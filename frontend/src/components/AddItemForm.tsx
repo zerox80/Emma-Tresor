@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import Button from './common/Button';
-import { createItem } from '../api/inventory';
+import { createItem, fetchLocations } from '../api/inventory';
 import type { ItemPayload, Location, Tag } from '../types/inventory';
 
 const itemSchema = z.object({
@@ -31,6 +31,46 @@ interface AddItemFormProps {
 
 const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, onCancel }) => {
   const [formError, setFormError] = useState<string | null>(null);
+  const [availableLocations, setAvailableLocations] = useState<Location[]>(locations);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAvailableLocations(locations);
+  }, [locations]);
+
+  useEffect(() => {
+    if (locations.length > 0) {
+      return;
+    }
+
+    let isMounted = true;
+    const loadLocations = async () => {
+      setLocationsLoading(true);
+      setLocationsError(null);
+      try {
+        const response = await fetchLocations();
+        if (isMounted) {
+          setAvailableLocations(response);
+        }
+      } catch (error) {
+        console.error('Failed to load locations for AddItemForm', error);
+        if (isMounted) {
+          setLocationsError('Standorte konnten nicht geladen werden. Aktualisiere die Seite oder versuche es erneut.');
+        }
+      } finally {
+        if (isMounted) {
+          setLocationsLoading(false);
+        }
+      }
+    };
+
+    void loadLocations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [locations.length]);
 
   const {
     register,
