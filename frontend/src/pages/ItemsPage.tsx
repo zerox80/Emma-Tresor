@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import QrReader from 'react-qr-reader';
+import { QrScanner } from '@yudiel/react-qr-scanner';
 
 import AddItemForm from '../components/AddItemForm';
 import EditItemForm from '../components/EditItemForm';
@@ -137,7 +137,7 @@ const ItemsPage: React.FC = () => {
   }, []);
 
   const handleScanResult = useCallback(
-    async (decoded: string | null) => {
+    async (decoded: string) => {
       if (!decoded || isProcessingScan) return;
       setScannerError(null);
       setIsProcessingScan(true);
@@ -514,26 +514,19 @@ const ItemsPage: React.FC = () => {
               </div>
             )}
             <div className="aspect-square w-full overflow-hidden rounded-2xl bg-slate-100">
-              <QrReader
-                scanDelay={400}
-                onResult={(result: unknown, error: unknown) => {
-                  if (result && typeof result === 'object' && 'text' in result) {
-                    const text = (result as { text?: string }).text;
-                    if (text) {
-                      void handleScanResult(text);
-                      return;
-                    }
-                  }
+              <QrScanner
+                constraints={{ facingMode: 'environment' }}
+                containerStyle={{ width: '100%', height: '100%' }}
+                onDecode={(result: string | null) => {
                   if (typeof result === 'string') {
                     void handleScanResult(result);
-                    return;
                   }
-                  if (error instanceof Error) {
+                }}
+                onError={(error?: Error) => {
+                  if (error) {
                     handleScanError(error);
                   }
                 }}
-                constraints={{ facingMode: 'environment' }}
-                style={{ width: '100%', height: '100%' }}
               />
             </div>
             <div className="mt-6 flex justify-end">
