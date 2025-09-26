@@ -66,19 +66,24 @@ Rechtsgrundlage für die Verwendung technisch notwendiger Cookies ist **Art. 6 A
 Wir nehmen die Sicherheit Ihrer Daten sehr ernst und haben umfassende technische und organisatorische Maßnahmen (TOMs) getroffen, um sie gemäß **Art. 32 DSGVO** zu schützen:
 
 *   **Verschlüsselung:** Jegliche Datenübertragung zwischen Ihrem Endgerät und unseren Servern erfolgt ausschließlich über eine sichere **SSL/TLS-Verschlüsselung** (erkennbar am `https://` in der Adresszeile). Ihre Passwörter werden mittels moderner Hashing-Verfahren (z.B. Argon2) gespeichert und sind selbst für uns nicht im Klartext einsehbar.
-*   **Zugriffskontrolle:** Der Zugriff auf Ihre Daten ist streng reglementiert. Nur Sie haben Zugriff auf Ihre Inventardaten. Unsere Systemadministratoren haben nur in technisch notwendigen Fällen und nach dem Prinzip des geringsten Privilegs (Least Privilege Principle) Zugriff auf die Systeminfrastruktur, nicht aber auf Ihre unverschlüsselten Inhalte.
 *   **Datenminimierung:** Wir erheben und speichern nur die Daten, die für den Betrieb von EmmaTresor zwingend erforderlich sind.
 *   **Regelmäßige Sicherheitsupdates:** Unsere Software und alle zugrunde liegenden Systeme werden kontinuierlich auf dem neuesten Stand gehalten, um bekannte Sicherheitslücken zu schließen.
 
 ## 5. Hosting und Drittanbieter
 
-Unsere Anwendung und Ihre Daten werden auf sicheren Servern bei **Contabo** in **Deutschland** gehostet. Wir haben mit unserem Hoster einen Auftragsverarbeitungsvertrag (AVV) gemäß **Art. 28 DSGVO** abgeschlossen. Dieser stellt sicher, dass der Hoster die Daten nur nach unserer Weisung und unter Einhaltung der DSGVO verarbeitet.
+Unsere Anwendung und Ihre Daten werden auf sicheren Servern bei **Contabo GmbH** in **Deutschland** gehostet. Wir haben mit unserem Hoster einen Auftragsverarbeitungsvertrag (AVV) gemäß **Art. 28 DSGVO** abgeschlossen. Dieser stellt sicher, dass der Hoster die Daten nur nach unserer Weisung und unter Einhaltung der DSGVO verarbeitet.
+
+### Einbindung von Google Fonts
+
+Zur einheitlichen Darstellung von Schriftarten nutzen wir in `templates/base.html` den externen Dienst **Google Fonts**, bereitgestellt von der Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland). Beim Aufruf der entsprechenden Seiten werden Schriftdateien von `fonts.googleapis.com` und `fonts.gstatic.com` geladen. Hierbei werden die für die Bereitstellung technisch notwendigen Daten (insbesondere Ihre IP-Adresse, Browserinformationen, Gerätetyp, Betriebssystem, Referrer-URL sowie Zeitpunkt des Zugriffs) an Google-Server übertragen. Diese Server können sich auch in den USA befinden. Google kann diese Informationen mit weiteren Daten aus Ihrem Google-Konto verknüpfen, sofern Sie dort eingeloggt sind.
+
+Die Nutzung von Google Fonts erfolgt auf Grundlage von **Art. 6 Abs. 1 lit. f DSGVO**. Unser berechtigtes Interesse liegt in der optisch ansprechenden und technisch stabilen Darstellung unserer Webinhalte. Google verwendet nach eigenen Angaben die Daten ausschließlich zum Ausliefern der Schriften und führt sie nicht mit anderen Google-Diensten zusammen. Weitere Informationen finden Sie in der Datenschutzerklärung von Google unter [https://policies.google.com/privacy](https://policies.google.com/privacy).
+
+Sie können die Ausführung von Google Fonts durch entsprechende Einstellungen in Ihrem Browser oder durch Add-ons (z.B. Script-Blocker) unterbinden. In diesem Fall werden jedoch möglicherweise nicht alle Inhalte korrekt dargestellt.
 
 Eine Weitergabe Ihrer Daten an sonstige Dritte oder ein Verkauf Ihrer Daten findet **nicht** statt.
 
 ## 6. Dauer der Speicherung
-
-Wir speichern Ihre personenbezogenen Daten nur so lange, wie es für die Erfüllung der Zwecke, für die sie erhoben wurden, erforderlich ist. Ihre Kontodaten und Inventardaten bleiben gespeichert, solange Ihr Benutzerkonto aktiv ist. Wenn Sie Ihr Konto löschen, werden alle zugehörigen Daten nach einer kurzen Sicherheitsfrist unwiderruflich gelöscht, sofern keine gesetzlichen Aufbewahrungspflichten (z.B. aus Handels- oder Steuerrecht) entgegenstehen.
 
 ## 7. Ihre Rechte als betroffene Person (Betroffenenrechte)
 
