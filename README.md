@@ -1,6 +1,6 @@
 # EmmaTresor Inventory
 
-<img width="1695" height="802" alt="{5F69326A-FD13-42F0-99E8-0CDBDDF54079}" src="https://github.com/user-attachments/assets/d12ab7f8-9b18-405d-b721-736fefd5e27d" />
+<img width="1634" height="793" alt="{34AD46C9-1318-4D0E-AB60-0CED2746A68F}" src="https://github.com/user-attachments/assets/8daa8bdf-9b0f-47e1-81db-12ba8a9270f3" />
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
