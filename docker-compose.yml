@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -58,11 +56,5 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
-    name: emmatresor_postgres_data
   backend_static:
-    driver: local
-    name: emmatresor_backend_static
   backend_media:
-    driver: local
-    name: emmatresor_backend_media
