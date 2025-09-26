@@ -157,7 +157,8 @@ const ItemsPage: React.FC = () => {
 
   const handleScanError = useCallback((err: unknown) => {
     console.error('QR scan failed', err);
-    setScannerError('Der QR-Code konnte nicht gelesen werden. Bitte versuche es erneut.');
+    const message = err instanceof Error ? err.message : 'Der QR-Code konnte nicht gelesen werden. Bitte versuche es erneut.';
+    setScannerError(message);
   }, []);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
