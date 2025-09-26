@@ -1,10 +1,18 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import axios from 'axios';
 import { QrScanner } from '@yudiel/react-qr-scanner';
 
 import AddItemForm from '../components/AddItemForm';
 import EditItemForm from '../components/EditItemForm';
 import Button from '../components/common/Button';
-import { fetchItems, fetchLocations, fetchTags, deleteItem, fetchItemByAssetTag } from '../api/inventory';
+import {
+  fetchItems,
+  fetchLocations,
+  fetchTags,
+  deleteItem,
+  fetchItemByAssetTag,
+  fetchItemQrCode,
+} from '../api/inventory';
 import type { Item, Location, Tag } from '../types/inventory';
 
 const ItemsPage: React.FC = () => {
@@ -27,6 +35,7 @@ const ItemsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [qrLoadingId, setQrLoadingId] = useState<number | null>(null);
 
   const PAGE_SIZE = 20;
 
@@ -160,6 +169,53 @@ const ItemsPage: React.FC = () => {
     const message = err instanceof Error ? err.message : 'Der QR-Code konnte nicht gelesen werden. Bitte versuche es erneut.';
     setScannerError(message);
   }, []);
+
+  const handleOpenQrCodeImage = useCallback(
+    async (item: Item) => {
+      const qrTab = window.open('', '_blank', 'noopener');
+      if (!qrTab) {
+        setError('Der QR-Code konnte nicht geöffnet werden, weil der Browser das Pop-up blockiert hat.');
+        return;
+      }
+
+      qrTab.document.write(
+        '<!DOCTYPE html><title>QR-Code wird geladen …</title><body style="margin:0;display:flex;align-items:center;justify-content:center;font-family:system-ui;background:#f8fafc;color:#0f172a;">QR-Code wird geladen …</body>',
+      );
+      qrTab.document.close();
+
+      setQrLoadingId(item.id);
+      try {
+        const blob = await fetchItemQrCode(item.id);
+        const objectUrl = URL.createObjectURL(blob);
+
+        const revoke = () => {
+          URL.revokeObjectURL(objectUrl);
+          qrTab.removeEventListener('beforeunload', revoke);
+        };
+
+        qrTab.addEventListener('beforeunload', revoke, { once: true });
+
+        if (qrTab.document?.body) {
+          qrTab.document.body.innerHTML = `<div style="margin:0 auto;max-width:640px;padding:24px;text-align:center;background:#0f172a;color:#f8fafc;height:100vh;display:flex;align-items:center;justify-content:center;"><img src="${objectUrl}" alt="QR-Code" style="max-width:100%;height:auto;border-radius:16px;background:#fff;padding:16px;box-shadow:0 20px 25px -15px rgba(15,23,42,0.45);" /></div>`;
+        } else {
+          qrTab.location.href = objectUrl;
+        }
+
+        window.setTimeout(revoke, 60_000);
+      } catch (err) {
+        console.error('Failed to open QR code image', err);
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          setError('Deine Sitzung ist abgelaufen. Melde dich erneut an, um QR-Codes zu generieren.');
+        } else {
+          setError('Der QR-Code konnte nicht geladen werden. Bitte versuche es erneut.');
+        }
+        qrTab.close();
+      } finally {
+        setQrLoadingId(null);
+      }
+    },
+    [],
+  );
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -352,7 +408,10 @@ const ItemsPage: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         className="text-emerald-600 hover:text-emerald-800"
-                        onClick={() => window.open(`/api/items/${item.id}/generate_qr_code/`, '_blank', 'noopener')}
+                        loading={qrLoadingId === item.id}
+                        onClick={() => {
+                          void handleOpenQrCodeImage(item);
+                        }}
                       >
                         QR-Code
                       </Button>

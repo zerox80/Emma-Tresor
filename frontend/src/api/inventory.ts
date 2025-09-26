@@ -21,6 +21,13 @@ export const fetchItemByAssetTag = async (assetTag: string): Promise<Item> => {
   return data;
 };
 
+export const fetchItemQrCode = async (itemId: number): Promise<Blob> => {
+  const { data } = await apiClient.get<Blob>(`/items/${itemId}/generate_qr_code/`, {
+    responseType: 'blob',
+  });
+  return data;
+};
+
 export const fetchAllItems = async (query?: string): Promise<Item[]> => {
   const collected: Item[] = [];
   let currentPage = 1;
