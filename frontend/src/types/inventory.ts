@@ -27,6 +27,7 @@ export interface Item {
   quantity: number;
   purchase_date: string | null;
   value: string | null;
+  asset_tag: string;
   owner: number;
   location: number | null;
   tags: number[];

@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import QrReader from 'react-qr-reader';
 
 import AddItemForm from '../components/AddItemForm';
 import EditItemForm from '../components/EditItemForm';
 import Button from '../components/common/Button';
-import { fetchItems, fetchLocations, fetchTags, deleteItem } from '../api/inventory';
+import { fetchItems, fetchLocations, fetchTags, deleteItem, fetchItemByAssetTag } from '../api/inventory';
 import type { Item, Location, Tag } from '../types/inventory';
 
 const ItemsPage: React.FC = () => {
@@ -20,6 +21,9 @@ const ItemsPage: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [scannerError, setScannerError] = useState<string | null>(null);
+  const [isProcessingScan, setIsProcessingScan] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -76,6 +80,18 @@ const ItemsPage: React.FC = () => {
     };
   }, [debouncedSearch, refreshCounter, currentPage]);
 
+  const handleCloseScanner = useCallback(() => {
+    setShowScannerModal(false);
+    setScannerError(null);
+    setIsProcessingScan(false);
+  }, []);
+
+  const handleOpenScanner = useCallback(() => {
+    setScannerError(null);
+    setIsProcessingScan(false);
+    setShowScannerModal(true);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -90,10 +106,13 @@ const ItemsPage: React.FC = () => {
           setShowDeleteModal(false);
           setSelectedItem(null);
         }
+        if (showScannerModal) {
+          handleCloseScanner();
+        }
       }
     };
 
-    const hasModalOpen = showAddModal || showEditModal || showDeleteModal;
+    const hasModalOpen = showAddModal || showEditModal || showDeleteModal || showScannerModal;
     if (hasModalOpen) {
       window.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
@@ -103,7 +122,7 @@ const ItemsPage: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [showAddModal, showEditModal, showDeleteModal]);
+  }, [handleCloseScanner, showAddModal, showDeleteModal, showEditModal, showScannerModal]);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(() => Object.fromEntries(locations.map((loc) => [loc.id, loc.name])), [locations]);
@@ -111,6 +130,35 @@ const ItemsPage: React.FC = () => {
   const handleRefresh = () => {
     setRefreshCounter((prev) => prev + 1);
   };
+
+  const openEditModalWithItem = useCallback((item: Item) => {
+    setSelectedItem(item);
+    setShowEditModal(true);
+  }, []);
+
+  const handleScanResult = useCallback(
+    async (decoded: string | null) => {
+      if (!decoded || isProcessingScan) return;
+      setScannerError(null);
+      setIsProcessingScan(true);
+      setShowScannerModal(false);
+      try {
+        const item = await fetchItemByAssetTag(decoded);
+        openEditModalWithItem(item);
+      } catch (err) {
+        console.error('Failed to fetch item by asset tag', err);
+        setError('Der gescannte QR-Code konnte keinem Gegenstand zugeordnet werden.');
+      } finally {
+        setIsProcessingScan(false);
+      }
+    },
+    [isProcessingScan, openEditModalWithItem],
+  );
+
+  const handleScanError = useCallback((err: unknown) => {
+    console.error('QR scan failed', err);
+    setScannerError('Der QR-Code konnte nicht gelesen werden. Bitte versuche es erneut.');
+  }, []);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -137,8 +185,7 @@ const ItemsPage: React.FC = () => {
   };
 
   const handleEditItem = (item: Item) => {
-    setSelectedItem(item);
-    setShowEditModal(true);
+    openEditModalWithItem(item);
   };
 
   const handleEditSuccess = () => {
@@ -212,6 +259,9 @@ const ItemsPage: React.FC = () => {
           />
           <Button type="button" variant="secondary" size="sm" loading={loading} onClick={handleRefresh}>
             Aktualisieren
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={handleOpenScanner}>
+            QR-Code scannen
           </Button>
         </div>
       </div>
@@ -295,6 +345,15 @@ const ItemsPage: React.FC = () => {
                         className="text-red-600 hover:text-red-800"
                       >
                         Löschen
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-emerald-600 hover:text-emerald-800"
+                        onClick={() => window.open(`/api/items/${item.id}/generate_qr_code/`, '_blank', 'noopener')}
+                      >
+                        QR-Code
                       </Button>
                     </div>
                   </td>
@@ -424,6 +483,61 @@ const ItemsPage: React.FC = () => {
                 className="flex-1"
               >
                 Löschen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Scanner Modal */}
+      {showScannerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
+          <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleCloseScanner} />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="qr-scanner-heading"
+            className="relative max-h-[90vh] w-full max-w-xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
+          >
+            <div className="mb-6">
+              <h3 id="qr-scanner-heading" className="text-xl font-semibold text-slate-900">
+                QR-Code scannen
+              </h3>
+              <p className="text-sm text-slate-600">
+                Richte die Kamera auf den QR-Code eines Gegenstands, um ihn sofort zu öffnen.
+              </p>
+            </div>
+            {scannerError && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
+                {scannerError}
+              </div>
+            )}
+            <div className="aspect-square w-full overflow-hidden rounded-2xl bg-slate-100">
+              <QrReader
+                scanDelay={400}
+                onResult={(result: unknown, error: unknown) => {
+                  if (result && typeof result === 'object' && 'text' in result) {
+                    const text = (result as { text?: string }).text;
+                    if (text) {
+                      void handleScanResult(text);
+                      return;
+                    }
+                  }
+                  if (typeof result === 'string') {
+                    void handleScanResult(result);
+                    return;
+                  }
+                  if (error instanceof Error) {
+                    handleScanError(error);
+                  }
+                }}
+                constraints={{ facingMode: 'environment' }}
+                style={{ width: '100%', height: '100%' }}
+              />
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button type="button" variant="secondary" onClick={handleCloseScanner}>
+                Abbrechen
               </Button>
             </div>
           </div>

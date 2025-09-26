@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -52,6 +54,7 @@ class Item(TimeStampedModel):
     quantity = models.PositiveIntegerField(default=1)
     purchase_date = models.DateField(blank=True, null=True)
     value = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    asset_tag = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

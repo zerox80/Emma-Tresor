@@ -1,6 +1,11 @@
+import io
+from uuid import UUID
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
 from rest_framework import filters, mixins, permissions, serializers, status, throttling, viewsets
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.response import Response
@@ -196,6 +201,52 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save(owner=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='lookup_by_tag/(?P<asset_tag>[^/]+)')
+    def lookup_by_asset_tag(self, request, asset_tag=None):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({'detail': 'Authentifizierung erforderlich.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            asset_uuid = UUID(str(asset_tag).strip())
+        except (TypeError, ValueError):
+            return Response({'detail': 'Ungültiger QR-Code.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            item = Item.objects.get(owner=user, asset_tag=asset_uuid)
+        except Item.DoesNotExist:
+            return Response({'detail': 'Gegenstand nicht gefunden.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(item)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='generate_qr_code')
+    def generate_qr_code(self, request, pk=None):
+        try:
+            import qrcode
+        except ImportError:
+            return Response(
+                {'detail': 'QR-Code-Generierung ist nicht verfügbar. Bitte installiere qrcode[pil].'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        item = self.get_object()
+        if item.owner != request.user:
+            raise PermissionDenied('Dieser Gegenstand gehört nicht zu deinem Konto.')
+
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(str(item.asset_tag))
+        qr.make(fit=True)
+        img = qr.make_image(fill_color='black', back_color='white')
+
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+
+        response = HttpResponse(buffer.getvalue(), content_type='image/png')
+        response['Content-Disposition'] = f'inline; filename=item-{item.id}-qr.png'
+        return response
 
 
 class ItemImageViewSet(viewsets.ModelViewSet):

@@ -144,6 +144,7 @@ class ItemSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
     description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    asset_tag = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = Item
@@ -154,13 +155,14 @@ class ItemSerializer(serializers.ModelSerializer):
             'quantity',
             'purchase_date',
             'value',
+            'asset_tag',
             'owner',
             'location',
             'tags',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'asset_tag', 'owner', 'created_at', 'updated_at']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

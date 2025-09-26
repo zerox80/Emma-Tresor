@@ -16,6 +16,11 @@ export const fetchItems = async ({ query, page, pageSize }: FetchItemsOptions = 
   return data;
 };
 
+export const fetchItemByAssetTag = async (assetTag: string): Promise<Item> => {
+  const { data } = await apiClient.get<Item>(`/items/lookup_by_tag/${encodeURIComponent(assetTag)}/`);
+  return data;
+};
+
 export const fetchAllItems = async (query?: string): Promise<Item[]> => {
   const collected: Item[] = [];
   let currentPage = 1;
