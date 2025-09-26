@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -223,12 +223,18 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
           {...register('location', { valueAsNumber: true })}
         >
           <option value="">Kein Standort ausgewählt</option>
-          {locations.map((location) => (
+          {locationsLoading && availableLocations.length === 0 && (
+            <option disabled value="">
+              Standorte werden geladen …
+            </option>
+          )}
+          {availableLocations.map((location) => (
             <option key={location.id} value={location.id}>
               {location.name}
             </option>
           ))}
         </select>
+        {locationsError && <p className="text-xs text-red-500">{locationsError}</p>}
         {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
       </div>
 
