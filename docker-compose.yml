@@ -50,7 +50,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "8888:80"
     volumes:
       - backend_static:/var/www/emmatresor/static
       - backend_media:/var/www/emmatresor/media
