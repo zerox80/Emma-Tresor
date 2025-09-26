@@ -90,6 +90,39 @@ class ItemImage(TimeStampedModel):
         return f"Bild für {self.item.name}"
 
 
+class ItemChangeLog(TimeStampedModel):
+    ACTION_CREATE = 'create'
+    ACTION_UPDATE = 'update'
+    ACTION_DELETE = 'delete'
+
+    ACTION_CHOICES = (
+        (ACTION_CREATE, 'Erstellung'),
+        (ACTION_UPDATE, 'Aktualisierung'),
+        (ACTION_DELETE, 'Löschung'),
+    )
+
+    item = models.ForeignKey('Item', on_delete=models.SET_NULL, related_name='change_logs', null=True, blank=True)
+    item_name = models.CharField(max_length=255, blank=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='item_change_logs',
+    )
+    action = models.CharField(max_length=12, choices=ACTION_CHOICES)
+    changes = models.JSONField(blank=True, default=dict)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Änderungsprotokoll'
+        verbose_name_plural = 'Änderungsprotokolle'
+
+    def __str__(self) -> str:
+        target = self.item.name if self.item else self.item_name or 'Unbekanntes Objekt'
+        return f"{self.get_action_display()} für {target}"
+
+
 class ItemList(TimeStampedModel):
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(

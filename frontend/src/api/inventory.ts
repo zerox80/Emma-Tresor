@@ -5,13 +5,26 @@ export interface FetchItemsOptions {
   query?: string;
   page?: number;
   pageSize?: number;
+  tags?: number[];
+  locations?: number[];
+  ordering?: string;
 }
 
-export const fetchItems = async ({ query, page, pageSize }: FetchItemsOptions = {}): Promise<PaginatedResponse<Item>> => {
+export const fetchItems = async ({
+  query,
+  page,
+  pageSize,
+  tags,
+  locations,
+  ordering,
+}: FetchItemsOptions = {}): Promise<PaginatedResponse<Item>> => {
   const params: Record<string, string | number> = {};
   if (query) params.search = query;
   if (page) params.page = page;
   if (pageSize) params.page_size = pageSize;
+  if (tags && tags.length > 0) params.tags = tags.join(',');
+  if (locations && locations.length > 0) params.location = locations.join(',');
+  if (ordering) params.ordering = ordering;
   const { data } = await apiClient.get<PaginatedResponse<Item>>('/items/', { params });
   return data;
 };

@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import Select, { type MultiValue, type OnChangeValue } from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 
 import Button from './common/Button';
-import { createItem, fetchLocations } from '../api/inventory';
+import { createItem, createTag, createLocation, fetchLocations } from '../api/inventory';
 import type { ItemPayload, Location, Tag } from '../types/inventory';
 
 const itemSchema = z.object({
@@ -22,6 +24,11 @@ const itemSchema = z.object({
 
 type ItemFormSchema = z.infer<typeof itemSchema>;
 
+interface SelectOption {
+  value: number;
+  label: string;
+}
+
 interface AddItemFormProps {
   locations: Location[];
   tags: Tag[];
@@ -32,12 +39,16 @@ interface AddItemFormProps {
 const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, onCancel }) => {
   const [formError, setFormError] = useState<string | null>(null);
   const [availableLocations, setAvailableLocations] = useState<Location[]>(locations);
+  const [availableTags, setAvailableTags] = useState<Tag[]>(tags);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [isCreatingLocation, setIsCreatingLocation] = useState(false);
+  const [isCreatingTag, setIsCreatingTag] = useState(false);
 
   useEffect(() => {
     setAvailableLocations(locations);
-  }, [locations]);
+    setAvailableTags(tags);
+  }, [locations, tags]);
 
   useEffect(() => {
     if (locations.length > 0) {
@@ -131,6 +142,45 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
     setValue('tags', newTags);
   };
 
+  const handleCreateLocation = async (inputValue: string) => {
+    setIsCreatingLocation(true);
+    try {
+      const newLocation = await createLocation(inputValue.trim());
+      setAvailableLocations(prev => [...prev, newLocation]);
+      setValue('location', newLocation.id);
+      return newLocation.id;
+    } catch (error) {
+      console.error('Failed to create location:', error);
+      setFormError('Standort konnte nicht erstellt werden. Bitte versuche es erneut.');
+      throw error;
+    } finally {
+      setIsCreatingLocation(false);
+    }
+  };
+
+  const handleCreateTag = async (inputValue: string) => {
+    setIsCreatingTag(true);
+    try {
+      const newTag = await createTag(inputValue.trim());
+      setAvailableTags(prev => [...prev, newTag]);
+      const currentTags = watchedTags || [];
+      setValue('tags', [...currentTags, newTag.id]);
+      return newTag.id;
+    } catch (error) {
+      console.error('Failed to create tag:', error);
+      setFormError('Tag konnte nicht erstellt werden. Bitte versuche es erneut.');
+      throw error;
+    } finally {
+      setIsCreatingTag(false);
+    }
+  };
+
+  const locationOptions = availableLocations.map(loc => ({ value: loc.id, label: loc.name }));
+  const tagOptions = availableTags.map(tag => ({ value: tag.id, label: tag.name }));
+  
+  const selectedLocationOption = locationOptions.find(opt => opt.value === watch('location')) || null;
+  const selectedTagOptions = tagOptions.filter(opt => watchedTags.includes(opt.value));
+
   return (
     <form className="space-y-6 text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
       {formError && (
@@ -214,48 +264,66 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="location" className="text-sm font-medium text-slate-800">
+        <label className="text-sm font-medium text-slate-800">
           Standort
         </label>
-        <select
-          id="location"
-          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-          {...register('location', { valueAsNumber: true })}
-        >
-          <option value="">Kein Standort ausgewählt</option>
-          {locationsLoading && availableLocations.length === 0 && (
-            <option disabled value="">
-              Standorte werden geladen …
-            </option>
-          )}
-          {availableLocations.map((location) => (
-            <option key={location.id} value={location.id}>
-              {location.name}
-            </option>
-          ))}
-        </select>
+        <CreatableSelect
+          isClearable
+          isDisabled={isCreatingLocation}
+          isLoading={locationsLoading || isCreatingLocation}
+          onCreateOption={handleCreateLocation}
+          options={locationOptions}
+          value={selectedLocationOption}
+          onChange={(newValue) => {
+            setValue('location', newValue?.value ?? null);
+          }}
+          placeholder="Standort auswählen oder erstellen..."
+          formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
+          noOptionsMessage={() => "Keine Standorte gefunden"}
+          loadingMessage={() => "Lade..."}
+          className="react-select-container"
+          classNamePrefix="react-select"
+        />
         {locationsError && <p className="text-xs text-red-500">{locationsError}</p>}
         {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-800">Tags</label>
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <button
-              key={tag.id}
-              type="button"
-              onClick={() => handleTagToggle(tag.id)}
-              className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-                watchedTags.includes(tag.id)
-                  ? 'bg-brand-500 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {tag.name}
-            </button>
-          ))}
-        </div>
+        <Select
+          isMulti
+          isClearable
+          isDisabled={isCreatingTag}
+          isLoading={isCreatingTag}
+          options={tagOptions}
+          value={selectedTagOptions}
+          onChange={(newValue) => {
+            const values = (newValue as SelectOption[]).map(option => option.value);
+            setValue('tags', values);
+          }}
+          placeholder="Tags auswählen..."
+          noOptionsMessage={() => "Keine Tags gefunden"}
+          loadingMessage={() => "Lade..."}
+          className="react-select-container"
+          classNamePrefix="react-select"
+        />
+        <CreatableSelect
+          isClearable
+          isDisabled={isCreatingTag}
+          isLoading={isCreatingTag}
+          onCreateOption={async (inputValue: string) => {
+            await handleCreateTag(inputValue);
+          }}
+          options={[]}
+          value={null}
+          onChange={() => {}}
+          placeholder="Neuen Tag erstellen..."
+          formatCreateLabel={(inputValue: string) => `"${inputValue}" als Tag erstellen`}
+          noOptionsMessage={() => "Tag eingeben zum Erstellen"}
+          loadingMessage={() => "Erstelle Tag..."}
+          className="react-select-container mt-2"
+          classNamePrefix="react-select"
+        />
         {errors.tags && <p className="text-xs text-red-500">{errors.tags.message}</p>}
       </div>
 

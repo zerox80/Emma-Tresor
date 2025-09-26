@@ -31,6 +31,7 @@ export interface Item {
   owner: number;
   location: number | null;
   tags: number[];
+  images: ItemImage[];
   created_at: string;
   updated_at: string;
 }

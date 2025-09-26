@@ -15,6 +15,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from django_filters import rest_framework as django_filters
+
 from .models import Item, ItemImage, ItemList, Location, Tag
 from .serializers import (
     ItemImageSerializer,
@@ -173,6 +175,20 @@ class LocationViewSet(UserScopedModelViewSet):
     serializer_class = LocationSerializer
 
 
+
+class NumberInFilter(django_filters.BaseInFilter, django_filters.NumberFilter):
+    pass
+
+
+class ItemFilter(django_filters.FilterSet):
+    tags = NumberInFilter(field_name='tags__id')
+    location = NumberInFilter(field_name='location__id')
+
+    class Meta:
+        model = Item
+        fields: list[str] = []
+
+
 class ItemPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
@@ -181,8 +197,11 @@ class ItemPagination(PageNumberPagination):
 
 class ItemViewSet(viewsets.ModelViewSet):
     serializer_class = ItemSerializer
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = ItemFilter
     search_fields = ['name', 'description', 'location__name', 'tags__name']
+    ordering_fields = ['name', 'quantity', 'value', 'purchase_date']
+    ordering = ['name']
     pagination_class = ItemPagination
 
     def get_queryset(self):

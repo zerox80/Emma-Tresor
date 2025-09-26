@@ -145,6 +145,7 @@ class ItemSerializer(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.id')
     description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     asset_tag = serializers.UUIDField(read_only=True)
+    images = ItemImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Item
@@ -159,6 +160,7 @@ class ItemSerializer(serializers.ModelSerializer):
             'owner',
             'location',
             'tags',
+            'images',
             'created_at',
             'updated_at',
         ]
