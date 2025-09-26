@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <span class="badge">✨ Willkommen bei EmmaTresor</span>
+    <h2>Die smarteste Art, Inventar, Räume und Teams im Blick zu behalten.</h2>
+    <p>
+        EmmaTresor vereint ein sicheres Django-Backend mit einem modernen React-Frontend. Melde dich an,
+        strukturiere Bestand mit Tags und Standorten und gewinne mit aussagekräftigen Dashboards sofortige Klarheit.
+    </p>
+    <div class="cta-group">
+        <a class="primary" href="{{ frontend_login_url }}" target="_blank" rel="noopener">App starten (Login) →</a>
+        <a class="secondary" href="/admin/">Admin-Konsole öffnen</a>
+        <a class="secondary" href="/api/" target="_blank" rel="noopener">API Explorer aufrufen</a>
+    </div>
+</section>
+
+<section class="resources">
+    <div class="resource-grid">
+        <div class="card">
+            <h3>Benutzer & Auth</h3>
+            <p>Registriere Mitwirkende, nutze sichere JWT-Flows und verwalte Sitzungen mit Token-Rotation.</p>
+            <ul>
+                <li><code>POST /api/users/</code></li>
+                <li><code>POST /api/token/</code></li>
+                <li><code>POST /api/token/refresh/</code></li>
+                <li><code>POST /api/auth/logout/</code></li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Inventar-Ressourcen</h3>
+            <p>Erfasse Assets samt Bildern, Standorten, Werten und Tags – vollständig per REST steuerbar.</p>
+            <ul>
+                <li><code>/api/items/</code></li>
+                <li><code>/api/item-images/</code></li>
+                <li><code>/api/locations/</code></li>
+                <li><code>/api/tags/</code></li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Listen & Automatisierung</h3>
+            <p>Gruppiere Gegenstände für Umzüge, Projekte oder Audits und nutze Filter, Suche und Pagination.</p>
+            <ul>
+                <li><code>/api/lists/</code></li>
+                <li>Filter & Suche: <code>?search=</code></li>
+                <li>Pagination & Ordering via DRF</li>
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}
