@@ -31,7 +31,11 @@ else:
 PY
 fi
 
-python manage.py migrate --noinput
+# Run migrations with extra safety
+echo "Running database migrations..."
+python manage.py migrate --noinput --verbosity=2
+
+echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
 if [ "${AUTO_CREATE_SUPERUSER:-false}" = "true" ]; then

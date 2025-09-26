@@ -2,14 +2,55 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Iterable
+import logging
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
+from django.db.migrations.executor import MigrationExecutor
+from django.db import connection
 
 from .models import Item, ItemChangeLog
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
+def _is_migrating() -> bool:
+    """Check if Django is currently running migrations"""
+    try:
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
+        return len(plan) > 0
+    except Exception:
+        # If we can't determine, assume we're not migrating
+        return False
+
+
+def _safe_signal_handler(func):
+    """Decorator to make signal handlers migration-safe"""
+    def wrapper(*args, **kwargs):
+        # Skip during migrations
+        if _is_migrating():
+            logger.debug(f"Skipping {func.__name__} during migration")
+            return
+            
+        # Skip if ItemChangeLog table doesn't exist yet
+        try:
+            ItemChangeLog._meta.get_field('id')
+        except Exception:
+            logger.debug(f"Skipping {func.__name__} - ItemChangeLog table not ready")
+            return
+            
+        # Execute with error handling
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in signal handler {func.__name__}: {e}")
+            # Don't re-raise to avoid breaking the main operation
+            
+    return wrapper
 
 
 @dataclass
@@ -57,6 +98,7 @@ def _resolve_actor(instance: Item) -> User | None:
 
 
 @receiver(pre_save, sender=Item)
+@_safe_signal_handler
 def _cache_previous_state(sender, instance: Item, **kwargs):
     if not instance.pk:
         instance._previous_state = None  # type: ignore[attr-defined]
@@ -65,11 +107,15 @@ def _cache_previous_state(sender, instance: Item, **kwargs):
         previous = Item.objects.get(pk=instance.pk)
     except Item.DoesNotExist:
         instance._previous_state = None  # type: ignore[attr-defined]
+    except Exception as e:
+        logger.warning(f"Could not fetch previous state for Item {instance.pk}: {e}")
+        instance._previous_state = None  # type: ignore[attr-defined]
     else:
         instance._previous_state = previous  # type: ignore[attr-defined]
 
 
 @receiver(post_save, sender=Item)
+@_safe_signal_handler
 def _log_item_changes(sender, instance: Item, created: bool, **kwargs):
     previous: Item | None = getattr(instance, '_previous_state', None)
     user = _resolve_actor(instance)
@@ -109,6 +155,7 @@ def _log_item_changes(sender, instance: Item, created: bool, **kwargs):
 
 
 @receiver(post_delete, sender=Item)
+@_safe_signal_handler 
 def _log_item_deletion(sender, instance: Item, **kwargs):
     user = _resolve_actor(instance)
     ItemChangeLog.objects.create(
