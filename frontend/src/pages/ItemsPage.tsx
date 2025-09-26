@@ -36,6 +36,8 @@ const ItemsPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [qrLoadingId, setQrLoadingId] = useState<number | null>(null);
+  const [qrModalItem, setQrModalItem] = useState<Item | null>(null);
+  const [qrModalUrl, setQrModalUrl] = useState<string | null>(null);
 
   const PAGE_SIZE = 20;
 
@@ -164,6 +166,14 @@ const ItemsPage: React.FC = () => {
     [isProcessingScan, openEditModalWithItem],
   );
 
+  const closeQrModal = useCallback(() => {
+    if (qrModalUrl) {
+      URL.revokeObjectURL(qrModalUrl);
+    }
+    setQrModalUrl(null);
+    setQrModalItem(null);
+  }, [qrModalUrl]);
+
   const handleScanError = useCallback((err: unknown) => {
     console.error('QR scan failed', err);
     const message = err instanceof Error ? err.message : 'Der QR-Code konnte nicht gelesen werden. Bitte versuche es erneut.';
@@ -172,36 +182,15 @@ const ItemsPage: React.FC = () => {
 
   const handleOpenQrCodeImage = useCallback(
     async (item: Item) => {
-      const qrTab = window.open('', '_blank', 'noopener');
-      if (!qrTab) {
-        setError('Der QR-Code konnte nicht geöffnet werden, weil der Browser das Pop-up blockiert hat.');
-        return;
-      }
-
-      qrTab.document.write(
-        '<!DOCTYPE html><title>QR-Code wird geladen …</title><body style="margin:0;display:flex;align-items:center;justify-content:center;font-family:system-ui;background:#f8fafc;color:#0f172a;">QR-Code wird geladen …</body>',
-      );
-      qrTab.document.close();
-
       setQrLoadingId(item.id);
       try {
         const blob = await fetchItemQrCode(item.id);
         const objectUrl = URL.createObjectURL(blob);
-
-        const revoke = () => {
-          URL.revokeObjectURL(objectUrl);
-          qrTab.removeEventListener('beforeunload', revoke);
-        };
-
-        qrTab.addEventListener('beforeunload', revoke, { once: true });
-
-        if (qrTab.document?.body) {
-          qrTab.document.body.innerHTML = `<div style="margin:0 auto;max-width:640px;padding:24px;text-align:center;background:#0f172a;color:#f8fafc;height:100vh;display:flex;align-items:center;justify-content:center;"><img src="${objectUrl}" alt="QR-Code" style="max-width:100%;height:auto;border-radius:16px;background:#fff;padding:16px;box-shadow:0 20px 25px -15px rgba(15,23,42,0.45);" /></div>`;
-        } else {
-          qrTab.location.href = objectUrl;
+        if (qrModalUrl) {
+          URL.revokeObjectURL(qrModalUrl);
         }
-
-        window.setTimeout(revoke, 60_000);
+        setQrModalItem(item);
+        setQrModalUrl(objectUrl);
       } catch (err) {
         console.error('Failed to open QR code image', err);
         if (axios.isAxiosError(err) && err.response?.status === 401) {
@@ -209,12 +198,11 @@ const ItemsPage: React.FC = () => {
         } else {
           setError('Der QR-Code konnte nicht geladen werden. Bitte versuche es erneut.');
         }
-        qrTab.close();
       } finally {
         setQrLoadingId(null);
       }
     },
-    [],
+    [qrModalUrl],
   );
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -544,6 +532,47 @@ const ItemsPage: React.FC = () => {
               >
                 Löschen
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {qrModalItem && qrModalUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
+          <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={closeQrModal} />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="qr-modal-heading"
+            className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
+          >
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 id="qr-modal-heading" className="text-xl font-semibold text-slate-900">
+                  QR-Code anzeigen
+                </h3>
+                <p className="text-sm text-slate-600">QR-Code für "{qrModalItem.name}"</p>
+              </div>
+              <Button type="button" variant="ghost" size="sm" onClick={closeQrModal}>
+                Schließen
+              </Button>
+            </div>
+            <div className="flex justify-center rounded-2xl bg-slate-100 p-6">
+              <img
+                src={qrModalUrl}
+                alt={`QR-Code für ${qrModalItem.name}`}
+                className="max-h-[60vh] w-full max-w-xs rounded-xl bg-white p-4 shadow-lg"
+              />
+            </div>
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-xs text-slate-500">Scanne diesen Code, um den Gegenstand sofort aufzurufen.</div>
+              <a
+                href={qrModalUrl}
+                download={`item-${qrModalItem.id}-qr.png`}
+                className="inline-flex items-center rounded-lg border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-600 transition hover:border-brand-300 hover:bg-brand-50"
+              >
+                QR-Code herunterladen
+              </a>
             </div>
           </div>
         </div>
