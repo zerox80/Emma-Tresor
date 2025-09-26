@@ -1,5 +1,7 @@
 # EmmaTresor Inventory
 
+<img width="1695" height="802" alt="{5F69326A-FD13-42F0-99E8-0CDBDDF54079}" src="https://github.com/user-attachments/assets/d12ab7f8-9b18-405d-b721-736fefd5e27d" />
+
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React 19](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
