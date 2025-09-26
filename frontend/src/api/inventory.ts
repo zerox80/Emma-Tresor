@@ -29,6 +29,11 @@ export const fetchItems = async ({
   return data;
 };
 
+export const fetchItem = async (id: number): Promise<Item> => {
+  const { data } = await apiClient.get<Item>(`/items/${id}/`);
+  return data;
+};
+
 export const fetchItemByAssetTag = async (assetTag: string): Promise<Item> => {
   const { data } = await apiClient.get<Item>(`/items/lookup_by_tag/${encodeURIComponent(assetTag)}/`);
   return data;
