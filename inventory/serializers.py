@@ -12,7 +12,11 @@ User = get_user_model()
 class UserRegistrationSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         required=True,
-        validators=[UniqueValidator(queryset=User.objects.all(), lookup='iexact')],
+        validators=[UniqueValidator(
+            queryset=User.objects.all(), 
+            lookup='iexact',
+            message='Ein Konto mit dieser E-Mail-Adresse existiert bereits. Bitte verwende eine andere E-Mail-Adresse oder melde dich mit deinem bestehenden Konto an.'
+        )],
     )
     password = serializers.CharField(write_only=True)
     password_confirm = serializers.CharField(write_only=True)

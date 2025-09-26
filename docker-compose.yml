@@ -11,6 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db_backups:/backups
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -57,5 +58,11 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+    name: emmatresor_postgres_data
   backend_static:
+    driver: local
+    name: emmatresor_backend_static
   backend_media:
+    driver: local
+    name: emmatresor_backend_media
