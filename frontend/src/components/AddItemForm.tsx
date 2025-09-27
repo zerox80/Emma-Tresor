@@ -182,161 +182,177 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
   const selectedTagOptions = tagOptions.filter(opt => watchedTags.includes(opt.value));
 
   return (
-    <form className="space-y-6 text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form
+      className="mx-auto flex w-full max-w-3xl flex-col gap-8 text-slate-700"
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+    >
       {formError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {formError}
         </div>
       )}
 
-      <div className="space-y-2">
-        <label htmlFor="name" className="text-sm font-medium text-slate-800">
-          Name *
-        </label>
-        <input
-          id="name"
-          type="text"
-          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-          placeholder="z. B. Laptop, Buch, Werkzeug..."
-          {...register('name')}
-        />
-        {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
-      </div>
+      <section className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2">
+            <label htmlFor="name" className="text-sm font-semibold text-slate-800">
+              Name *
+            </label>
+            <input
+              id="name"
+              type="text"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+              placeholder="z. B. Laptop, Buch, Werkzeug..."
+              {...register('name')}
+            />
+            {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+          </div>
 
-      <div className="space-y-2">
-        <label htmlFor="description" className="text-sm font-medium text-slate-800">
-          Beschreibung
-        </label>
-        <textarea
-          id="description"
-          rows={3}
-          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-          placeholder="Optionale Beschreibung des Gegenstands..."
-          {...register('description')}
-        />
-        {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label htmlFor="quantity" className="text-sm font-medium text-slate-800">
-            Menge *
-          </label>
-          <input
-            id="quantity"
-            type="number"
-            min="1"
-            step="1"
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-            {...register('quantity', { valueAsNumber: true })}
-          />
-          {errors.quantity && <p className="text-xs text-red-500">{errors.quantity.message}</p>}
+          <div className="space-y-2 md:col-span-2">
+            <label htmlFor="description" className="text-sm font-semibold text-slate-800">
+              Beschreibung
+            </label>
+            <textarea
+              id="description"
+              rows={4}
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+              placeholder="Optionale Beschreibung des Gegenstands..."
+              {...register('description')}
+            />
+            {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="value" className="text-sm font-medium text-slate-800">
-            Wert (€)
-          </label>
-          <input
-            id="value"
-            type="number"
-            step="0.01"
-            min="0"
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-            placeholder="z. B. 1299.99"
-            {...register('value')}
-          />
-          {errors.value && <p className="text-xs text-red-500">{errors.value.message}</p>}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-2">
+            <label htmlFor="quantity" className="text-sm font-semibold text-slate-800">
+              Menge *
+            </label>
+            <input
+              id="quantity"
+              type="number"
+              min="1"
+              step="1"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+              {...register('quantity', { valueAsNumber: true })}
+            />
+            {errors.quantity && <p className="text-xs text-red-500">{errors.quantity.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="value" className="text-sm font-semibold text-slate-800">
+              Wert (€)
+            </label>
+            <input
+              id="value"
+              type="number"
+              step="0.01"
+              min="0"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+              placeholder="z. B. 1299.99"
+              {...register('value')}
+            />
+            {errors.value && <p className="text-xs text-red-500">{errors.value.message}</p>}
+          </div>
+
+          <div className="space-y-2 md:col-span-2 lg:col-span-1">
+            <label htmlFor="purchase_date" className="text-sm font-semibold text-slate-800">
+              Kaufdatum
+            </label>
+            <input
+              id="purchase_date"
+              type="date"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+              {...register('purchase_date')}
+            />
+            {errors.purchase_date && <p className="text-xs text-red-500">{errors.purchase_date.message}</p>}
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-2">
-        <label htmlFor="purchase_date" className="text-sm font-medium text-slate-800">
-          Kaufdatum
-        </label>
-        <input
-          id="purchase_date"
-          type="date"
-          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-          {...register('purchase_date')}
-        />
-        {errors.purchase_date && <p className="text-xs text-red-500">{errors.purchase_date.message}</p>}
-      </div>
+      <section className="flex flex-col gap-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-slate-800">Standort</label>
+            <CreatableSelect
+              isClearable
+              isDisabled={isCreatingLocation}
+              isLoading={locationsLoading || isCreatingLocation}
+              onCreateOption={handleCreateLocation}
+              options={locationOptions}
+              value={selectedLocationOption}
+              onChange={(newValue) => {
+                setValue('location', newValue?.value ?? null);
+              }}
+              placeholder="Standort auswählen oder erstellen..."
+              formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
+              noOptionsMessage={() => "Keine Standorte gefunden"}
+              loadingMessage={() => "Lade..."}
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+            {locationsError && <p className="text-xs text-red-500">{locationsError}</p>}
+            {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
+          </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-800">
-          Standort
-        </label>
-        <CreatableSelect
-          isClearable
-          isDisabled={isCreatingLocation}
-          isLoading={locationsLoading || isCreatingLocation}
-          onCreateOption={handleCreateLocation}
-          options={locationOptions}
-          value={selectedLocationOption}
-          onChange={(newValue) => {
-            setValue('location', newValue?.value ?? null);
-          }}
-          placeholder="Standort auswählen oder erstellen..."
-          formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
-          noOptionsMessage={() => "Keine Standorte gefunden"}
-          loadingMessage={() => "Lade..."}
-          className="react-select-container"
-          classNamePrefix="react-select"
-        />
-        {locationsError && <p className="text-xs text-red-500">{locationsError}</p>}
-        {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
-      </div>
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-slate-800">Tags</label>
+            <Select
+              isMulti
+              isClearable
+              isDisabled={isCreatingTag}
+              isLoading={isCreatingTag}
+              options={tagOptions}
+              value={selectedTagOptions}
+              onChange={(newValue) => {
+                const values = (newValue as SelectOption[]).map(option => option.value);
+                setValue('tags', values);
+              }}
+              placeholder="Tags auswählen..."
+              noOptionsMessage={() => "Keine Tags gefunden"}
+              loadingMessage={() => "Lade..."}
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+            <CreatableSelect
+              isClearable
+              isDisabled={isCreatingTag}
+              isLoading={isCreatingTag}
+              onCreateOption={async (inputValue: string) => {
+                await handleCreateTag(inputValue);
+              }}
+              options={[]}
+              value={null}
+              onChange={() => {}}
+              placeholder="Neuen Tag erstellen..."
+              formatCreateLabel={(inputValue: string) => `"${inputValue}" als Tag erstellen`}
+              noOptionsMessage={() => "Tag eingeben zum Erstellen"}
+              loadingMessage={() => "Erstelle Tag..."}
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+            {errors.tags && <p className="text-xs text-red-500">{errors.tags.message}</p>}
+          </div>
+        </div>
+      </section>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-800">Tags</label>
-        <Select
-          isMulti
-          isClearable
-          isDisabled={isCreatingTag}
-          isLoading={isCreatingTag}
-          options={tagOptions}
-          value={selectedTagOptions}
-          onChange={(newValue) => {
-            const values = (newValue as SelectOption[]).map(option => option.value);
-            setValue('tags', values);
-          }}
-          placeholder="Tags auswählen..."
-          noOptionsMessage={() => "Keine Tags gefunden"}
-          loadingMessage={() => "Lade..."}
-          className="react-select-container"
-          classNamePrefix="react-select"
-        />
-        <CreatableSelect
-          isClearable
-          isDisabled={isCreatingTag}
-          isLoading={isCreatingTag}
-          onCreateOption={async (inputValue: string) => {
-            await handleCreateTag(inputValue);
-          }}
-          options={[]}
-          value={null}
-          onChange={() => {}}
-          placeholder="Neuen Tag erstellen..."
-          formatCreateLabel={(inputValue: string) => `"${inputValue}" als Tag erstellen`}
-          noOptionsMessage={() => "Tag eingeben zum Erstellen"}
-          loadingMessage={() => "Erstelle Tag..."}
-          className="react-select-container mt-2"
-          classNamePrefix="react-select"
-        />
-        {errors.tags && <p className="text-xs text-red-500">{errors.tags.message}</p>}
-      </div>
-
-      <div className="flex gap-3 pt-4">
-        <Button type="button" variant="secondary" size="md" onClick={onCancel}>
+      <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="secondary" size="md" onClick={onCancel} className="sm:w-auto">
           Abbrechen
         </Button>
-        <Button type="submit" variant="primary" size="md" loading={isSubmitting} className="flex-1">
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          loading={isSubmitting}
+          className="sm:min-w-[14rem]"
+        >
           Gegenstand hinzufügen
         </Button>
       </div>
     </form>
   );
-};
+}
 
 export default AddItemForm;
