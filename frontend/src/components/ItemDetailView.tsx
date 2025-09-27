@@ -152,11 +152,24 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   };
 
   const shareLink = useMemo(() => {
-    if (!item) {
+    if (!item?.asset_tag) {
       return '';
     }
-    return `${window.location.origin}/scan/${item.asset_tag}`;
-  }, [item]);
+
+    try {
+      if (typeof window !== 'undefined' && window.location?.origin) {
+        return new URL(`scan/${item.asset_tag}`, `${window.location.origin}/`).toString();
+      }
+    } catch (error) {
+      // Ignore and try fallback below
+    }
+
+    try {
+      return new URL(`scan/${item.asset_tag}`, apiMediaBase).toString();
+    } catch (fallbackError) {
+      return `scan/${item.asset_tag}`;
+    }
+  }, [item, apiMediaBase]);
 
   const generateFallbackQr = useCallback(async () => {
     if (!shareLink) {
@@ -183,6 +196,33 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       }
     }
   ), []);
+
+  useEffect(() => {
+    const body = document.body;
+    const previousOverflow = body.style.overflow;
+    const previousPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPaddingRight;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!item) {
+      if (copyTimeoutRef.current !== null) {
+        window.clearTimeout(copyTimeoutRef.current);
+        copyTimeoutRef.current = null;
+      }
+      setCopySuccess(false);
+    }
+  }, [item]);
 
   useEffect(() => {
     qrPreviewRef.current = qrPreview;
@@ -410,7 +450,11 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                       </div>
                     )}
                     {!qrLoading && qrPreview?.url && (
-                      <img src={qrPreview.url} alt={`QR-Code für ${item.name}`} className="h-full w-full object-contain" />
+                      <img
+                        src={qrPreview.url}
+                        alt={`QR-Code für ${item.name ?? 'Inventargegenstand'}`}
+                        className="h-full w-full object-contain"
+                      />
                     )}
                     {!qrLoading && !qrPreview?.url && !qrError && (
                       <div className="text-center text-sm text-slate-500">
@@ -449,7 +493,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                       size="sm"
                       onClick={handleDownloadQr}
                       loading={qrDownloadLoading}
-                      disabled={!item || (!qrPreview && qrError !== null && !qrLoading)}
+                      disabled={!item || (!qrPreview?.url && !qrLoading)}
                     >
                       QR-Code herunterladen
                     </Button>
@@ -484,7 +528,11 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     <div key={attachment.key} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                       {attachment.type === 'image' ? (
                         <figure className="relative">
-                          <img src={attachment.url} alt={attachment.name} className="h-56 w-full object-cover" />
+                          <img
+                            src={attachment.url}
+                            alt={`${item.name ?? 'Inventargegenstand'} – ${attachment.name}`}
+                            className="h-56 w-full object-cover"
+                          />
                           <figcaption className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-slate-900/80 to-transparent px-4 pb-4 pt-6 text-xs text-white">
                             <span className="truncate pr-2 font-semibold" title={attachment.name}>
                               {attachment.name}

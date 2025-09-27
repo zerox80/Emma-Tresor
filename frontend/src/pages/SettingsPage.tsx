@@ -61,10 +61,14 @@ const SettingsPage: React.FC = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [loadingTags, setLoadingTags] = useState(false);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const [initialError, setInitialError] = useState<string | null>(null);
+  const [tagInfo, setTagInfo] = useState<string | null>(null);
+  const [locationInfo, setLocationInfo] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
+      setInitialError(null);
       try {
         const [tagResponse, locationResponse] = await Promise.all([fetchTags(), fetchLocations()]);
         if (isMounted) {
@@ -72,6 +76,9 @@ const SettingsPage: React.FC = () => {
           setLocations(locationResponse);
         }
       } catch (error) {
+        if (isMounted) {
+          setInitialError('Tags und Standorte konnten nicht geladen werden. Bitte aktualisiere die Seite oder versuche es erneut.');
+        }
       }
     };
 
@@ -81,6 +88,22 @@ const SettingsPage: React.FC = () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!tagInfo) {
+      return;
+    }
+    const timer = window.setTimeout(() => setTagInfo(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [tagInfo]);
+
+  useEffect(() => {
+    if (!locationInfo) {
+      return;
+    }
+    const timer = window.setTimeout(() => setLocationInfo(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [locationInfo]);
 
   const handleCreateTag = async () => {
     setTagError(null);
@@ -94,6 +117,7 @@ const SettingsPage: React.FC = () => {
       const newTag = await createTag(validation.data);
       setTags((prev) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name)));
       setTagName('');
+      setTagInfo(`Tag „${newTag.name}“ wurde hinzugefügt.`);
     } catch (error) {
       setTagError(extractApiError(error, 'Der Tag konnte nicht erstellt werden. Bitte versuche es gleich erneut.'));
     } finally {
@@ -106,6 +130,8 @@ const SettingsPage: React.FC = () => {
       setLoadingTags(true);
       await deleteTag(id);
       setTags((prev) => prev.filter((tag) => tag.id !== id));
+      const removedTagName = tags.find((tag) => tag.id === id)?.name ?? 'Tag';
+      setTagInfo(`„${removedTagName}“ wurde gelöscht.`);
     } catch (error) {
       setTagError(extractApiError(error, 'Der Tag konnte nicht gelöscht werden. Bitte lade die Seite neu und versuche es dann erneut.'));
     } finally {
@@ -125,6 +151,7 @@ const SettingsPage: React.FC = () => {
       const newLocation = await createLocation(validation.data);
       setLocations((prev) => [...prev, newLocation].sort((a, b) => a.name.localeCompare(b.name)));
       setLocationName('');
+      setLocationInfo(`Standort „${newLocation.name}“ wurde erstellt.`);
     } catch (error) {
       setLocationError(
         extractApiError(error, 'Der Standort konnte nicht erstellt werden. Versuche es bitte kurz darauf erneut.'),
@@ -139,6 +166,8 @@ const SettingsPage: React.FC = () => {
       setLoadingLocations(true);
       await deleteLocation(id);
       setLocations((prev) => prev.filter((location) => location.id !== id));
+      const removedLocationName = locations.find((location) => location.id === id)?.name ?? 'Standort';
+      setLocationInfo(`„${removedLocationName}“ wurde gelöscht.`);
     } catch (error) {
       setLocationError(
         extractApiError(
@@ -153,6 +182,11 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="grid gap-6 text-slate-700 lg:grid-cols-2">
+      {initialError && (
+        <div className="lg:col-span-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {initialError}
+        </div>
+      )}
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <header className="flex items-center justify-between gap-4">
           <div>
@@ -174,6 +208,9 @@ const SettingsPage: React.FC = () => {
           </Button>
         </div>
         {tagError && <p className="mt-2 text-xs text-red-500">{tagError}</p>}
+        {tagInfo && !tagError && (
+          <p className="mt-2 text-xs text-emerald-600">{tagInfo}</p>
+        )}
 
         <ul className="mt-6 space-y-2 text-sm text-slate-700">
           {tags.map((tag) => (
@@ -215,6 +252,9 @@ const SettingsPage: React.FC = () => {
           </Button>
         </div>
         {locationError && <p className="mt-2 text-xs text-red-500">{locationError}</p>}
+        {locationInfo && !locationError && (
+          <p className="mt-2 text-xs text-emerald-600">{locationInfo}</p>
+        )}
 
         <ul className="mt-6 space-y-2 text-sm text-slate-700">
           {locations.map((location) => (

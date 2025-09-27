@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z, ZodNumber } from 'zod';
@@ -110,7 +110,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     handleSubmit,
     trigger,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<ItemFormSchema>({
     resolver: zodResolver(itemSchema),
     defaultValues: DEFAULT_VALUES,
@@ -132,6 +132,28 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
   const watchedValues = watch();
+  const reviewSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open || typeof document === 'undefined') {
+      return;
+    }
+
+    const body = document.body;
+    const previousOverflow = body.style.overflow;
+    const previousPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPaddingRight;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -188,6 +210,31 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, [open, resetState, mode, item]);
 
+  useEffect(() => {
+    if (!open || typeof document === 'undefined' || typeof window === 'undefined') {
+      return;
+    }
+
+    const focusTargets: Array<() => HTMLElement | null> = [
+      () => document.getElementById('add-item-name'),
+      () => document.getElementById('add-item-location'),
+      () => reviewSectionRef.current,
+    ];
+
+    const target = focusTargets[currentStep]?.();
+    if (!target || typeof target.focus !== 'function') {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      target.focus({ preventScroll: true } as FocusOptions);
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [currentStep, open]);
+
   const filePreviews = useMemo(
     () =>
       files.map((file) => ({
@@ -207,14 +254,53 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, [files]); // Changed dependency to files instead of filePreviews to avoid recreation
 
-  const handleClose = useCallback(() => {
+  const closeDialog = useCallback(() => {
     if (isSubmitting) {
       return;
     }
-    setCompletedItem(null);
-    setCompletionMode(null);
+    const initialItem = mode === 'edit' ? item ?? null : null;
+    resetState(initialItem);
     onClose();
-  }, [isSubmitting, onClose]);
+  }, [isSubmitting, resetState, mode, item, onClose]);
+
+  const handleRequestClose = useCallback(() => {
+    if (isSubmitting) {
+      return;
+    }
+
+    const hasUnsavedData = isDirty || files.length > 0 || newLocationName.trim().length > 0;
+    if (hasUnsavedData) {
+      if (typeof window !== 'undefined') {
+        const confirmed = window.confirm('Unvollständige Eingaben gehen verloren. Dialog wirklich schließen?');
+        if (!confirmed) {
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
+    closeDialog();
+  }, [closeDialog, files.length, isDirty, isSubmitting, newLocationName]);
+
+  useEffect(() => {
+    if (!open || typeof window === 'undefined') {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleRequestClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleRequestClose, open]);
 
   const handleNextStep = useCallback(async () => {
     const fields = stepFieldMap[currentStep];
@@ -395,7 +481,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
           if (warningMessage) {
             setUploadWarning(warningMessage);
           }
-          handleClose();
+          closeDialog();
           return;
         }
 
@@ -430,7 +516,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         setFormError('Der Gegenstand konnte nicht erstellt werden. Bitte versuche es erneut.');
       }
     },
-    [files, normalisePayload, onCreated, onUpdated, mode, item, handleClose],
+    [files, normalisePayload, onCreated, onUpdated, mode, item, closeDialog],
   );
 
   const onSubmit = handleSubmit(submitHandler);
@@ -450,7 +536,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   if (completedItem && completionMode === 'create') {
     return (
       <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-6">
-        <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleClose} />
+        <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleRequestClose} />
         <div
           role="dialog"
           aria-modal="true"
@@ -479,7 +565,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
             <Button variant="primary" size="md" onClick={handleAddAnother}>
               Weiteren Gegenstand anlegen
             </Button>
-            <Button variant="secondary" size="md" onClick={handleClose}>
+            <Button variant="secondary" size="md" onClick={closeDialog}>
               Schließen
             </Button>
           </div>
@@ -525,7 +611,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-6">
-      <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleClose} />
+      <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleRequestClose} />
       <div
         role="dialog"
         aria-modal="true"
@@ -544,7 +630,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                   : 'Erfasse neue Gegenstände in drei Schritten – sauber strukturiert und jederzeit bearbeitbar.'}
               </p>
             </div>
-            <Button type="button" variant="ghost" size="sm" onClick={handleClose}>
+            <Button type="button" variant="ghost" size="sm" onClick={handleRequestClose}>
               ✕
             </Button>
           </div>
@@ -763,24 +849,28 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
             {currentStep === 2 && (
               <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 sm:gap-6 lg:max-w-4xl">
-                <section className="rounded-xl border border-slate-200 bg-slate-50 p-5 lg:p-6">
+                <section
+                  ref={reviewSectionRef}
+                  tabIndex={-1}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-5 lg:p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                >
                   <h4 className="text-sm font-semibold uppercase text-slate-500">Zusammenfassung</h4>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div>
+                    <div className="flex flex-col gap-1">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Name</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">{watchedValues.name || '—'}</p>
+                      <p className="text-sm font-semibold text-slate-900">{watchedValues.name || '—'}</p>
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-1">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Menge</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">{watchedValues.quantity}</p>
+                      <p className="text-sm font-semibold text-slate-900">{watchedValues.quantity}</p>
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-1">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Wert</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">{formatCurrency(watchedValues.value)}</p>
+                      <p className="text-sm font-semibold text-slate-900">{formatCurrency(watchedValues.value)}</p>
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-1">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Kaufdatum</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">{formatDate(watchedValues.purchase_date)}</p>
+                      <p className="text-sm font-semibold text-slate-900">{formatDate(watchedValues.purchase_date)}</p>
                     </div>
                     <div className="sm:col-span-2">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Beschreibung</p>
@@ -788,11 +878,11 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                         {watchedValues.description?.trim() ? watchedValues.description : '—'}
                       </p>
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-1">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Standort</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">{selectedLocationName}</p>
+                      <p className="text-sm font-semibold text-slate-900">{selectedLocationName}</p>
                     </div>
-                    <div>
+                    <div className="flex flex-col gap-1">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Tags</p>
                       <div className="mt-1 flex flex-wrap gap-2">
                         {selectedTags.length > 0 ? (
