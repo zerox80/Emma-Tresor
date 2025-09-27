@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from './common/Button';
+import { fetchItemQrCode } from '../api/inventory';
 import type { Item } from '../types/inventory';
 
 interface ItemDetailViewProps {
@@ -23,6 +24,14 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   tagMap,
   locationMap,
 }) => {
+  const [qrPreviewUrl, setQrPreviewUrl] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
+  const [qrReloadToken, setQrReloadToken] = useState(0);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const copyTimeoutRef = useRef<number | null>(null);
+
   const formatCurrency = (value: string | null) => {
     const numeric = Number(value ?? 0);
     if (!Number.isFinite(numeric)) {
@@ -45,6 +54,125 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       year: 'numeric',
     }).format(date);
   };
+
+  const shareLink = useMemo(() => {
+    if (!item) {
+      return '';
+    }
+    return `${window.location.origin}/scan/${item.asset_tag}`;
+  }, [item]);
+
+  useEffect(() => (
+    () => {
+      if (copyTimeoutRef.current !== null) {
+        window.clearTimeout(copyTimeoutRef.current);
+        copyTimeoutRef.current = null;
+      }
+    }
+  ), []);
+
+  useEffect(() => {
+    return () => {
+      setQrPreviewUrl((prev) => {
+        if (prev) {
+          URL.revokeObjectURL(prev);
+        }
+        return null;
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    setQrPreviewUrl((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+      return null;
+    });
+
+    if (!item) {
+      setQrLoading(false);
+      setQrError(null);
+      return;
+    }
+
+    const loadQrCode = async () => {
+      setQrLoading(true);
+      setQrError(null);
+      try {
+        const blob = await fetchItemQrCode(item.id);
+        if (!active) {
+          return;
+        }
+        const objectUrl = URL.createObjectURL(blob);
+        setQrPreviewUrl(objectUrl);
+      } catch (qrFetchError) {
+        console.error('Failed to load QR code', qrFetchError);
+        if (active) {
+          setQrError('QR-Code konnte nicht geladen werden.');
+        }
+      } finally {
+        if (active) {
+          setQrLoading(false);
+        }
+      }
+    };
+
+    void loadQrCode();
+
+    return () => {
+      active = false;
+    };
+  }, [item, qrReloadToken]);
+
+  const handleRefreshQr = useCallback(() => {
+    setQrReloadToken((prev) => prev + 1);
+  }, []);
+
+  const handleDownloadQr = useCallback(async () => {
+    if (!item) {
+      return;
+    }
+    setDownloadLoading(true);
+    try {
+      const blob = await fetchItemQrCode(item.id, { download: true });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `item-${item.id}-qr.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (downloadError) {
+      console.error('Failed to download QR code', downloadError);
+      setQrError('QR-Code konnte nicht heruntergeladen werden.');
+    } finally {
+      setDownloadLoading(false);
+    }
+  }, [item]);
+
+  const handleCopyShareLink = useCallback(async () => {
+    if (!shareLink) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setCopySuccess(true);
+      if (copyTimeoutRef.current !== null) {
+        window.clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = window.setTimeout(() => {
+        setCopySuccess(false);
+        copyTimeoutRef.current = null;
+      }, 2000);
+    } catch (copyError) {
+      console.error('Failed to copy share link', copyError);
+      setQrError('Link konnte nicht in die Zwischenablage kopiert werden.');
+    }
+  }, [shareLink]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
@@ -95,6 +223,72 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         {/* Content */}
         {!loading && !error && item && (
           <div className="space-y-8">
+            <section className="rounded-xl border border-slate-200 bg-white p-6">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+                <div className="flex w-full justify-center lg:w-auto">
+                  <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                    {qrLoading && (
+                      <div className="flex flex-col items-center gap-3 text-center text-sm text-slate-500">
+                        <span className="inline-flex h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-brand-600" />
+                        <span>QR-Code wird erstellt …</span>
+                      </div>
+                    )}
+                    {!qrLoading && qrPreviewUrl && (
+                      <img src={qrPreviewUrl} alt={`QR-Code für ${item.name}`} className="h-full w-full object-contain" />
+                    )}
+                    {!qrLoading && !qrPreviewUrl && !qrError && (
+                      <div className="text-center text-sm text-slate-500">
+                        QR-Code wird vorbereitet …
+                      </div>
+                    )}
+                    {!qrLoading && qrError && (
+                      <div className="flex flex-col items-center gap-3 text-center text-sm text-red-500">
+                        <span>QR-Code konnte nicht geladen werden.</span>
+                        <Button type="button" variant="secondary" size="sm" onClick={handleRefreshQr}>
+                          Erneut versuchen
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <h4 className="text-lg font-semibold text-slate-900">QR-Code für schnellen Zugriff</h4>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Scanne den Code, um diesen Gegenstand sofort zu öffnen. Teile den Link mit deinem Team oder drucke den Code für dein Inventar aus.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleDownloadQr}
+                      loading={downloadLoading}
+                      disabled={!item || (!!qrError && !qrPreviewUrl)}
+                    >
+                      QR-Code herunterladen
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleCopyShareLink}
+                      disabled={!shareLink}
+                    >
+                      Link kopieren
+                    </Button>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                    <p className="font-semibold text-slate-700">Direktlink</p>
+                    <p className="mt-1 break-all font-mono text-[11px] text-slate-500">{shareLink || '—'}</p>
+                    {copySuccess && <p className="mt-2 text-xs text-emerald-600">Link in Zwischenablage kopiert.</p>}
+                    {qrError && !qrLoading && <p className="mt-2 text-xs text-red-500">{qrError}</p>}
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Images Section */}
             {item.images && item.images.length > 0 ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">

@@ -39,9 +39,15 @@ export const fetchItemByAssetTag = async (assetTag: string): Promise<Item> => {
   return data;
 };
 
-export const fetchItemQrCode = async (itemId: number): Promise<Blob> => {
+export interface FetchItemQrCodeOptions {
+  download?: boolean;
+}
+
+export const fetchItemQrCode = async (itemId: number, options: FetchItemQrCodeOptions = {}): Promise<Blob> => {
+  const params = options.download ? { download: '1' } : undefined;
   const { data } = await apiClient.get<Blob>(`/items/${itemId}/generate_qr_code/`, {
     responseType: 'blob',
+    params,
   });
   return data;
 };

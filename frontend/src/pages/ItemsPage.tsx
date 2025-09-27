@@ -3,9 +3,11 @@ import clsx from 'clsx';
 
 import Button from '../components/common/Button';
 import AddItemDialog from '../components/AddItemDialog';
+import ItemDetailView from '../components/ItemDetailView';
 import {
   createLocation,
   createTag,
+  fetchItem,
   fetchItems,
   fetchLocations,
   fetchTags,
@@ -50,6 +52,11 @@ const ItemsPage: React.FC = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  const [detailItemId, setDetailItemId] = useState<number | null>(null);
+  const [detailItem, setDetailItem] = useState<Item | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(
@@ -161,6 +168,42 @@ const ItemsPage: React.FC = () => {
     setInfoMessage(`„${item.name}“ wurde erfolgreich angelegt.`);
     await loadItems();
   };
+
+  const loadItemDetails = useCallback(async (itemId: number) => {
+    setDetailLoading(true);
+    setDetailError(null);
+    try {
+      const itemData = await fetchItem(itemId);
+      setDetailItem(itemData);
+    } catch (error) {
+      console.error('Failed to load item details', error);
+      setDetailError('Details konnten nicht geladen werden. Bitte versuche es erneut.');
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  const handleOpenItemDetails = useCallback(
+    (itemId: number) => {
+      setDetailItemId(itemId);
+      const cachedItem = items.find((currentItem) => currentItem.id === itemId) ?? null;
+      setDetailItem(cachedItem);
+      void loadItemDetails(itemId);
+    },
+    [items, loadItemDetails],
+  );
+
+  const handleCloseItemDetails = useCallback(() => {
+    setDetailItemId(null);
+    setDetailItem(null);
+    setDetailError(null);
+  }, []);
+
+  const handleRetryItemDetails = useCallback(() => {
+    if (detailItemId != null) {
+      void loadItemDetails(detailItemId);
+    }
+  }, [detailItemId, loadItemDetails]);
 
   const totalItemsCount = pagination?.count ?? items.length;
   const totalQuantity = useMemo(
@@ -472,8 +515,14 @@ const ItemsPage: React.FC = () => {
                     <span className="text-xs text-slate-400">Keine Tags</span>
                   )}
                 </div>
+
+                <div className="mt-4 flex justify-end">
+                  <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenItemDetails(item.id)}>
+                    Details & QR-Code
+                  </Button>
+                </div>
               </article>
-            ))}
+            )))}
           </div>
         )}
 
@@ -499,6 +548,9 @@ const ItemsPage: React.FC = () => {
                   </th>
                   <th scope="col" className="px-4 py-3 text-right font-semibold">
                     Kaufdatum
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">
+                    Aktionen
                   </th>
                 </tr>
               </thead>
@@ -538,6 +590,11 @@ const ItemsPage: React.FC = () => {
                       {item.purchase_date
                         ? new Date(item.purchase_date).toLocaleDateString('de-DE')
                         : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm">
+                      <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenItemDetails(item.id)}>
+                        Anzeigen
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -593,6 +650,19 @@ const ItemsPage: React.FC = () => {
         onCreateTag={handleCreateTag}
         onCreateLocation={handleCreateLocation}
       />
+
+      {detailItemId !== null && (
+        <ItemDetailView
+          item={detailItem}
+          loading={detailLoading}
+          error={detailError}
+          onClose={handleCloseItemDetails}
+          onEdit={() => handleCloseItemDetails()}
+          onRetry={handleRetryItemDetails}
+          tagMap={tagMap}
+          locationMap={locationMap}
+        />
+      )}
     </div>
   );
 };

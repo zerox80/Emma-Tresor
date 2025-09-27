@@ -7,6 +7,7 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import PublicRoute from './routes/PublicRoute';
 import DashboardPage from './pages/DashboardPage';
 import ItemsPage from './pages/ItemsPage';
+import ScanItemPage from './pages/ScanItemPage';
 import ListsPage from './pages/ListsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -23,6 +24,7 @@ const App: React.FC = () => (
     >
       <Route index element={<DashboardPage />} />
       <Route path="items" element={<ItemsPage />} />
+      <Route path="scan/:assetTag" element={<ScanItemPage />} />
       <Route path="lists" element={<ListsPage />} />
       <Route path="settings" element={<SettingsPage />} />
     </Route>

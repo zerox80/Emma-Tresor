@@ -255,7 +255,8 @@ class ItemViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Dieser Gegenstand gehört nicht zu deinem Konto.')
 
         qr = qrcode.QRCode(version=1, box_size=10, border=4)
-        qr.add_data(str(item.asset_tag))
+        scan_url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/scan/{item.asset_tag}"
+        qr.add_data(scan_url)
         qr.make(fit=True)
         img = qr.make_image(fill_color='black', back_color='white')
 
@@ -264,7 +265,10 @@ class ItemViewSet(viewsets.ModelViewSet):
         buffer.seek(0)
 
         response = HttpResponse(buffer.getvalue(), content_type='image/png')
-        response['Content-Disposition'] = f'inline; filename=item-{item.id}-qr.png'
+        download = request.query_params.get('download', '')
+        as_attachment = str(download).lower() in {'1', 'true', 'yes', 'download'}
+        disposition = 'attachment' if as_attachment else 'inline'
+        response['Content-Disposition'] = f'{disposition}; filename="item-{item.id}-qr.png"'
         return response
 
 
