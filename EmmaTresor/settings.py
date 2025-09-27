@@ -148,9 +148,6 @@ if DB_VENDOR == 'postgres':
             'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
             'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
             'PORT': os.environ.get('POSTGRES_PORT', '5432'),
-            'OPTIONS': {
-                'charset': 'utf8',
-            },
         }
     }
 else:
