@@ -181,16 +181,16 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
 
   return (
     <form className="flex h-full min-h-0 flex-1 flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="flex-1 overflow-y-auto px-2 py-2 sm:px-6 sm:py-3">
-        <div className="mx-auto w-full max-w-4xl space-y-2.5">
+      <div className="flex-1 overflow-y-auto px-2 py-2 sm:px-6 sm:py-3 xl:overflow-visible">
+        <div className="mx-auto w-full max-w-5xl space-y-3">
           {formError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {formError}
             </div>
           )}
           <div className="rounded-2xl border border-slate-100 bg-white p-2.5 shadow-sm sm:p-3.5">
-            <div className="grid gap-x-2 gap-y-2.5 md:grid-cols-2">
-              <div className="md:col-span-2 space-y-1.5">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="space-y-1.5 sm:col-span-2 xl:col-span-3">
                 <label htmlFor="name" className="text-sm font-medium text-slate-800">
                   Name *
                 </label>
@@ -204,7 +204,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                 {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
               </div>
 
-              <div className="md:col-span-2 space-y-1.5">
+              <div className="space-y-1.5 sm:col-span-2 xl:col-span-3">
                 <label htmlFor="description" className="text-sm font-medium text-slate-800">
                   Beschreibung
                 </label>
@@ -262,7 +262,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                 {errors.purchase_date && <p className="text-xs text-red-500">{errors.purchase_date.message}</p>}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
                 <label className="text-sm font-medium text-slate-800">Standort</label>
                 <CreatableSelect
                   isClearable
@@ -285,7 +285,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                 {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
               </div>
 
-              <div className="md:col-span-2 space-y-1.5">
+              <div className="space-y-1.5 sm:col-span-2 xl:col-span-3">
                 <label className="text-sm font-medium text-slate-800">Tags</label>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-2.5">
                   <Select
@@ -331,7 +331,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
       </div>
 
       <div className="flex-shrink-0 border-t border-slate-200 px-3 py-3 sm:px-6 sm:py-4">
-        <div className="mx-auto flex w-full max-w-4xl flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <div className="mx-auto flex w-full max-w-5xl flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" size="md" onClick={onCancel} className="sm:w-auto">
             Abbrechen
           </Button>
