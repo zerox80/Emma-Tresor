@@ -232,7 +232,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
           </div>
         )}
 
-        <div className="mx-auto flex w-full max-w-4xl flex-col space-y-8">
+        <div className="mx-auto flex w-full max-w-6xl flex-col space-y-8">
           <FormCard>
             <SectionTitle
               title="Basisinformationen"

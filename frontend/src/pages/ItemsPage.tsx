@@ -745,7 +745,7 @@ const ItemsPage: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-heading"
-            className={`relative flex h-full max-h-[95vh] w-full max-w-5xl transform flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 transition-all duration-300 ease-out ${isAddPanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
+            className={`relative flex h-full max-h-[98vh] w-full max-w-[min(96vw,80rem)] transform flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 transition-all duration-300 ease-out ${isAddPanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
             onClick={(event) => event.stopPropagation()}
           >
             <AddItemForm
