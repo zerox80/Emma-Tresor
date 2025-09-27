@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 
-import ItemDetailView from '../components/ItemDetailView';
+import ItemScanView from '../components/ItemScanView';
 import { fetchItemByAssetTag, fetchItems, fetchLocations, fetchTags } from '../api/inventory';
 import type { Item, Location, PaginatedResponse, Tag } from '../types/inventory';
 
@@ -308,7 +308,7 @@ const ScanItemPage: React.FC = () => {
   }, [loading, navigationDirection]);
 
   return (
-    <ItemDetailView
+    <ItemScanView
       item={item}
       loading={loading}
       error={error}
