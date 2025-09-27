@@ -183,16 +183,16 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
 
   return (
     <form className="flex h-full min-h-0 flex-1 flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-8">
-        <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-col gap-6">
+      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+        <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-col gap-5">
           {formError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {formError}
             </div>
           )}
 
-          <div className="rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-md">
-            <div className="grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-md sm:p-6">
+            <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-3 md:col-span-2">
             <label htmlFor="name" className="text-sm font-medium text-slate-800">
               Name *
@@ -331,7 +331,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
         </div>
       </div>
 
-      <div className="flex-shrink-0 border-t border-slate-200 px-6 py-4 sm:px-8 sm:py-6">
+      <div className="flex-shrink-0 border-t border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
         <div className="mx-auto flex w-full max-w-2xl flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" size="md" onClick={onCancel} className="sm:w-auto">
             Abbrechen

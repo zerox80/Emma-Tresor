@@ -700,7 +700,7 @@ const ItemsPage: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-heading"
-            className="relative flex h-full w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[90vh]"
+            className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[92vh] min-h-[55vh]"
           >
             <div className="flex-shrink-0 border-b border-slate-200 px-6 py-6 sm:px-8 sm:py-8">
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
@@ -729,7 +729,7 @@ const ItemsPage: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-item-heading"
-            className="relative flex h-full w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[90vh]"
+            className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[92vh] min-h-[55vh]"
           >
             <div className="flex-shrink-0 border-b border-slate-200 px-6 py-6 sm:px-8 sm:py-8">
               <h3 id="edit-item-heading" className="text-xl font-semibold text-slate-900">
