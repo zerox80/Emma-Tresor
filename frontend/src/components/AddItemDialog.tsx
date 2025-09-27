@@ -8,6 +8,7 @@ import type { MultiValue } from 'react-select';
 import Button from './common/Button';
 import {
   createItem,
+  updateItem,
   uploadItemImage,
 } from '../api/inventory';
 import type { Item, ItemImage, ItemPayload, Location, Tag } from '../types/inventory';
@@ -20,6 +21,9 @@ interface AddItemDialogProps {
   locations: Location[];
   onCreateTag: (name: string) => Promise<Tag>;
   onCreateLocation: (name: string) => Promise<Location>;
+  mode?: 'create' | 'edit';
+  item?: Item | null;
+  onUpdated?: (item: Item, warning?: string | null) => void;
 }
 
 interface TagOption {
