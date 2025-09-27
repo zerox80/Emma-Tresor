@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 import Button from './common/Button';
 import { fetchItemQrCode } from '../api/inventory';
 import type { Item } from '../types/inventory';
@@ -24,13 +25,42 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   tagMap,
   locationMap,
 }) => {
-  const [qrPreviewUrl, setQrPreviewUrl] = useState<string | null>(null);
+  type QrPreview = {
+    url: string;
+    revokable: boolean;
+  };
+
+  const [qrPreview, setQrPreview] = useState<QrPreview | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
   const [qrReloadToken, setQrReloadToken] = useState(0);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
+  const qrPreviewRef = useRef<QrPreview | null>(null);
+
+  const releaseQrPreview = useCallback((preview: QrPreview | null) => {
+    if (preview?.revokable) {
+      URL.revokeObjectURL(preview.url);
+    }
+  }, []);
+
+  const clearQrPreview = useCallback(() => {
+    setQrPreview((previous) => {
+      releaseQrPreview(previous);
+      return null;
+    });
+  }, [releaseQrPreview]);
+
+  const setQrPreviewValue = useCallback(
+    (preview: QrPreview) => {
+      setQrPreview((previous) => {
+        releaseQrPreview(previous);
+        return preview;
+      });
+    },
+    [releaseQrPreview],
+  );
 
   const formatCurrency = (value: string | null) => {
     const numeric = Number(value ?? 0);
@@ -62,6 +92,24 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     return `${window.location.origin}/scan/${item.asset_tag}`;
   }, [item]);
 
+  const generateFallbackQr = useCallback(async () => {
+    if (!shareLink) {
+      return false;
+    }
+    try {
+      const dataUrl = await QRCode.toDataURL(shareLink, {
+        width: 480,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+      });
+      setQrPreviewValue({ url: dataUrl, revokable: false });
+      return true;
+    } catch (error) {
+      console.error('Failed to generate fallback QR code', error);
+      return false;
+    }
+  }, [shareLink, setQrPreviewValue]);
+
   useEffect(() => (
     () => {
       if (copyTimeoutRef.current !== null) {
@@ -72,25 +120,20 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   ), []);
 
   useEffect(() => {
-    return () => {
-      setQrPreviewUrl((prev) => {
-        if (prev) {
-          URL.revokeObjectURL(prev);
-        }
-        return null;
-      });
-    };
-  }, []);
+    qrPreviewRef.current = qrPreview;
+  }, [qrPreview]);
+
+  useEffect(
+    () => () => {
+      releaseQrPreview(qrPreviewRef.current);
+    },
+    [releaseQrPreview],
+  );
 
   useEffect(() => {
     let active = true;
 
-    setQrPreviewUrl((prev) => {
-      if (prev) {
-        URL.revokeObjectURL(prev);
-      }
-      return null;
-    });
+    clearQrPreview();
 
     if (!item) {
       setQrLoading(false);
@@ -107,11 +150,17 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
           return;
         }
         const objectUrl = URL.createObjectURL(blob);
-        setQrPreviewUrl(objectUrl);
+        setQrPreviewValue({ url: objectUrl, revokable: true });
       } catch (qrFetchError) {
         console.error('Failed to load QR code', qrFetchError);
-        if (active) {
-          setQrError('QR-Code konnte nicht geladen werden.');
+        if (!active) {
+          return;
+        }
+        const fallbackOk = await generateFallbackQr();
+        if (fallbackOk) {
+          setQrError('Server-QR-Code nicht verfügbar. Lokale Version wird angezeigt.');
+        } else {
+          setQrError('QR-Code konnte nicht geladen werden. Bitte versuche es erneut.');
         }
       } finally {
         if (active) {
@@ -125,7 +174,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     return () => {
       active = false;
     };
-  }, [item, qrReloadToken]);
+  }, [item, qrReloadToken, clearQrPreview, setQrPreviewValue, generateFallbackQr]);
 
   const handleRefreshQr = useCallback(() => {
     setQrReloadToken((prev) => prev + 1);
@@ -148,11 +197,38 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       URL.revokeObjectURL(url);
     } catch (downloadError) {
       console.error('Failed to download QR code', downloadError);
-      setQrError('QR-Code konnte nicht heruntergeladen werden.');
+      try {
+        if (!qrPreviewRef.current) {
+          const fallbackCreated = await generateFallbackQr();
+          if (!fallbackCreated) {
+            throw downloadError;
+          }
+        }
+
+        const sourceUrl = qrPreviewRef.current?.url;
+        if (!sourceUrl) {
+          throw downloadError;
+        }
+
+        const response = await fetch(sourceUrl);
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `item-${item.id}-qr.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        setQrError('Server-QR-Code nicht verfügbar. Lokale Version wurde heruntergeladen.');
+      } catch (fallbackError) {
+        console.error('Failed to download fallback QR code', fallbackError);
+        setQrError('QR-Code konnte nicht heruntergeladen werden. Bitte versuche es erneut.');
+      }
     } finally {
       setDownloadLoading(false);
     }
-  }, [item]);
+  }, [item, generateFallbackQr]);
 
   const handleCopyShareLink = useCallback(async () => {
     if (!shareLink) {
@@ -233,17 +309,25 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                         <span>QR-Code wird erstellt …</span>
                       </div>
                     )}
-                    {!qrLoading && qrPreviewUrl && (
-                      <img src={qrPreviewUrl} alt={`QR-Code für ${item.name}`} className="h-full w-full object-contain" />
+                    {!qrLoading && qrPreview?.url && (
+                      <img src={qrPreview.url} alt={`QR-Code für ${item.name}`} className="h-full w-full object-contain" />
                     )}
-                    {!qrLoading && !qrPreviewUrl && !qrError && (
+                    {!qrLoading && !qrPreview?.url && !qrError && (
                       <div className="text-center text-sm text-slate-500">
                         QR-Code wird vorbereitet …
                       </div>
                     )}
-                    {!qrLoading && qrError && (
+                    {!qrLoading && qrError && !qrPreview?.url && (
                       <div className="flex flex-col items-center gap-3 text-center text-sm text-red-500">
                         <span>QR-Code konnte nicht geladen werden.</span>
+                        <Button type="button" variant="secondary" size="sm" onClick={handleRefreshQr}>
+                          Erneut versuchen
+                        </Button>
+                      </div>
+                    )}
+                    {!qrLoading && qrError && qrPreview?.url && (
+                      <div className="flex flex-col items-center gap-3 text-center text-sm text-amber-500">
+                        <span>{qrError}</span>
                         <Button type="button" variant="secondary" size="sm" onClick={handleRefreshQr}>
                           Erneut versuchen
                         </Button>
@@ -265,7 +349,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                       size="sm"
                       onClick={handleDownloadQr}
                       loading={downloadLoading}
-                      disabled={!item || (!!qrError && !qrPreviewUrl)}
+                      disabled={!item || (!qrPreview && qrError !== null && !qrLoading)}
                     >
                       QR-Code herunterladen
                     </Button>
@@ -283,7 +367,9 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     <p className="font-semibold text-slate-700">Direktlink</p>
                     <p className="mt-1 break-all font-mono text-[11px] text-slate-500">{shareLink || '—'}</p>
                     {copySuccess && <p className="mt-2 text-xs text-emerald-600">Link in Zwischenablage kopiert.</p>}
-                    {qrError && !qrLoading && <p className="mt-2 text-xs text-red-500">{qrError}</p>}
+                    {qrError && !qrLoading && !qrPreview?.url && (
+                      <p className="mt-2 text-xs text-red-500">{qrError}</p>
+                    )}
                   </div>
                 </div>
               </div>
