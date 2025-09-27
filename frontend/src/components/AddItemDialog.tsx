@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { z, ZodNumber } from 'zod';
 import CreatableSelect from 'react-select/creatable';
 import type { MultiValue } from 'react-select';
 
@@ -42,8 +42,8 @@ const itemSchema = z.object({
     .optional(),
   quantity: z
     .number({ invalid_type_error: 'Menge muss eine Zahl sein.' })
+    .finite('Menge muss eine Zahl sein.')
     .int('Menge muss eine ganze Zahl sein.')
-    .refine((value) => Number.isFinite(value), 'Menge muss eine Zahl sein.')
     .min(1, 'Menge muss mindestens 1 sein.'),
   purchase_date: z
     .string()
