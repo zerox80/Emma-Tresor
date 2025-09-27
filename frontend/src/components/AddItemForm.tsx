@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -35,6 +35,32 @@ interface AddItemFormProps {
   onSuccess: () => void;
   onCancel: () => void;
 }
+
+const FormCard: React.FC<{ children: ReactNode; className?: string }> = ({ children, className = '' }) => (
+  <section
+    className={`rounded-2xl border border-slate-100 bg-white/80 p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur ${className}`}
+  >
+    {children}
+  </section>
+);
+
+const SectionTitle: React.FC<{ title: string; subtitle?: string; icon?: ReactNode }> = ({ title, subtitle, icon }) => (
+  <div className="mb-6 flex items-start gap-4">
+    {icon ? (
+      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-500/10 text-2xl text-brand-500">
+        {icon}
+      </div>
+    ) : null}
+    <div>
+      <h4 className="text-lg font-semibold text-slate-900">{title}</h4>
+      {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+    </div>
+  </div>
+);
+
+const FieldHint: React.FC<{ children: ReactNode }> = ({ children }) => (
+  <p className="mt-1 text-xs text-slate-500">{children}</p>
+);
 
 const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, onCancel }) => {
   const [formError, setFormError] = useState<string | null>(null);
@@ -181,168 +207,235 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
 
   return (
     <form className="flex h-full flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="flex-shrink-0 border-b border-slate-200 px-6 py-5">
-        <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
-          Neuen Gegenstand hinzufügen
-        </h3>
-        <p className="mt-1 text-sm text-slate-500">
-          Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags und Standorte zu.
-        </p>
+      <div className="flex-shrink-0 border-b border-transparent bg-gradient-to-r from-brand-50 via-white to-brand-50 px-6 py-6">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-500/10 text-3xl text-brand-500">
+            <span aria-hidden="true">＋</span>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Inventar</p>
+            <h3 id="add-item-heading" className="text-2xl font-semibold text-slate-900">
+              Neuen Gegenstand hinzufügen
+            </h3>
+            <p className="mt-2 max-w-xl text-sm text-slate-500">
+              Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags sowie Standorte zu. Alle Felder lassen sich später
+              bearbeiten.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto p-8">
+      <div className="flex-grow overflow-y-auto px-6 py-8">
         {formError && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
             {formError}
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">
-          <div className="space-y-3 lg:col-span-2">
-            <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-slate-800">
-                Name *
-              </label>
-              <input
-                id="name"
-                type="text"
-                className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                placeholder="z. B. Laptop, Buch, Werkzeug"
-                {...register('name')}
-              />
-              {errors.name && <p className="mt-1 text-xs font-medium text-red-600">{errors.name.message}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-semibold text-slate-800">
-                Beschreibung
-              </label>
-              <textarea
-                id="description"
-                rows={4}
-                className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                placeholder="Optionale Beschreibung des Gegenstands"
-                {...register('description')}
-              />
-              {errors.description && <p className="mt-1 text-xs font-medium text-red-600">{errors.description.message}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="quantity" className="block text-sm font-semibold text-slate-800">
-              Menge *
-            </label>
-            <input
-              id="quantity"
-              type="number"
-              min="1"
-              step="1"
-              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-              {...register('quantity', { valueAsNumber: true })}
+        <div className="mx-auto flex w-full max-w-4xl flex-col space-y-8">
+          <FormCard>
+            <SectionTitle
+              title="Basisinformationen"
+              subtitle="Beschreibe deinen Gegenstand klar und verständlich."
+              icon={<span aria-hidden="true">🧾</span>}
             />
-            {errors.quantity && <p className="mt-1 text-xs font-medium text-red-600">{errors.quantity.message}</p>}
-          </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="lg:col-span-1">
+                <label htmlFor="name" className="block text-sm font-semibold text-slate-800">
+                  Name <span className="text-brand-500">*</span>
+                </label>
+                <FieldHint>Kurzer, sprechender Titel – zum Beispiel „MacBook Pro 14\"“.</FieldHint>
+                <input
+                  id="name"
+                  type="text"
+                  className="mt-3 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  placeholder="z. B. Laptop, Buch, Werkzeug"
+                  {...register('name')}
+                />
+                {errors.name && <p className="mt-2 text-xs font-medium text-red-600">{errors.name.message}</p>}
+              </div>
 
-          <div>
-            <label htmlFor="value" className="block text-sm font-semibold text-slate-800">
-              Wert
-            </label>
-            <div className="relative mt-2">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-slate-500">
-                €
-              </span>
-              <input
-                id="value"
-                type="number"
-                step="0.01"
-                min="0"
-                className="block w-full rounded-xl border border-slate-300 bg-white py-3 pl-9 pr-4 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                placeholder="z. B. 1299,99"
-                {...register('value')}
-              />
+              <div className="lg:col-span-2">
+                <label htmlFor="description" className="block text-sm font-semibold text-slate-800">
+                  Beschreibung
+                </label>
+                <FieldHint>Optional: Weitere Details, Zustand oder Besonderheiten.</FieldHint>
+                <textarea
+                  id="description"
+                  rows={4}
+                  className="mt-3 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  placeholder="Optionale Beschreibung des Gegenstands"
+                  {...register('description')}
+                />
+                {errors.description && <p className="mt-2 text-xs font-medium text-red-600">{errors.description.message}</p>}
+              </div>
             </div>
-            {errors.value && <p className="mt-1 text-xs font-medium text-red-600">{errors.value.message}</p>}
-          </div>
+          </FormCard>
 
-          <div>
-            <label htmlFor="purchase_date" className="block text-sm font-semibold text-slate-800">
-              Kaufdatum
-            </label>
-            <input
-              id="purchase_date"
-              type="date"
-              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-              {...register('purchase_date')}
+          <FormCard>
+            <SectionTitle
+              title="Details"
+              subtitle="Halte Kaufwerte und Mengen fest, um deine Bestände im Blick zu behalten."
+              icon={<span aria-hidden="true">📦</span>}
             />
-            {errors.purchase_date && <p className="mt-1 text-xs font-medium text-red-600">{errors.purchase_date.message}</p>}
-          </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <div>
+                <label htmlFor="quantity" className="block text-sm font-semibold text-slate-800">
+                  Menge <span className="text-brand-500">*</span>
+                </label>
+                <FieldHint>Wie oft ist dieser Gegenstand vorhanden?</FieldHint>
+                <input
+                  id="quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  className="mt-3 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  {...register('quantity', { valueAsNumber: true })}
+                />
+                {errors.quantity && <p className="mt-2 text-xs font-medium text-red-600">{errors.quantity.message}</p>}
+              </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-800">Standort</label>
-            <div className="mt-2">
-              <CreatableSelect
-                isClearable
-                isDisabled={isCreatingLocation}
-                isLoading={locationsLoading || isCreatingLocation}
-                onCreateOption={handleCreateLocation}
-                options={locationOptions}
-                value={selectedLocationOption}
-                onChange={(newValue) => {
-                  setValue('location', newValue?.value ?? null, { shouldDirty: true, shouldValidate: true });
-                }}
-                placeholder="Standort auswählen …"
-                formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
-                noOptionsMessage={() => 'Keine Standorte gefunden'}
-                loadingMessage={() => 'Lade…'}
-                className="react-select-container text-sm"
-                classNamePrefix="react-select"
-              />
+              <div>
+                <label htmlFor="value" className="block text-sm font-semibold text-slate-800">
+                  Wert
+                </label>
+                <FieldHint>Optional: Kaufpreis oder geschätzter Wert in Euro.</FieldHint>
+                <div className="relative mt-3">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-slate-500">
+                    €
+                  </span>
+                  <input
+                    id="value"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="block w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-4 text-base shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                    placeholder="z. B. 1299,99"
+                    {...register('value')}
+                  />
+                </div>
+                {errors.value && <p className="mt-2 text-xs font-medium text-red-600">{errors.value.message}</p>}
+              </div>
+
+              <div>
+                <label htmlFor="purchase_date" className="block text-sm font-semibold text-slate-800">
+                  Kaufdatum
+                </label>
+                <FieldHint>Wann wurde der Gegenstand angeschafft?</FieldHint>
+                <input
+                  id="purchase_date"
+                  type="date"
+                  className="mt-3 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base shadow-sm transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  {...register('purchase_date')}
+                />
+                {errors.purchase_date && <p className="mt-2 text-xs font-medium text-red-600">{errors.purchase_date.message}</p>}
+              </div>
             </div>
-            {locationsError && <p className="mt-1 text-xs font-medium text-red-600">{locationsError}</p>}
-            {errors.location && <p className="mt-1 text-xs font-medium text-red-600">{errors.location.message}</p>}
-          </div>
+          </FormCard>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-800">Tags</label>
-            <div className="mt-2 space-y-3">
-              <Select
-                isMulti
-                isClearable
-                isDisabled={isCreatingTag}
-                isLoading={isCreatingTag}
-                options={tagOptions}
-                value={selectedTagOptions}
-                onChange={(newValue) => {
-                  const values = (newValue as MultiValue<SelectOption>).map((option) => option.value);
-                  setValue('tags', values, { shouldDirty: true, shouldValidate: true });
-                }}
-                placeholder="Tags auswählen …"
-                noOptionsMessage={() => 'Keine Tags gefunden'}
-                loadingMessage={() => 'Lade…'}
-                className="react-select-container text-sm"
-                classNamePrefix="react-select"
-              />
+          <FormCard>
+            <SectionTitle
+              title="Organisation"
+              subtitle="Ordne Gegenstände Standorten und Tags zu, um sie später schnell zu finden."
+              icon={<span aria-hidden="true">🗂️</span>}
+            />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-800" htmlFor="location">
+                    Standort
+                  </label>
+                  <FieldHint>Wähle einen bestehenden Ort oder erstelle direkt einen neuen.</FieldHint>
+                  <div className="mt-3">
+                    <CreatableSelect
+                      inputId="location"
+                      isClearable
+                      isDisabled={isCreatingLocation}
+                      isLoading={locationsLoading || isCreatingLocation}
+                      onCreateOption={handleCreateLocation}
+                      options={locationOptions}
+                      value={selectedLocationOption}
+                      onChange={(newValue) => {
+                        setValue('location', newValue?.value ?? null, { shouldDirty: true, shouldValidate: true });
+                      }}
+                      placeholder="Standort auswählen …"
+                      formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
+                      noOptionsMessage={() => 'Keine Standorte gefunden'}
+                      loadingMessage={() => 'Lade…'}
+                      className="react-select-container text-sm"
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                  {locationsError && <p className="mt-2 text-xs font-medium text-red-600">{locationsError}</p>}
+                  {errors.location && <p className="mt-2 text-xs font-medium text-red-600">{errors.location.message}</p>}
+                </div>
 
-              <CreatableSelect
-                isClearable
-                isDisabled={isCreatingTag}
-                isLoading={isCreatingTag}
-                onCreateOption={async (inputValue: string) => {
-                  await handleCreateTag(inputValue);
-                }}
-                options={[]}
-                value={null}
-                onChange={() => {}}
-                placeholder="Neuen Tag erstellen …"
-                formatCreateLabel={(inputValue) => `"${inputValue}" als Tag erstellen`}
-                noOptionsMessage={() => 'Tag eingeben zum Erstellen'}
-                loadingMessage={() => 'Erstelle Tag…'}
-                className="react-select-container text-sm"
-                classNamePrefix="react-select"
-              />
+                <div>
+                  <label className="block text-sm font-semibold text-slate-800" htmlFor="tags">
+                    Tags
+                  </label>
+                  <FieldHint>Nutze Tags wie „Elektronik“ oder „Arbeitsplatz“, um den Überblick zu behalten.</FieldHint>
+                  <div className="mt-3 space-y-3">
+                    <Select
+                      inputId="tags"
+                      isMulti
+                      isClearable
+                      isDisabled={isCreatingTag}
+                      isLoading={isCreatingTag}
+                      options={tagOptions}
+                      value={selectedTagOptions}
+                      onChange={(newValue) => {
+                        const values = (newValue as MultiValue<SelectOption>).map((option) => option.value);
+                        setValue('tags', values, { shouldDirty: true, shouldValidate: true });
+                      }}
+                      placeholder="Tags auswählen …"
+                      noOptionsMessage={() => 'Keine Tags gefunden'}
+                      loadingMessage={() => 'Lade…'}
+                      className="react-select-container text-sm"
+                      classNamePrefix="react-select"
+                    />
+
+                    <CreatableSelect
+                      isClearable
+                      isDisabled={isCreatingTag}
+                      isLoading={isCreatingTag}
+                      onCreateOption={async (inputValue: string) => {
+                        await handleCreateTag(inputValue);
+                      }}
+                      options={[]}
+                      value={null}
+                      onChange={() => {}}
+                      placeholder="Neuen Tag erstellen …"
+                      formatCreateLabel={(inputValue) => `"${inputValue}" als Tag erstellen`}
+                      noOptionsMessage={() => 'Tag eingeben zum Erstellen'}
+                      loadingMessage={() => 'Erstelle Tag…'}
+                      className="react-select-container text-sm"
+                      classNamePrefix="react-select"
+                    />
+                  </div>
+                  {errors.tags && <p className="mt-2 text-xs font-medium text-red-600">{errors.tags.message}</p>}
+                </div>
+              </div>
+
+              <aside className="hidden h-full rounded-2xl border border-brand-100 bg-brand-50/60 p-6 text-sm text-brand-900 shadow-inner lg:block">
+                <h5 className="text-sm font-semibold uppercase tracking-wide text-brand-500">Schnelle Tipps</h5>
+                <ul className="mt-4 space-y-3">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1 text-base">•</span>
+                    <p>Nutze kurze, prägnante Tags, damit sich deine Gegenstände später besser filtern lassen.</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1 text-base">•</span>
+                    <p>Ordne jedem Standort eine klare Bezeichnung zu – z. B. „Lagerraum A“ oder „Büro links“.</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1 text-base">•</span>
+                    <p>Du kannst Standorte und Tags jederzeit bearbeiten oder ergänzen.</p>
+                  </li>
+                </ul>
+              </aside>
             </div>
-            {errors.tags && <p className="mt-1 text-xs font-medium text-red-600">{errors.tags.message}</p>}
-          </div>
+          </FormCard>
         </div>
       </div>
 
