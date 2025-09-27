@@ -467,7 +467,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-item-heading"
-        className="relative flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10"
+        className="relative flex h-full max-h-[calc(100vh-2rem)] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 sm:h-auto sm:max-h-[calc(100vh-4rem)]"
       >
         <header className="border-b border-slate-200 bg-slate-50/70 px-6 py-5">
           <div className="flex items-start justify-between gap-4">
@@ -483,7 +483,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
               ✕
             </Button>
           </div>
-          <nav className="mt-4 grid grid-cols-3 gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <nav className="mt-4 grid grid-cols-1 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid-cols-3 sm:gap-3">
             {steps.map((step, index) => {
               const active = index === currentStep;
               const reached = index <= currentStep;
@@ -514,7 +514,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
           </nav>
         </header>
 
-        <form className="flex flex-1 flex-col" onSubmit={onSubmit} noValidate>
+        <form className="flex flex-1 flex-col overflow-hidden" onSubmit={onSubmit} noValidate>
           <div className="flex-1 overflow-y-auto px-6 py-6">
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
