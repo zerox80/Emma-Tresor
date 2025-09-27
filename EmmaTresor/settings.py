@@ -231,7 +231,6 @@ REST_FRAMEWORK = {
         'register': '3/minute',
         'logout': '10/minute',
     },
-    'UNICODE_JSON': True,
 }
 
 SIMPLE_JWT = {
@@ -279,10 +278,6 @@ CSRF_COOKIE_SAMESITE = 'None' if FORCE_SSL else 'Lax'
 # Compression settings
 USE_GZIP = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-
-# Force UTF-8 encoding for all responses
-DEFAULT_CHARSET = 'utf-8'
-FILE_CHARSET = 'utf-8'
 
 
 _csp_connect_extra = _env_list('CSP_CONNECT_SRC_EXTRA', default='')
