@@ -694,13 +694,13 @@ const ItemsPage: React.FC = () => {
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center px-2 pt-8 pb-6 sm:px-6 sm:pt-10 sm:pb-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6 sm:py-10">
           <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleAddCancel} />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-heading"
-            className="relative flex h-full w-full max-w-[94vw] lg:max-w-6xl 2xl:max-w-7xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[96vh]"
+            className="relative flex h-full max-h-[92vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 sm:max-w-5xl lg:max-w-6xl"
           >
             <div className="flex-shrink-0 border-b border-slate-200 px-5 py-4 sm:px-7 sm:py-6 lg:px-10">
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
@@ -710,7 +710,7 @@ const ItemsPage: React.FC = () => {
                 Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags und Standorte zu.
               </p>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:px-4 xl:px-6">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 sm:px-6 lg:px-8 xl:px-10">
               <AddItemForm
                 locations={locations}
                 tags={tags}
