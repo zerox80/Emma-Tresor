@@ -71,7 +71,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
           try {
             return new URL(path, window.location.origin).toString();
           } catch (innerError) {
-            console.warn('Failed to resolve asset URL', innerError);
+            // Failed to resolve asset URL
           }
         }
         return path;
@@ -171,7 +171,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       setQrPreviewValue({ url: dataUrl, revokable: false });
       return true;
     } catch (error) {
-      console.error('Failed to generate fallback QR code', error);
       return false;
     }
   }, [shareLink, setQrPreviewValue]);
@@ -218,7 +217,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         const objectUrl = URL.createObjectURL(blob);
         setQrPreviewValue({ url: objectUrl, revokable: true });
       } catch (qrFetchError) {
-        console.error('Failed to load QR code', qrFetchError);
         if (!active) {
           return;
         }
@@ -262,7 +260,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (downloadError) {
-      console.error('Failed to download QR code', downloadError);
       try {
         if (!qrPreviewRef.current) {
           const fallbackCreated = await generateFallbackQr();
@@ -288,7 +285,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         URL.revokeObjectURL(url);
         setQrError('Server-QR-Code nicht verfügbar. Lokale Version wurde heruntergeladen.');
       } catch (fallbackError) {
-        console.error('Failed to download fallback QR code', fallbackError);
         setQrError('QR-Code konnte nicht heruntergeladen werden. Bitte versuche es erneut.');
       }
     } finally {
@@ -327,7 +323,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } catch (downloadError) {
-        console.error('Failed to download attachment', downloadError);
+        // Failed to download attachment
       } finally {
         setDownloadingAttachmentId(null);
       }
@@ -350,7 +346,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         copyTimeoutRef.current = null;
       }, 2000);
     } catch (copyError) {
-      console.error('Failed to copy share link', copyError);
       setQrError('Link konnte nicht in die Zwischenablage kopiert werden.');
     }
   }, [shareLink]);

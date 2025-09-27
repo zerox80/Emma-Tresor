@@ -81,7 +81,6 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
       await updateItem(item.id, itemData);
       onSuccess();
     } catch (error) {
-      console.error('Failed to update item:', error);
       setFormError('Der Gegenstand konnte nicht aktualisiert werden. Bitte versuche es erneut.');
     }
   };
