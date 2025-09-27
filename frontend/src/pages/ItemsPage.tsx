@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 
 import Button from '../components/common/Button';
@@ -62,6 +62,10 @@ const ItemsPage: React.FC = () => {
   const [detailError, setDetailError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [detailNavigationDirection, setDetailNavigationDirection] = useState<'next' | 'previous' | null>(null);
+  const [pendingDetailNavigation, setPendingDetailNavigation] = useState<'next' | 'previous' | null>(null);
+  const [itemsVersion, setItemsVersion] = useState(0);
+  const navStartItemsVersionRef = useRef<number | null>(null);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(
@@ -116,8 +120,12 @@ const ItemsPage: React.FC = () => {
       });
       setItems(response.results);
       setPagination(response);
+      setItemsVersion((prev) => prev + 1);
     } catch (error) {
       setItemsError('Deine Gegenstände konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.');
+      setPendingDetailNavigation(null);
+      setDetailNavigationDirection(null);
+      navStartItemsVersionRef.current = null;
     } finally {
       setLoadingItems(false);
     }
@@ -202,11 +210,22 @@ const ItemsPage: React.FC = () => {
   }, []);
 
   const handleOpenItemDetails = useCallback(
-    (itemId: number) => {
+    (itemId: number, options?: { fromNavigation?: 'next' | 'previous' }) => {
       setDetailItemId(itemId);
       const cachedItem = items.find((currentItem) => currentItem.id === itemId) ?? null;
       setDetailItem(cachedItem);
-      void loadItemDetails(itemId);
+
+      const loadPromise = loadItemDetails(itemId);
+
+      if (options?.fromNavigation) {
+        void loadPromise.finally(() => {
+          setDetailNavigationDirection((current) =>
+            current === options.fromNavigation ? null : current,
+          );
+        });
+      } else {
+        setDetailNavigationDirection(null);
+      }
     },
     [items, loadItemDetails],
   );
@@ -217,6 +236,9 @@ const ItemsPage: React.FC = () => {
     setDetailError(null);
     setDeleteError(null);
     setDeleteLoading(false);
+    setPendingDetailNavigation(null);
+    setDetailNavigationDirection(null);
+    navStartItemsVersionRef.current = null;
   }, []);
 
   const handleRetryItemDetails = useCallback(() => {
@@ -277,6 +299,98 @@ const ItemsPage: React.FC = () => {
       }, 0),
     [items],
   );
+
+  const currentDetailIndex = useMemo(() => {
+    if (detailItemId == null) {
+      return -1;
+    }
+    return items.findIndex((currentItem) => currentItem.id === detailItemId);
+  }, [detailItemId, items]);
+
+  const handleNavigateDetail = useCallback(
+    (direction: 'next' | 'previous') => {
+      if (detailItemId == null) {
+        return;
+      }
+
+      const index = items.findIndex((currentItem) => currentItem.id === detailItemId);
+      if (index === -1) {
+        return;
+      }
+
+      if (direction === 'next') {
+        if (index < items.length - 1) {
+          setDetailNavigationDirection('next');
+          handleOpenItemDetails(items[index + 1].id, { fromNavigation: 'next' });
+          return;
+        }
+        if (pagination?.next) {
+          setDetailNavigationDirection('next');
+          navStartItemsVersionRef.current = itemsVersion;
+          setPendingDetailNavigation('next');
+          setPage((prev) => prev + 1);
+        }
+        return;
+      }
+
+      if (direction === 'previous') {
+        if (index > 0) {
+          setDetailNavigationDirection('previous');
+          handleOpenItemDetails(items[index - 1].id, { fromNavigation: 'previous' });
+          return;
+        }
+        if (pagination?.previous) {
+          setDetailNavigationDirection('previous');
+          navStartItemsVersionRef.current = itemsVersion;
+          setPendingDetailNavigation('previous');
+          setPage((prev) => Math.max(prev - 1, 1));
+        }
+      }
+    },
+    [detailItemId, handleOpenItemDetails, items, itemsVersion, pagination],
+  );
+
+  const handleNavigateNext = useCallback(() => {
+    handleNavigateDetail('next');
+  }, [handleNavigateDetail]);
+
+  const handleNavigatePrevious = useCallback(() => {
+    handleNavigateDetail('previous');
+  }, [handleNavigateDetail]);
+
+  const hasNextOnCurrentPage = currentDetailIndex !== -1 && currentDetailIndex < items.length - 1;
+  const hasPreviousOnCurrentPage = currentDetailIndex > 0;
+  const canNavigateNext = hasNextOnCurrentPage || Boolean(pagination?.next);
+  const canNavigatePrevious = hasPreviousOnCurrentPage || Boolean(pagination?.previous);
+
+  const totalCountForPosition = pagination?.count ?? (page - 1) * PAGE_SIZE + items.length;
+  const detailPosition = currentDetailIndex === -1
+    ? null
+    : {
+        current: (page - 1) * PAGE_SIZE + currentDetailIndex + 1,
+        total: totalCountForPosition,
+      };
+
+  useEffect(() => {
+    if (!pendingDetailNavigation) {
+      return;
+    }
+
+    if (navStartItemsVersionRef.current !== null && itemsVersion === navStartItemsVersionRef.current) {
+      return;
+    }
+
+    const targetItem = pendingDetailNavigation === 'next' ? items[0] : items[items.length - 1];
+
+    if (targetItem) {
+      handleOpenItemDetails(targetItem.id, { fromNavigation: pendingDetailNavigation });
+    } else {
+      setDetailNavigationDirection(null);
+    }
+
+    setPendingDetailNavigation(null);
+    navStartItemsVersionRef.current = null;
+  }, [handleOpenItemDetails, items, itemsVersion, pendingDetailNavigation]);
 
   const isFiltered =
     debouncedSearchTerm.length > 0 || selectedTagIds.length > 0 || selectedLocationIds.length > 0 || ordering !== '-purchase_date';
@@ -717,6 +831,12 @@ const ItemsPage: React.FC = () => {
           deleteError={deleteError}
           tagMap={tagMap}
           locationMap={locationMap}
+          onNavigatePrevious={handleNavigatePrevious}
+          onNavigateNext={handleNavigateNext}
+          canNavigatePrevious={canNavigatePrevious}
+          canNavigateNext={canNavigateNext}
+          navigationDirection={detailNavigationDirection}
+          positionInfo={detailPosition}
         />
       )}
     </div>

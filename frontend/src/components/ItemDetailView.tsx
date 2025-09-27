@@ -6,6 +6,11 @@ import type { Item } from '../types/inventory';
 import { apiBaseUrl } from '../api/client';
 import { tokenStorage } from '../utils/tokenStorage';
 
+interface DetailPositionInfo {
+  current: number;
+  total: number;
+}
+
 interface ItemDetailViewProps {
   item: Item | null;
   loading: boolean;
@@ -18,6 +23,12 @@ interface ItemDetailViewProps {
   deleteError?: string | null;
   tagMap: Record<number, string>;
   locationMap: Record<number, string>;
+  onNavigatePrevious?: () => void;
+  onNavigateNext?: () => void;
+  canNavigatePrevious?: boolean;
+  canNavigateNext?: boolean;
+  navigationDirection?: 'next' | 'previous' | null;
+  positionInfo?: DetailPositionInfo | null;
 }
 
 const FOCUSABLE_SELECTOR =
@@ -35,6 +46,12 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   deleteError = null,
   tagMap,
   locationMap,
+  onNavigatePrevious,
+  onNavigateNext,
+  canNavigatePrevious = false,
+  canNavigateNext = false,
+  navigationDirection = null,
+  positionInfo = null,
 }) => {
   type QrPreview = {
     url: string;
@@ -57,6 +74,12 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const confirmDeleteRef = useRef<HTMLDivElement | null>(null);
 
   const canDelete = typeof onDelete === 'function';
+
+  const showNavigation = Boolean(onNavigatePrevious || onNavigateNext);
+  const isNavigatingNext = navigationDirection === 'next';
+  const isNavigatingPrevious = navigationDirection === 'previous';
+  const previousDisabled = !onNavigatePrevious || !canNavigatePrevious || loading || isNavigatingPrevious;
+  const nextDisabled = !onNavigateNext || !canNavigateNext || loading || isNavigatingNext;
 
   const getFocusableElements = useCallback(() => {
     const dialog = dialogRef.current;
@@ -466,6 +489,22 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         return;
       }
 
+      if (event.key === 'ArrowRight') {
+        if (canNavigateNext && onNavigateNext) {
+          event.preventDefault();
+          onNavigateNext();
+        }
+        return;
+      }
+
+      if (event.key === 'ArrowLeft') {
+        if (canNavigatePrevious && onNavigatePrevious) {
+          event.preventDefault();
+          onNavigatePrevious();
+        }
+        return;
+      }
+
       if (event.key !== 'Tab') {
         return;
       }
@@ -504,7 +543,15 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         previouslyFocusedElementRef.current.focus({ preventScroll: true });
       }
     };
-  }, [getFocusableElements, item, onClose]);
+  }, [
+    canNavigateNext,
+    canNavigatePrevious,
+    getFocusableElements,
+    item,
+    onClose,
+    onNavigateNext,
+    onNavigatePrevious,
+  ]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
@@ -517,18 +564,51 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         ref={dialogRef}
       >
         {/* Header */}
-        <div className="mb-6 flex items-start justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h3 id="item-detail-heading" className="text-2xl font-semibold text-slate-900">
               {loading ? 'Lade Details...' : item?.name || 'Gegenstand Details'}
             </h3>
-            <p className="text-sm text-slate-600">
-              Vollständige Ansicht des Inventargegenstands
-            </p>
+            <p className="text-sm text-slate-600">Vollständige Ansicht des Inventargegenstands</p>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="Schließen">
-            ✕
-          </Button>
+          <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center sm:gap-3">
+            {showNavigation && (
+              <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
+                {positionInfo && (
+                  <span className="text-xs font-medium text-slate-500 sm:text-sm">
+                    {positionInfo.current} von {positionInfo.total}
+                  </span>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onNavigatePrevious?.()}
+                    disabled={previousDisabled}
+                    loading={isNavigatingPrevious}
+                    aria-label="Vorheriger Gegenstand"
+                  >
+                    ← Zurück
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onNavigateNext?.()}
+                    disabled={nextDisabled}
+                    loading={isNavigatingNext}
+                    aria-label="Nächster Gegenstand"
+                  >
+                    Weiter →
+                  </Button>
+                </div>
+              </div>
+            )}
+            <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="Schließen">
+              ✕
+            </Button>
+          </div>
         </div>
 
         {/* Loading State */}
