@@ -140,17 +140,22 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     }
 
     const body = document.body;
-    const previousOverflow = body.style.overflow;
+    const html = document.documentElement;
+    const previousBodyOverflow = body.style.overflow;
+    const previousHtmlOverflow = html.style.overflow;
     const previousPaddingRight = body.style.paddingRight;
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
+    // Allow scrolling in the modal container instead of preventing it entirely
     body.style.overflow = 'hidden';
+    html.style.overflow = 'hidden';
     if (scrollbarWidth > 0) {
       body.style.paddingRight = `${scrollbarWidth}px`;
     }
 
     return () => {
-      body.style.overflow = previousOverflow;
+      body.style.overflow = previousBodyOverflow;
+      html.style.overflow = previousHtmlOverflow;
       body.style.paddingRight = previousPaddingRight;
     };
   }, [open]);
@@ -248,11 +253,14 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   useEffect(() => {
     // Clean up URLs when component unmounts or when files change
-    const urls = filePreviews.map(preview => preview.url);
     return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
+      filePreviews.forEach((preview) => {
+        if (preview.url.startsWith('blob:')) {
+          URL.revokeObjectURL(preview.url);
+        }
+      });
     };
-  }, [files]); // Changed dependency to files instead of filePreviews to avoid recreation
+  }, [filePreviews]);
 
   const closeDialog = useCallback(() => {
     if (isSubmitting) {
@@ -329,7 +337,9 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       Array.from(selectedFiles).forEach((file) => {
         const isImage = file.type.startsWith('image/');
         const withinSize = file.size <= MAX_FILE_SIZE_MB * 1024 * 1024;
-        if (isImage && withinSize) {
+        const hasValidExtension = /\.(jpg|jpeg|png|gif|webp|bmp|avif|heic|heif)$/i.test(file.name);
+        
+        if (isImage && withinSize && hasValidExtension) {
           accepted.push(file);
         } else {
           rejected = true;
@@ -610,13 +620,13 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleRequestClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-item-heading"
-        className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 sm:h-auto sm:max-h-[90vh] sm:rounded-3xl lg:max-w-5xl"
+        className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 sm:h-auto sm:max-h-[calc(100vh-2rem)] sm:rounded-3xl lg:max-w-5xl"
       >
         <header className="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-start justify-between gap-3 sm:gap-4">
@@ -762,7 +772,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                     id="add-item-location"
                     className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                     {...register('location', { 
-                      setValueAs: (v) => v === '' || v === 0 ? null : Number(v)
+                      setValueAs: (v) => v === '' ? null : Number(v)
                     })}
                   >
                     <option value="">Kein Standort ausgewählt</option>

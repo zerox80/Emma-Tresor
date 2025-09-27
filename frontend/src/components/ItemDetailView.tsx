@@ -49,7 +49,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const [copySuccess, setCopySuccess] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
   const qrPreviewRef = useRef<QrPreview | null>(null);
-  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<number | string | null>(null);
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | number | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
@@ -72,7 +72,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     try {
       const base = apiBaseUrl.replace(/\/@?api(?:\/)?$/i, '/');
       const url = new URL(base);
-      return url.toString().replace(/\/$/, '/') ?? base;
+      const result = url.toString().replace(/\/$/, '');
+      return result + '/';
     } catch (error) {
       if (typeof window !== 'undefined') {
         return `${window.location.origin}/`;
@@ -477,7 +478,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
       const first = elements[0];
       const last = elements[elements.length - 1];
-      const activeElement = document.activeElement as HTMLElement | null;
+      const activeElement = document.activeElement;
+      const activeHtmlElement = activeElement instanceof HTMLElement ? activeElement : null;
 
       if (event.shiftKey) {
         if (activeElement === first || !dialog.contains(activeElement)) {

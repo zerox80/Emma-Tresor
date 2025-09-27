@@ -47,7 +47,7 @@ def _load_env_file() -> None:
         os.environ[key] = cleaned_value
 
 
-def _env_bool(value: str, *, default: bool = False) -> bool:
+def _env_bool(value: str | None, *, default: bool = False) -> bool:
     if value is None:
         return default
     return value.lower() in {'1', 'true', 'yes', 'on'}
@@ -71,8 +71,9 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-q-8qv^gs+a=hqi
 
 DEBUG = _env_bool(os.environ.get('DJANGO_DEBUG'), default=False)
 
-if not DEBUG and SECRET_KEY.startswith('django-insecure'):
-    raise ImproperlyConfigured('Bitte setze die Umgebungsvariable DJANGO_SECRET_KEY für Produktionsumgebungen.')
+# Stricter secret key validation
+if not DEBUG and (SECRET_KEY.startswith('django-insecure') or len(SECRET_KEY) < 50 or SECRET_KEY == 'your-secret-key-here'):
+    raise ImproperlyConfigured('Bitte setze eine sichere DJANGO_SECRET_KEY (mindestens 50 Zeichen) für Produktionsumgebungen.')
 
 ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1')
 
@@ -230,6 +231,10 @@ REST_FRAMEWORK = {
         'login': '5/minute',
         'register': '3/minute',
         'logout': '10/minute',
+        'item_create': '50/hour',
+        'item_update': '100/hour',
+        'item_delete': '20/hour',
+        'qr_generate': '30/minute',
     },
 }
 

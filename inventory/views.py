@@ -43,6 +43,22 @@ class LogoutRateThrottle(throttling.AnonRateThrottle):
     scope = 'logout'
 
 
+class ItemCreateRateThrottle(throttling.UserRateThrottle):
+    scope = 'item_create'
+
+
+class ItemUpdateRateThrottle(throttling.UserRateThrottle):
+    scope = 'item_update'
+
+
+class ItemDeleteRateThrottle(throttling.UserRateThrottle):
+    scope = 'item_delete'
+
+
+class QRGenerateRateThrottle(throttling.UserRateThrottle):
+    scope = 'qr_generate'
+
+
 class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
@@ -146,8 +162,9 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return queryset.none()
-        field = f'{self.owner_field}__id'
-        return queryset.filter(**{field: user.id})
+        # Safe field lookup without f-string interpolation
+        filter_kwargs = {f'{self.owner_field}__id': user.id}
+        return queryset.filter(**filter_kwargs)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -162,6 +179,7 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
         if owner_value != self.request.user:
             raise PermissionDenied('Diese Ressource gehört nicht zu deinem Konto.')
 
+        # Don't override owner in update
         serializer.save()
 
 
@@ -215,11 +233,27 @@ class ItemViewSet(viewsets.ModelViewSet):
             .distinct()
         )
 
+    def get_throttles(self):
+        throttles = super().get_throttles()
+        if self.action == 'create':
+            throttles.append(ItemCreateRateThrottle())
+        elif self.action in ['update', 'partial_update']:
+            throttles.append(ItemUpdateRateThrottle())
+        elif self.action == 'destroy':
+            throttles.append(ItemDeleteRateThrottle())
+        elif self.action == 'generate_qr_code':
+            throttles.append(QRGenerateRateThrottle())
+        return throttles
+
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
     def perform_update(self, serializer):
-        serializer.save(owner=self.request.user)
+        # Validate ownership before update
+        instance = self.get_object()
+        if instance.owner != self.request.user:
+            raise PermissionDenied('Dieser Gegenstand gehört nicht zu deinem Konto.')
+        serializer.save()
 
     @action(detail=False, methods=['get'], url_path='lookup_by_tag/(?P<asset_tag>[^/]+)')
     def lookup_by_asset_tag(self, request, asset_tag=None):
@@ -229,7 +263,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 
         try:
             asset_uuid = UUID(str(asset_tag).strip())
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, AttributeError, UnicodeDecodeError):
             return Response({'detail': 'Ungültiger QR-Code.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:

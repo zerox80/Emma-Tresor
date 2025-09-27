@@ -50,15 +50,23 @@ export const tokenStorage = {
     const persistent = getStorage('local');
     const temporary = getStorage('session');
 
+    // Always update session storage if available
     if (temporary) {
       temporary.setItem(SESSION_ACCESS_TOKEN_KEY, access);
       if (refresh) {
         temporary.setItem(SESSION_REFRESH_TOKEN_KEY, refresh);
       }
     }
-    if (persistent && persistent.getItem(ACCESS_TOKEN_KEY)) {
-      persistent.setItem(ACCESS_TOKEN_KEY, access);
-      if (refresh && persistent.getItem(REFRESH_TOKEN_KEY)) {
+    
+    // Only update persistent storage if it was originally used
+    if (persistent) {
+      const hasPersistentAccess = persistent.getItem(ACCESS_TOKEN_KEY) !== null;
+      const hasPersistentRefresh = persistent.getItem(REFRESH_TOKEN_KEY) !== null;
+      
+      if (hasPersistentAccess) {
+        persistent.setItem(ACCESS_TOKEN_KEY, access);
+      }
+      if (refresh && hasPersistentRefresh) {
         persistent.setItem(REFRESH_TOKEN_KEY, refresh);
       }
     }

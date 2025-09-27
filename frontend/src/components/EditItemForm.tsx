@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import Select, { type MultiValue } from 'react-select';
-import CreatableSelect from 'react-select/creatable';
+// Removed unused react-select imports
 
 import Button from './common/Button';
-import { updateItem, createTag, createLocation } from '../api/inventory';
+import { updateItem } from '../api/inventory';
 import type { Item, ItemPayload, Location, Tag } from '../types/inventory';
 
 const itemSchema = z.object({

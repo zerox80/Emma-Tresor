@@ -41,7 +41,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
-        user.save()
+        try:
+            user.save()
+        except Exception:
+            # If save fails, we need to ensure password is not left in memory
+            user = None
+            raise
         return user
 
 
