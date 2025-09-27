@@ -220,18 +220,20 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       return '';
     }
 
+    const encodedAssetTag = encodeURIComponent(item.asset_tag);
+
     try {
       if (typeof window !== 'undefined' && window.location?.origin) {
-        return new URL(`scan/${item.asset_tag}`, `${window.location.origin}/`).toString();
+        return new URL(`scan/${encodedAssetTag}`, `${window.location.origin}/`).toString();
       }
     } catch (error) {
       // Ignore and try fallback below
     }
 
     try {
-      return new URL(`scan/${item.asset_tag}`, apiMediaBase).toString();
+      return new URL(`scan/${encodedAssetTag}`, apiMediaBase).toString();
     } catch (fallbackError) {
-      return `scan/${item.asset_tag}`;
+      return `scan/${encodedAssetTag}`;
     }
   }, [item, apiMediaBase]);
 
