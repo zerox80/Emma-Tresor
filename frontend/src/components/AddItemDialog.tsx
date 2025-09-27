@@ -442,7 +442,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleClose} />
         <div
           role="dialog"
-{{ ... }}
           aria-modal="true"
           aria-labelledby="add-item-success-heading"
           className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:rounded-3xl sm:p-8"

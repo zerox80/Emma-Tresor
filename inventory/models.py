@@ -50,7 +50,7 @@ class Location(TimeStampedModel):
 
 class Item(TimeStampedModel):
     name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True)
     quantity = models.PositiveIntegerField(default=1)
     purchase_date = models.DateField(blank=True, null=True)
     value = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
