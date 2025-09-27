@@ -32,8 +32,10 @@ const resolveBaseURL = () => {
   }
 };
 
+export const apiBaseUrl = resolveBaseURL();
+
 const apiClient = axios.create({
-  baseURL: `${resolveBaseURL()}`,
+  baseURL: apiBaseUrl,
   withCredentials: true,
   timeout: 45000,
   headers: {

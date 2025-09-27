@@ -10,6 +10,7 @@
       "@types/*": ["./src/types/*"]
     },
     "skipLibCheck": true,
+    "module": "ES2022",
     "jsx": "react-jsx",
 
     /* Bundler mode */

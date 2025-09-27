@@ -635,14 +635,16 @@ const ItemsPage: React.FC = () => {
         )}
       </section>
 
-      <button
-        type="button"
-        className="fixed bottom-8 right-8 z-40 inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white shadow-xl transition hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-300"
-        onClick={() => setDialogOpen(true)}
-      >
-        <span className="text-lg">＋</span>
-        <span>Gegenstand hinzufügen</span>
-      </button>
+      <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center pb-6 sm:inset-auto sm:right-8 sm:bottom-8 sm:left-auto sm:pb-0">
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-300 sm:px-6 sm:py-3"
+          onClick={() => setDialogOpen(true)}
+        >
+          <span className="text-lg">＋</span>
+          <span>Gegenstand hinzufügen</span>
+        </button>
+      </div>
 
       <AddItemDialog
         open={dialogOpen}

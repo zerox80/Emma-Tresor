@@ -3,6 +3,8 @@ import QRCode from 'qrcode';
 import Button from './common/Button';
 import { fetchItemQrCode } from '../api/inventory';
 import type { Item } from '../types/inventory';
+import { apiBaseUrl } from '../api/client';
+import { tokenStorage } from '../utils/tokenStorage';
 
 interface ItemDetailViewProps {
   item: Item | null;
@@ -34,10 +36,74 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
   const [qrReloadToken, setQrReloadToken] = useState(0);
-  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [qrDownloadLoading, setQrDownloadLoading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const copyTimeoutRef = useRef<number | null>(null);
   const qrPreviewRef = useRef<QrPreview | null>(null);
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<number | string | null>(null);
+
+  const apiMediaBase = useMemo(() => {
+    try {
+      const base = apiBaseUrl.replace(/\/@?api(?:\/)?$/i, '/');
+      const url = new URL(base);
+      return url.toString().replace(/\/$/, '/') ?? base;
+    } catch (error) {
+      if (typeof window !== 'undefined') {
+        return `${window.location.origin}/`;
+      }
+      return apiBaseUrl;
+    }
+  }, []);
+
+  const resolveAssetUrl = useCallback(
+    (path: string | null | undefined) => {
+      if (!path) {
+        return '';
+      }
+      if (/^https?:\/\//i.test(path)) {
+        return path;
+      }
+      const normalised = path.startsWith('/') ? path.slice(1) : path;
+      try {
+        return new URL(normalised, apiMediaBase).toString();
+      } catch (error) {
+        if (typeof window !== 'undefined') {
+          try {
+            return new URL(path, window.location.origin).toString();
+          } catch (innerError) {
+            console.warn('Failed to resolve asset URL', innerError);
+          }
+        }
+        return path;
+      }
+    },
+    [apiMediaBase],
+  );
+
+  const attachments = useMemo(() => {
+    if (!item?.images) {
+      return [];
+    }
+
+    const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif', 'heic', 'heif', 'ico', 'tif', 'tiff']);
+
+    return item.images.map((attachment, index) => {
+      const rawPath = typeof attachment === 'string' ? attachment : attachment.image;
+      const url = resolveAssetUrl(rawPath);
+      const name = rawPath?.split('/').pop() ?? `Datei-${index + 1}`;
+      const extension = name.includes('.') ? name.split('.').pop()?.toLowerCase() ?? '' : '';
+      const type = extension && imageExtensions.has(extension) ? 'image' : extension === 'pdf' ? 'pdf' : 'file';
+      const key = typeof attachment === 'string' ? `img-${index}` : attachment.id ?? `img-${index}`;
+
+      return {
+        key,
+        url,
+        name,
+        extension,
+        type,
+      };
+    });
+  }, [item, resolveAssetUrl]);
 
   const releaseQrPreview = useCallback((preview: QrPreview | null) => {
     if (preview?.revokable) {
@@ -184,7 +250,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     if (!item) {
       return;
     }
-    setDownloadLoading(true);
+    setQrDownloadLoading(true);
     try {
       const blob = await fetchItemQrCode(item.id, { download: true });
       const url = URL.createObjectURL(blob);
@@ -226,9 +292,48 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         setQrError('QR-Code konnte nicht heruntergeladen werden. Bitte versuche es erneut.');
       }
     } finally {
-      setDownloadLoading(false);
+      setQrDownloadLoading(false);
     }
   }, [item, generateFallbackQr]);
+
+  const handleOpenAttachment = useCallback((url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const handleDownloadAttachment = useCallback(
+    async (attachment: { key: string | number; url: string; name: string }) => {
+      setDownloadingAttachmentId(attachment.key);
+      try {
+        const headers: HeadersInit = {};
+        const { access } = tokenStorage.getTokens();
+        if (access) {
+          headers.Authorization = `Bearer ${access}`;
+        }
+
+        const response = await fetch(attachment.url, {
+          headers,
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error('Download fehlgeschlagen');
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = attachment.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (downloadError) {
+        console.error('Failed to download attachment', downloadError);
+      } finally {
+        setDownloadingAttachmentId(null);
+      }
+    },
+    [],
+  );
 
   const handleCopyShareLink = useCallback(async () => {
     if (!shareLink) {
@@ -348,7 +453,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                       variant="primary"
                       size="sm"
                       onClick={handleDownloadQr}
-                      loading={downloadLoading}
+                      loading={qrDownloadLoading}
                       disabled={!item || (!qrPreview && qrError !== null && !qrLoading)}
                     >
                       QR-Code herunterladen
@@ -376,24 +481,73 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
             </section>
 
             {/* Images Section */}
-            {item.images && item.images.length > 0 ? (
+            {attachments.length > 0 ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-                <h4 className="mb-4 text-lg font-semibold text-slate-900">Bilder</h4>
+                <h4 className="mb-4 text-lg זיך font-semibold text-slate-900">Anhänge</h4>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {item.images.map((image, index) => (
-                    <div key={index} className="overflow-hidden rounded-lg bg-white shadow-sm">
-                      <img
-                        src={typeof image === 'string' ? image : image.image}
-                        alt={`${item.name} - Bild ${index + 1}`}
-                        className="h-48 w-full object-cover"
-                      />
+                  {attachments.map((attachment) => (
+                    <div key={attachment.key} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                      {attachment.type === 'image' ? (
+                        <figure className="relative">
+                          <img src={attachment.url} alt={attachment.name} className="h-56 w-full object-cover" />
+                          <figcaption className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-slate-900/80 to-transparent px-4 pb-4 pt-6 text-xs text-white">
+                            <span className="truncate pr-2 font-semibold" title={attachment.name}>
+                              {attachment.name}
+                            </span>
+                            <div className="flex gap-2">
+                              <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenAttachment(attachment.url)}>
+                                Öffnen
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                loading={downloadingAttachmentId === attachment.key}
+                                onClick={() => handleDownloadAttachment(attachment)}
+                              >
+                                Download
+                              </Button>
+                            </div>
+                          </figcaption>
+                        </figure>
+                      ) : (
+                        <div className="flex h-full flex-col justify-between p-5">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                              {attachment.type === 'pdf' ? '📄' : '📁'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-900" title={attachment.name}>
+                                {attachment.name}
+                              </p>
+                              <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
+                                {attachment.extension?.toUpperCase() || 'Datei'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="mt-4 flex gap-2">
+                            <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenAttachment(attachment.url)}>
+                              Öffnen
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="primary"
+                              size="sm"
+                              loading={downloadingAttachmentId === attachment.key}
+                              onClick={() => handleDownloadAttachment(attachment)}
+                            >
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center">
-                <p className="text-slate-500">Keine Bilder verfügbar</p>
+                <p className="text-slate-500">Keine Dateien verfügbar</p>
               </div>
             )}
 
