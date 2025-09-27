@@ -645,9 +645,9 @@ const ItemsPage: React.FC = () => {
                     </button>
                   </td>
                   <td className="px-4 py-3 text-slate-600">
-                    {item.description ? item.description.slice(0, 80) : 'â€”'}
+                    {item.description ? item.description.slice(0, 80) : '—'}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{locationMap[item.location ?? 0] ?? 'N/A'}</td>
+                  <td className="px-4 py-3 text-slate-600">{locationMap[item.location ?? 0] ?? '—'}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
                       {item.tags.length > 0 ? (
@@ -735,7 +735,7 @@ const ItemsPage: React.FC = () => {
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center px-2 pt-8 pb-6 sm:px-6 sm:pt-10 sm:pb-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6 sm:py-10">
           <div
             className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isAddPanelOpen ? 'opacity-100' : 'opacity-0'}`}
             aria-hidden="true"
@@ -745,8 +745,8 @@ const ItemsPage: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-heading"
-            className={`relative flex w-full max-w-2xl flex-col transform rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 transition-all duration-300 ease-out max-h-[96vh] ${isAddPanelOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
-            onClick={(e) => e.stopPropagation()}
+            className={`relative flex h-full max-h-[95vh] w-full max-w-5xl transform flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 transition-all duration-300 ease-out ${isAddPanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
+            onClick={(event) => event.stopPropagation()}
           >
             <AddItemForm
               locations={locations}
