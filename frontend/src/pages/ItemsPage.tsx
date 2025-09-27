@@ -1,934 +1,598 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import axios from 'axios';
-import Select, { type MultiValue } from 'react-select';
-import { QrScanner } from '@yudiel/react-qr-scanner';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import clsx from 'clsx';
 
-import AddItemForm from '../components/AddItemForm';
-import EditItemForm from '../components/EditItemForm';
 import Button from '../components/common/Button';
-import ItemDetailView from '../components/ItemDetailView';
+import AddItemDialog from '../components/AddItemDialog';
 import {
-  deleteItem,
-  fetchItem,
-  fetchItemByAssetTag,
-  fetchItemQrCode,
+  createLocation,
+  createTag,
   fetchItems,
   fetchLocations,
   fetchTags,
 } from '../api/inventory';
-import type { Item, Location, Tag } from '../types/inventory';
-
-type SortField = 'name' | 'quantity' | 'value' | 'purchase_date';
-
-interface SelectOption {
-  value: number;
-  label: string;
-}
-
-const sortFieldLabel: Record<SortField, string> = {
-  name: 'Name',
-  quantity: 'Menge',
-  value: 'Wert',
-  purchase_date: 'Kaufdatum',
-};
+import type { Item, Location, PaginatedResponse, Tag } from '../types/inventory';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 const PAGE_SIZE = 20;
 
+type ViewMode = 'grid' | 'table';
+
+const formatCurrency = (value: string | null | undefined) => {
+  if (!value) {
+    return '—';
+  }
+  const numeric = Number.parseFloat(value);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return '—';
+  }
+  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
+};
+
 const ItemsPage: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
+  const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(null);
+  const [loadingItems, setLoadingItems] = useState(true);
+  const [itemsError, setItemsError] = useState<string | null>(null);
+
   const [tags, setTags] = useState<Tag[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [metaLoading, setMetaLoading] = useState(true);
+  const [metaError, setMetaError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [refreshCounter, setRefreshCounter] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [showScannerModal, setShowScannerModal] = useState(false);
-  const [scannerError, setScannerError] = useState<string | null>(null);
-  const [isProcessingScan, setIsProcessingScan] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [qrLoadingId, setQrLoadingId] = useState<number | null>(null);
-  const [qrModalItem, setQrModalItem] = useState<Item | null>(null);
-  const [qrModalUrl, setQrModalUrl] = useState<string | null>(null);
+  const debouncedSearchTerm = useDebouncedValue(searchTerm);
+
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [selectedLocationIds, setSelectedLocationIds] = useState<number[]>([]);
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [detailItemId, setDetailItemId] = useState<number | null>(null);
-  const [detailItem, setDetailItem] = useState<Item | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
+  const [ordering, setOrdering] = useState<string>('-purchase_date');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [page, setPage] = useState(1);
 
-  const addPanelCloseTimeoutRef = useRef<number | null>(null);
-
-  const clearAddPanelCloseTimeout = useCallback(() => {
-    if (addPanelCloseTimeoutRef.current != null) {
-      window.clearTimeout(addPanelCloseTimeoutRef.current);
-      addPanelCloseTimeoutRef.current = null;
-    }
-  }, []);
-
-  const openAddPanel = useCallback(() => {
-    clearAddPanelCloseTimeout();
-    setShowAddModal(true);
-
-    if (typeof window !== 'undefined') {
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          setIsAddPanelOpen(true);
-        });
-      });
-    } else {
-      setIsAddPanelOpen(true);
-    }
-  }, [clearAddPanelCloseTimeout]);
-
-  const closeAddPanel = useCallback(() => {
-    setIsAddPanelOpen(false);
-    clearAddPanelCloseTimeout();
-
-    if (typeof window !== 'undefined') {
-      addPanelCloseTimeoutRef.current = window.setTimeout(() => {
-        setShowAddModal(false);
-        addPanelCloseTimeoutRef.current = null;
-      }, 300);
-    } else {
-      setShowAddModal(false);
-    }
-  }, [clearAddPanelCloseTimeout]);
-
-  useEffect(() => () => clearAddPanelCloseTimeout(), [clearAddPanelCloseTimeout]);
-
-  useEffect(() => {
-    const handler = window.setTimeout(() => {
-      setDebouncedSearch(searchTerm.trim());
-    }, 400);
-
-    return () => window.clearTimeout(handler);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const ordering = `${sortDirection === 'desc' ? '-' : ''}${sortField}`;
-        const [itemsResponse, tagResponse, locationResponse] = await Promise.all([
-          fetchItems({
-            query: debouncedSearch || undefined,
-            page: currentPage,
-            pageSize: PAGE_SIZE,
-            tags: selectedTagIds,
-            locations: selectedLocationIds,
-            ordering,
-          }),
-          fetchTags(),
-          fetchLocations(),
-        ]);
-
-        if (!isMounted) {
-          return;
-        }
-
-        const computedTotalPages = Math.max(1, Math.ceil(itemsResponse.count / PAGE_SIZE));
-        if (currentPage > computedTotalPages) {
-          setCurrentPage(computedTotalPages);
-        }
-        setItems(itemsResponse.results);
-        setTags(tagResponse);
-        setLocations(locationResponse);
-        setTotalItems(itemsResponse.count);
-        setTotalPages(computedTotalPages);
-      } catch (err) {
-        console.error('Failed to load items', err);
-        if (isMounted) {
-          setError('Die Inventardaten konnten nicht aktualisiert werden. Prüfe deine Verbindung und versuche es noch einmal.');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void loadData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentPage, debouncedSearch, refreshCounter, selectedLocationIds, selectedTagIds, sortDirection, sortField]);
-
-  const loadDetailItem = useCallback(async (itemId: number) => {
-    setDetailLoading(true);
-    setDetailError(null);
-    try {
-      const response = await fetchItem(itemId);
-      setDetailItem(response);
-    } catch (err) {
-      console.error('Failed to load item details', err);
-      setDetailError('Die Detailansicht konnte nicht geladen werden. Bitte versuche es erneut.');
-    } finally {
-      setDetailLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!showDetailModal || detailItemId == null) {
-      return;
-    }
-    setDetailItem(null);
-    void loadDetailItem(detailItemId);
-  }, [detailItemId, loadDetailItem, showDetailModal]);
-
-  const handleCloseScanner = useCallback(() => {
-    setShowScannerModal(false);
-    setScannerError(null);
-    setIsProcessingScan(false);
-  }, []);
-
-  const handleOpenScanner = useCallback(() => {
-    setScannerError(null);
-    setIsProcessingScan(false);
-    setShowScannerModal(true);
-  }, []);
-
-  const handleDetailClose = useCallback(() => {
-    setShowDetailModal(false);
-    setDetailItem(null);
-    setDetailItemId(null);
-    setDetailError(null);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') {
-        return;
-      }
-      if (showAddModal) {
-        closeAddPanel();
-      }
-      if (showEditModal) {
-        setShowEditModal(false);
-        setSelectedItem(null);
-      }
-      if (showDeleteModal) {
-        setShowDeleteModal(false);
-        setSelectedItem(null);
-      }
-      if (showScannerModal) {
-        handleCloseScanner();
-      }
-      if (showDetailModal) {
-        handleDetailClose();
-      }
-    };
-
-    const hasModalOpen = showAddModal || showEditModal || showDeleteModal || showScannerModal || showDetailModal;
-    if (hasModalOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [closeAddPanel, handleCloseScanner, handleDetailClose, showAddModal, showDeleteModal, showDetailModal, showEditModal, showScannerModal]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
-  const locationMap = useMemo(() => Object.fromEntries(locations.map((loc) => [loc.id, loc.name])), [locations]);
-
-  const tagOptions = useMemo<SelectOption[]>(() => tags.map((tag) => ({ value: tag.id, label: tag.name })), [tags]);
-  const locationOptions = useMemo<SelectOption[]>(
-    () => locations.map((location) => ({ value: location.id, label: location.name })),
+  const locationMap = useMemo(
+    () => Object.fromEntries(locations.map((location) => [location.id, location.name])),
     [locations],
   );
 
-  const selectedTagOptions = useMemo(
-    () => tagOptions.filter((option) => selectedTagIds.includes(option.value)),
-    [selectedTagIds, tagOptions],
-  );
+  useEffect(() => {
+    let active = true;
 
-  const selectedLocationOptions = useMemo(
-    () => locationOptions.filter((option) => selectedLocationIds.includes(option.value)),
-    [locationOptions, selectedLocationIds],
-  );
-
-  const handleRefresh = () => {
-    setRefreshCounter((prev) => prev + 1);
-  };
-
-  const handleTagFilterChange = (options: MultiValue<SelectOption>) => {
-    const values = options.map((option) => option.value);
-    setSelectedTagIds(values);
-    setCurrentPage(1);
-    setItems([]);
-  };
-
-  const handleLocationFilterChange = (options: MultiValue<SelectOption>) => {
-    const values = options.map((option) => option.value);
-    setSelectedLocationIds(values);
-    setCurrentPage(1);
-    setItems([]);
-  };
-
-  const handleSortChange = (field: SortField) => {
-    setItems([]);
-    setCurrentPage(1);
-    setSortDirection((previous) => (sortField === field ? (previous === 'asc' ? 'desc' : 'asc') : 'asc'));
-    setSortField(field);
-  };
-
-  const getSortIndicator = (field: SortField) => {
-    if (sortField !== field) {
-      return null;
-    }
-    return sortDirection === 'asc' ? '▲' : '▼';
-  };
-
-  const openEditModalWithItem = useCallback((item: Item) => {
-    setSelectedItem(item);
-    setShowEditModal(true);
-  }, []);
-
-  const handleScanResult = useCallback(
-    async (decoded: string) => {
-      if (!decoded || isProcessingScan) {
-        return;
-      }
-      setScannerError(null);
-      setIsProcessingScan(true);
-      setShowScannerModal(false);
+    const loadMeta = async () => {
+      setMetaLoading(true);
+      setMetaError(null);
       try {
-        const item = await fetchItemByAssetTag(decoded);
-        openEditModalWithItem(item);
-      } catch (err) {
-        console.error('Failed to fetch item by asset tag', err);
-        setError('Der gescannte QR-Code konnte keinem Gegenstand zugeordnet werden.');
-      } finally {
-        setIsProcessingScan(false);
-      }
-    },
-    [isProcessingScan, openEditModalWithItem],
-  );
-
-  const closeQrModal = useCallback(() => {
-    if (qrModalUrl) {
-      URL.revokeObjectURL(qrModalUrl);
-    }
-    setQrModalUrl(null);
-    setQrModalItem(null);
-  }, [qrModalUrl]);
-
-  const handleScanError = useCallback((err: unknown) => {
-    console.error('QR scan failed', err);
-    const message = err instanceof Error ? err.message : 'Der QR-Code konnte nicht gelesen werden. Bitte versuche es erneut.';
-    setScannerError(message);
-  }, []);
-
-  const handleOpenQrCodeImage = useCallback(
-    async (item: Item) => {
-      setQrLoadingId(item.id);
-      try {
-        const blob = await fetchItemQrCode(item.id);
-        const objectUrl = URL.createObjectURL(blob);
-        if (qrModalUrl) {
-          URL.revokeObjectURL(qrModalUrl);
+        const [fetchedTags, fetchedLocations] = await Promise.all([fetchTags(), fetchLocations()]);
+        if (!active) {
+          return;
         }
-        setQrModalItem(item);
-        setQrModalUrl(objectUrl);
-      } catch (err) {
-        console.error('Failed to open QR code image', err);
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          setError('Deine Sitzung ist abgelaufen. Melde dich erneut an, um QR-Codes zu generieren.');
-        } else {
-          setError('Der QR-Code konnte nicht geladen werden. Bitte versuche es erneut.');
+        const sortedTags = [...fetchedTags].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
+        const sortedLocations = [...fetchedLocations].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
+        setTags(sortedTags);
+        setLocations(sortedLocations);
+      } catch (error) {
+        console.error('Failed to load tag/location metadata', error);
+        if (active) {
+          setMetaError('Tags und Standorte konnten nicht geladen werden. Bitte versuche es erneut.');
         }
       } finally {
-        setQrLoadingId(null);
+        if (active) {
+          setMetaLoading(false);
+        }
       }
-    },
-    [qrModalUrl],
-  );
+    };
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setSearchTerm(value);
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-    setItems([]);
-  };
+    void loadMeta();
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    setItems([]);
-  };
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const handleOpenDetail = (itemId: number) => {
-    setDetailItemId(itemId);
-    setShowDetailModal(true);
-  };
-
-  const handleDetailEdit = useCallback(() => {
-    if (!detailItem) {
-      return;
-    }
-    setShowDetailModal(false);
-    setSelectedItem(detailItem);
-    setShowEditModal(true);
-  }, [detailItem]);
-
-  const handleAddSuccess = useCallback(() => {
-    closeAddPanel();
-    setRefreshCounter((prev) => prev + 1);
-    setCurrentPage(1);
-  }, [closeAddPanel]);
-
-  const handleAddCancel = useCallback(() => {
-    closeAddPanel();
-  }, [closeAddPanel]);
-
-  const handleEditSuccess = () => {
-    setShowEditModal(false);
-    setSelectedItem(null);
-    setRefreshCounter((prev) => prev + 1);
-    if (detailItemId != null) {
-      void loadDetailItem(detailItemId);
-    }
-  };
-
-  const handleEditCancel = () => {
-    setShowEditModal(false);
-    setSelectedItem(null);
-  };
-
-  const handleDeleteItem = (item: Item) => {
-    setSelectedItem(item);
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!selectedItem) {
-      return;
-    }
+  const loadItems = useCallback(async () => {
+    setLoadingItems(true);
+    setItemsError(null);
     try {
-      setDeleteLoading(true);
-      await deleteItem(selectedItem.id);
-      const wasLastItemOnPage = items.length === 1;
-      const nextPage = wasLastItemOnPage && currentPage > 1 ? currentPage - 1 : currentPage;
-      setShowDeleteModal(false);
-      setSelectedItem(null);
-      setCurrentPage(nextPage);
-      setRefreshCounter((prev) => prev + 1);
-      if (detailItemId === selectedItem.id) {
-        handleDetailClose();
-      }
-    } catch (err) {
-      console.error('Failed to delete item:', err);
-      setError('Der Gegenstand konnte nicht gelöscht werden. Bitte versuche es erneut.');
+      const response = await fetchItems({
+        query: debouncedSearchTerm || undefined,
+        page,
+        pageSize: PAGE_SIZE,
+        tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+        locations: selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
+        ordering: ordering.trim().length > 0 ? ordering : undefined,
+      });
+      setItems(response.results);
+      setPagination(response);
+    } catch (error) {
+      console.error('Failed to load items', error);
+      setItemsError('Deine Gegenstände konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.');
     } finally {
-      setDeleteLoading(false);
+      setLoadingItems(false);
     }
+  }, [debouncedSearchTerm, ordering, page, selectedLocationIds, selectedTagIds]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
+
+  useEffect(() => {
+    void loadItems();
+  }, [loadItems, page]);
+
+  const handleToggleTag = (tagId: number) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
+    );
   };
 
-  const handleDeleteCancel = () => {
-    setShowDeleteModal(false);
-    setSelectedItem(null);
+  const handleToggleLocation = (locationId: number) => {
+    setSelectedLocationIds((prev) =>
+      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId],
+    );
   };
 
-  const formatCurrency = (value: string | null) => {
-    const numeric = Number(value ?? 0);
-    if (!Number.isFinite(numeric)) {
-      return '—';
-    }
-    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
+  const handleClearFilters = () => {
+    setSelectedTagIds([]);
+    setSelectedLocationIds([]);
+    setOrdering('-purchase_date');
+    setSearchTerm('');
   };
 
-  const formatDate = (value: string | null) => {
-    if (!value) {
-      return '—';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return '—';
-    }
-    return new Intl.DateTimeFormat('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }).format(date);
+  const handleCreateTag = useCallback(async (name: string) => {
+    const newTag = await createTag(name);
+    setTags((prev) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
+    return newTag;
+  }, []);
+
+  const handleCreateLocation = useCallback(async (name: string) => {
+    const newLocation = await createLocation(name);
+    setLocations((prev) => [...prev, newLocation].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
+    return newLocation;
+  }, []);
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
   };
 
-  const hasActiveFilters = selectedTagIds.length > 0 || selectedLocationIds.length > 0;
+  const handleItemCreated = async (item: Item) => {
+    setDialogOpen(false);
+    setInfoMessage(`„${item.name}“ wurde erfolgreich angelegt.`);
+    await loadItems();
+  };
+
+  const totalItemsCount = pagination?.count ?? items.length;
+  const totalQuantity = useMemo(
+    () => items.reduce((sum, current) => sum + current.quantity, 0),
+    [items],
+  );
+  const totalValue = useMemo(
+    () =>
+      items.reduce((sum, current) => {
+        if (!current.value) {
+          return sum;
+        }
+        const numeric = Number.parseFloat(current.value);
+        return Number.isFinite(numeric) && numeric > 0 ? sum + numeric : sum;
+      }, 0),
+    [items],
+  );
+
+  const isFiltered =
+    debouncedSearchTerm.length > 0 || selectedTagIds.length > 0 || selectedLocationIds.length > 0 || ordering !== '-purchase_date';
 
   return (
-    <div className="space-y-6 text-slate-700">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Inventarübersicht</h2>
-          <p className="text-sm text-slate-600">
-            Finde Gegenstände sekundenschnell über Namen, Beschreibungen oder deine Tags und Standorte.
-          </p>
+    <div className="relative space-y-8">
+      {infoMessage && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <div className="flex items-start justify-between gap-3">
+            <span>{infoMessage}</span>
+            <button
+              type="button"
+              className="text-emerald-600 transition hover:text-emerald-800"
+              onClick={() => setInfoMessage(null)}
+            >
+              ✕
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-          <div className="flex items-center gap-3">
-            <Button type="button" variant="primary" size="sm" onClick={openAddPanel}>
-              Neuen Gegenstand hinzufügen
-            </Button>
-            <Button type="button" variant="secondary" size="sm" loading={loading} onClick={handleRefresh}>
-              Aktualisieren
-            </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={handleOpenScanner}>
-              QR-Code scannen
-            </Button>
-          </div>
-          <input
-            type="search"
-            placeholder="Nach Gegenständen, Standorten oder Tags suchen …"
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60 md:w-64"
-            value={searchTerm}
-            onChange={handleSearchChange}
-          />
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tags</label>
-            <Select
-              isMulti
-              options={tagOptions}
-              value={selectedTagOptions}
-              onChange={handleTagFilterChange}
-              placeholder="Tags auswählen…"
-              classNamePrefix="inventory-select"
-              isClearable
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Standorte</label>
-            <Select
-              isMulti
-              options={locationOptions}
-              value={selectedLocationOptions}
-              onChange={handleLocationFilterChange}
-              placeholder="Standorte auswählen…"
-              classNamePrefix="inventory-select"
-              isClearable
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sortierung</label>
-            <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-              <span className="font-medium text-slate-700">{sortFieldLabel[sortField]}</span>
-              <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-500">
-                {sortDirection === 'asc' ? 'aufsteigend' : 'absteigend'}
-              </span>
-            </div>
-          </div>
-          {hasActiveFilters && (
-            <div className="flex items-end">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-sm text-slate-500 hover:text-slate-700"
-                onClick={() => {
-                  setSelectedTagIds([]);
-                  setSelectedLocationIds([]);
-                  setItems([]);
-                  setCurrentPage(1);
-                }}
-              >
-                Filter zurücksetzen
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-          <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-3 text-left">
-                <button
-                  type="button"
-                  className="flex items-center gap-1 font-semibold text-slate-600 hover:text-slate-900"
-                  onClick={() => handleSortChange('name')}
-                >
-                  <span>Name</span>
-                  {getSortIndicator('name') && <span className="text-[10px]">{getSortIndicator('name')}</span>}
-                </button>
-              </th>
-              <th className="px-4 py-3 text-left">Beschreibung</th>
-              <th className="px-4 py-3 text-left">Standort</th>
-              <th className="px-4 py-3 text-left">Tags</th>
-              <th className="px-4 py-3 text-right">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-end gap-1 font-semibold text-slate-600 hover:text-slate-900"
-                  onClick={() => handleSortChange('quantity')}
-                >
-                  <span>Menge</span>
-                  {getSortIndicator('quantity') && <span className="text-[10px]">{getSortIndicator('quantity')}</span>}
-                </button>
-              </th>
-              <th className="px-4 py-3 text-right">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-end gap-1 font-semibold text-slate-600 hover:text-slate-900"
-                  onClick={() => handleSortChange('value')}
-                >
-                  <span>Wert</span>
-                  {getSortIndicator('value') && <span className="text-[10px]">{getSortIndicator('value')}</span>}
-                </button>
-              </th>
-              <th className="px-4 py-3 text-right">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-end gap-1 font-semibold text-slate-600 hover:text-slate-900"
-                  onClick={() => handleSortChange('purchase_date')}
-                >
-                  <span>Kaufdatum</span>
-                  {getSortIndicator('purchase_date') && (
-                    <span className="text-[10px]">{getSortIndicator('purchase_date')}</span>
+      <section className="grid gap-4 lg:grid-cols-4">
+        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gesamtanzahl</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{loadingItems ? '…' : totalItemsCount}</p>
+          <p className="mt-1 text-xs text-slate-500">Alle Gegenstände, die deinen Filtern entsprechen.</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Summe Stückzahl</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{loadingItems ? '…' : totalQuantity}</p>
+          <p className="mt-1 text-xs text-slate-500">Wie viele Einheiten aktuell erfasst sind.</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Geschätzter Wert</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">
+            {loadingItems ? '…' : new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(totalValue)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">Basierend auf deinen Angaben zum Kaufpreis.</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Schnellaktionen</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Button variant="primary" size="sm" onClick={() => setDialogOpen(true)}>
+              Gegenstand hinzufügen
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => void loadItems()} loading={loadingItems}>
+              Aktualisieren
+            </Button>
+          </div>
+        </article>
+      </section>
+
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold text-slate-900">Inventar filtern</h2>
+            <p className="text-sm text-slate-600">
+              Nutze Suche, Tags und Standorte, um blitzschnell den richtigen Gegenstand zu finden.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-md px-3 py-1 transition',
+                  viewMode === 'grid' ? 'bg-white text-brand-600 shadow-sm' : 'hover:text-brand-600',
+                )}
+                onClick={() => setViewMode('grid')}
+              >
+                Karten
+              </button>
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-md px-3 py-1 transition',
+                  viewMode === 'table' ? 'bg-white text-brand-600 shadow-sm' : 'hover:text-brand-600',
+                )}
+                onClick={() => setViewMode('table')}
+              >
+                Tabelle
+              </button>
+            </div>
+            {isFiltered && (
+              <Button type="button" variant="ghost" size="sm" onClick={handleClearFilters}>
+                Filter zurücksetzen
+              </Button>
+            )}
+          </div>
+        </header>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <label htmlFor="items-search" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Suche
+            </label>
+            <div className="mt-1 flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-200/60">
+              <span className="mr-2 text-slate-400">🔍</span>
+              <input
+                id="items-search"
+                type="search"
+                placeholder="Name, Beschreibung, Standort ..."
+                className="w-full border-none bg-transparent text-sm text-slate-900 outline-none"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="lg:col-span-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tags</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {metaLoading && <span className="text-xs text-slate-400">Lade Tags …</span>}
+              {!metaLoading && tags.length === 0 && (
+                <span className="text-xs text-slate-400">Noch keine Tags vorhanden.</span>
+              )}
+              {!metaLoading &&
+                tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className={clsx(
+                      'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition',
+                      selectedTagIds.includes(tag.id)
+                        ? 'bg-brand-500 text-white shadow'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    )}
+                    onClick={() => handleToggleTag(tag.id)}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+            </div>
+          </div>
+
+          <div className="lg:col-span-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Standorte</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {metaLoading && <span className="text-xs text-slate-400">Lade Standorte …</span>}
+              {!metaLoading && locations.length === 0 && (
+                <span className="text-xs text-slate-400">Noch keine Standorte vorhanden.</span>
+              )}
+              {!metaLoading &&
+                locations.map((location) => (
+                  <button
+                    key={location.id}
+                    type="button"
+                    className={clsx(
+                      'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition',
+                      selectedLocationIds.includes(location.id)
+                        ? 'bg-blue-500 text-white shadow'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    )}
+                    onClick={() => handleToggleLocation(location.id)}
+                  >
+                    {location.name}
+                  </button>
+                ))}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sortierung</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[
+              { label: 'Neueste Kaufdaten', value: '-purchase_date' },
+              { label: 'Älteste Kaufdaten', value: 'purchase_date' },
+              { label: 'Name A-Z', value: 'name' },
+              { label: 'Name Z-A', value: '-name' },
+              { label: 'Höchste Menge', value: '-quantity' },
+              { label: 'Höchster Wert', value: '-value' },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={clsx(
+                  'inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold transition',
+                  ordering === option.value
+                    ? 'bg-slate-900 text-white shadow'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                )}
+                onClick={() => setOrdering(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Gegenstände</h3>
+            <p className="text-sm text-slate-500">
+              {loadingItems
+                ? 'Lade Gegenstände …'
+                : `${pagination?.count ?? items.length} Ergebnisse gesamt${isFiltered ? ' (gefiltert)' : ''}.`}
+            </p>
+          </div>
+          <Button variant="primary" size="sm" onClick={() => setDialogOpen(true)}>
+            Neuer Gegenstand
+          </Button>
+        </header>
+
+        {itemsError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="flex items-start justify-between gap-3">
+              <span>{itemsError}</span>
+              <Button variant="ghost" size="sm" onClick={() => void loadItems()}>
+                Erneut laden
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {loadingItems && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-40 w-full animate-pulse rounded-xl border border-slate-200 bg-slate-100"
+              />
+            ))}
+          </div>
+        )}
+
+        {!loadingItems && items.length === 0 && !itemsError && (
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-slate-500">
+              📦
+            </div>
+            <h4 className="mt-4 text-xl font-semibold text-slate-900">Noch keine Gegenstände erfasst</h4>
+            <p className="mt-2 text-sm text-slate-500">
+              Lege deinen ersten Gegenstand an und starte deine Inventarliste. Alles ist in wenigen Schritten erledigt.
+            </p>
+            <div className="mt-4 flex justify-center">
+              <Button variant="primary" size="md" onClick={() => setDialogOpen(true)}>
+                Jetzt starten
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!loadingItems && items.length > 0 && viewMode === 'grid' && (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {items.map((item) => (
+              <article key={item.id} className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <header className="flex items-start justify-between gap-3">
+                  <div>
+                    <h4 className="text-lg font-semibold text-slate-900">{item.name}</h4>
+                    <p className="text-xs text-slate-500">
+                      {item.purchase_date
+                        ? new Date(item.purchase_date).toLocaleDateString('de-DE')
+                        : 'Kaufdatum unbekannt'}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                    {item.quantity}×
+                  </span>
+                </header>
+
+                {item.description && (
+                  <p className="mt-3 line-clamp-3 text-sm text-slate-600">{item.description}</p>
+                )}
+
+                <dl className="mt-4 grid gap-2 text-xs text-slate-500">
+                  <div className="flex items-center justify-between">
+                    <dt>Standort</dt>
+                    <dd className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                      {item.location ? locationMap[item.location] ?? 'Unbekannt' : 'Kein Standort'}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <dt>Wert</dt>
+                    <dd className="font-semibold text-slate-900">{formatCurrency(item.value)}</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {item.tags.length > 0 ? (
+                    item.tags.map((tagId) => (
+                      <span
+                        key={tagId}
+                        className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700"
+                      >
+                        {tagMap[tagId] ?? `Tag ${tagId}`}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400">Keine Tags</span>
                   )}
-                </button>
-              </th>
-              <th className="px-4 py-3 text-center">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading && (
-              <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
-                  Lade Items …
-                </td>
-              </tr>
-            )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
 
-            {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
-                  Keine Einträge gefunden. Erstelle den ersten Gegenstand oder passe deine Suchkriterien an.
-                </td>
-              </tr>
-            )}
-
-            {!loading &&
-              items.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-semibold text-slate-900">
-                    <button
-                      type="button"
-                      className="text-left text-blue-600 hover:text-blue-800"
-                      onClick={() => handleOpenDetail(item.id)}
-                    >
-                      {item.name}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {item.description ? item.description.slice(0, 80) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{locationMap[item.location ?? 0] ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
+        {!loadingItems && items.length > 0 && viewMode === 'table' && (
+          <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Name
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Standort
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">
+                    Tags
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">
+                    Menge
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">
+                    Wert
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">
+                    Kaufdatum
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
+                {items.map((item) => (
+                  <tr key={item.id} className="transition hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <div className="font-semibold text-slate-900">{item.name}</div>
+                      {item.description && (
+                        <p className="mt-1 text-xs text-slate-500 line-clamp-1">{item.description}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {item.location ? locationMap[item.location] ?? 'Unbekannt' : 'Kein Standort'}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
                       {item.tags.length > 0 ? (
-                        item.tags.map((tagId) => (
-                          <span
-                            key={tagId}
-                            className="inline-flex items-center rounded-full bg-brand-100 px-2 py-1 text-xs font-semibold text-brand-700"
-                          >
-                            {tagMap[tagId] ?? `Tag ${tagId}`}
-                          </span>
-                        ))
+                        <div className="flex flex-wrap gap-2">
+                          {item.tags.map((tagId) => (
+                            <span
+                              key={tagId}
+                              className="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700"
+                            >
+                              {tagMap[tagId] ?? `Tag ${tagId}`}
+                            </span>
+                          ))}
+                        </div>
                       ) : (
                         <span className="text-xs text-slate-400">Keine Tags</span>
                       )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-700">{item.quantity}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-700">{formatCurrency(item.value)}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-700">{formatDate(item.purchase_date)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditModalWithItem(item)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        Bearbeiten
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteItem(item)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Löschen
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-emerald-600 hover:text-emerald-800"
-                        loading={qrLoadingId === item.id}
-                        onClick={() => void handleOpenQrCodeImage(item)}
-                      >
-                        QR-Code
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <div className="text-sm text-slate-600">
-            Zeige Seite {currentPage} von {totalPages} ({totalItems} Gegenstände)
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{item.quantity}</td>
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">
+                      {formatCurrency(item.value)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm">
+                      {item.purchase_date
+                        ? new Date(item.purchase_date).toLocaleDateString('de-DE')
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => handlePageChange(currentPage - 1)}
-            >
-              Zurück
-            </Button>
-            <span className="px-3 py-1 text-sm text-slate-600">{currentPage}</span>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => handlePageChange(currentPage + 1)}
-            >
-              Weiter
-            </Button>
-          </div>
-        </div>
-      )}
+        )}
 
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6 sm:py-10">
-          <div
-            className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isAddPanelOpen ? 'opacity-100' : 'opacity-0'}`}
-            aria-hidden="true"
-            onClick={handleAddCancel}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-item-heading"
-            className={`relative flex h-full max-h-[98vh] w-full max-w-[min(96vw,80rem)] transform flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 transition-all duration-300 ease-out ${isAddPanelOpen ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <AddItemForm
-              locations={locations}
-              tags={tags}
-              onSuccess={handleAddSuccess}
-              onCancel={handleAddCancel}
-            />
-          </div>
-        </div>
-      )}
-
-      {showEditModal && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center px-2 pt-8 pb-6 sm:px-6 sm:pt-10 sm:pb-8">
-          <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleEditCancel} />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-item-heading"
-            className="relative flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[96vh]"
-          >
-            <div className="flex-shrink-0 border-b border-slate-200 px-5 py-4 sm:px-7 sm:py-6">
-              <h3 id="edit-item-heading" className="text-xl font-semibold text-slate-900">
-                Gegenstand bearbeiten
-              </h3>
-              <p className="mt-2 text-sm text-slate-600">Bearbeite die Informationen für "{selectedItem.name}".</p>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <EditItemForm
-                item={selectedItem}
-                locations={locations}
-                tags={tags}
-                onSuccess={handleEditSuccess}
-                onCancel={handleEditCancel}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showDeleteModal && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
-          <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleDeleteCancel} />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-item-heading"
-            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
-          >
-            <div className="mb-6">
-              <h3 id="delete-item-heading" className="text-xl font-semibold text-slate-900">
-                Gegenstand löschen
-              </h3>
-              <p className="text-sm text-slate-600">
-                Bist du sicher, dass du "{selectedItem.name}" löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
-              </p>
-            </div>
-            <div className="flex gap-3">
+        {pagination && (pagination.next || pagination.previous) && (
+          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+            <span>
+              Seite {page} · {pagination.count} Ergebnisse insgesamt
+            </span>
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="secondary"
-                size="md"
-                onClick={handleDeleteCancel}
-                disabled={deleteLoading}
-                className="flex-1"
+                size="sm"
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={!pagination.previous || page === 1 || loadingItems}
               >
-                Abbrechen
+                Zurück
               </Button>
               <Button
                 type="button"
-                variant="secondary"
-                size="md"
-                onClick={handleDeleteConfirm}
-                loading={deleteLoading}
-                className="flex-1"
+                variant="primary"
+                size="sm"
+                onClick={() => setPage((prev) => prev + 1)}
+                disabled={!pagination.next || loadingItems}
               >
-                Löschen
+                Weiter
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </section>
 
-      {qrModalItem && qrModalUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
-          <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={closeQrModal} />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="qr-modal-heading"
-            className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
-          >
-            <div className="mb-4 flex items-start justify-between">
-              <div>
-                <h3 id="qr-modal-heading" className="text-xl font-semibold text-slate-900">
-                  QR-Code anzeigen
-                </h3>
-                <p className="text-sm text-slate-600">QR-Code für "{qrModalItem.name}"</p>
-              </div>
-              <Button type="button" variant="ghost" size="sm" onClick={closeQrModal}>
-                Schließen
-              </Button>
-            </div>
-            <div className="flex justify-center rounded-2xl bg-slate-100 p-6">
-              <img
-                src={qrModalUrl}
-                alt={`QR-Code für ${qrModalItem.name}`}
-                className="max-h-[60vh] w-full max-w-xs rounded-xl bg-white p-4 shadow-lg"
-              />
-            </div>
-            <div className="mt-6 flex items-center justify-between">
-              <div className="text-xs text-slate-500">Scanne diesen Code, um den Gegenstand sofort aufzurufen.</div>
-              <a
-                href={qrModalUrl}
-                download={`item-${qrModalItem.id}-qr.png`}
-                className="inline-flex items-center rounded-lg border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-600 transition hover:border-brand-300 hover:bg-brand-50"
-              >
-                QR-Code herunterladen
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
+      <button
+        type="button"
+        className="fixed bottom-8 right-8 z-40 inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white shadow-xl transition hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-300"
+        onClick={() => setDialogOpen(true)}
+      >
+        <span className="text-lg">＋</span>
+        <span>Gegenstand hinzufügen</span>
+      </button>
 
-      {showDetailModal && (
-        <ItemDetailView
-          item={detailItem}
-          loading={detailLoading}
-          error={detailError}
-          onClose={handleDetailClose}
-          onEdit={handleDetailEdit}
-          onRetry={detailItemId != null ? () => void loadDetailItem(detailItemId) : undefined}
-          tagMap={tagMap}
-          locationMap={locationMap}
-        />
-      )}
-
-      {showScannerModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
-          <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleCloseScanner} />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="qr-scanner-heading"
-            className="relative max-h-[90vh] w-full max-w-xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
-          >
-            <div className="mb-6">
-              <h3 id="qr-scanner-heading" className="text-xl font-semibold text-slate-900">
-                QR-Code scannen
-              </h3>
-              <p className="text-sm text-slate-600">
-                Richte die Kamera auf den QR-Code eines Gegenstands, um ihn sofort zu öffnen.
-              </p>
-            </div>
-            {scannerError && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
-                {scannerError}
-              </div>
-            )}
-            <div className="aspect-square w-full overflow-hidden rounded-2xl bg-slate-100">
-              <QrScanner
-                constraints={{ facingMode: 'environment' }}
-                containerStyle={{ width: '100%', height: '100%' }}
-                onDecode={(result: string | null) => {
-                  if (typeof result === 'string') {
-                    void handleScanResult(result);
-                  }
-                }}
-                onError={(maybeError?: Error) => {
-                  if (maybeError) {
-                    handleScanError(maybeError);
-                  }
-                }}
-              />
-            </div>
-            <div className="mt-6 flex justify-end">
-              <Button type="button" variant="secondary" onClick={handleCloseScanner}>
-                Abbrechen
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddItemDialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        onCreated={handleItemCreated}
+        tags={tags}
+        locations={locations}
+        onCreateTag={handleCreateTag}
+        onCreateLocation={handleCreateLocation}
+      />
     </div>
   );
 };

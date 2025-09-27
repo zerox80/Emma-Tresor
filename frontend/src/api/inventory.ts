@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Item, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory';
+import type { Item, ItemImage, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory';
 
 export interface FetchItemsOptions {
   query?: string;
@@ -111,4 +111,18 @@ export const updateItem = async (id: number, itemData: ItemPayload): Promise<Ite
 
 export const deleteItem = async (id: number): Promise<void> => {
   await apiClient.delete(`/items/${id}/`);
+};
+
+export const uploadItemImage = async (itemId: number, file: File): Promise<ItemImage> => {
+  const formData = new FormData();
+  formData.append('item', String(itemId));
+  formData.append('image', file);
+
+  const { data } = await apiClient.post<ItemImage>('/item-images/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return data;
 };
