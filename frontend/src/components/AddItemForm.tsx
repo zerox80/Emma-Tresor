@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import Select, { type MultiValue, type OnChangeValue } from 'react-select';
+import Select, { type MultiValue } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
 import Button from './common/Button';
@@ -102,7 +102,13 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
     },
   });
 
+  useEffect(() => {
+    register('location');
+    register('tags');
+  }, [register]);
+
   const watchedTags = watch('tags') || [];
+  const watchedLocation = watch('location');
 
   const normalisePayload = (values: ItemFormSchema): ItemPayload => {
     const description = values.description?.trim();
@@ -115,7 +121,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
       description: description && description.length > 0 ? description : '',
       quantity: values.quantity,
       purchase_date: purchaseDate && purchaseDate.length > 0 ? purchaseDate : null,
-      value: value,
+      value,
       location: Number.isFinite(values.location) ? values.location ?? null : null,
       tags: values.tags ?? [],
     };
@@ -132,14 +138,6 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
       console.error('Failed to create item:', error);
       setFormError('Der Gegenstand konnte nicht erstellt werden. Bitte versuche es erneut.');
     }
-  };
-
-  const handleTagToggle = (tagId: number) => {
-    const currentTags = watchedTags;
-    const newTags = currentTags.includes(tagId)
-      ? currentTags.filter((id) => id !== tagId)
-      : [...currentTags, tagId];
-    setValue('tags', newTags);
   };
 
   const handleCreateLocation = async (inputValue: string) => {
@@ -178,49 +176,49 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
   const locationOptions = availableLocations.map(loc => ({ value: loc.id, label: loc.name }));
   const tagOptions = availableTags.map(tag => ({ value: tag.id, label: tag.name }));
 
-  const selectedLocationOption = locationOptions.find(opt => opt.value === watch('location')) || null;
-  const selectedTagOptions = tagOptions.filter(opt => watchedTags.includes(opt.value));
+  const selectedLocationOption = locationOptions.find(option => option.value === watchedLocation) || null;
+  const selectedTagOptions = tagOptions.filter(option => watchedTags.includes(option.value));
 
   return (
     <form className="flex h-full min-h-0 flex-1 flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="flex-1 overflow-y-auto px-2 py-3 sm:px-5 sm:py-5">
-        <div className="mx-auto w-full max-w-3xl min-h-0 space-y-3">
+      <div className="flex-1 overflow-y-auto px-2 py-2 sm:px-6 sm:py-3">
+        <div className="mx-auto w-full max-w-4xl space-y-2.5">
           {formError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {formError}
             </div>
           )}
-          <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2">
+          <div className="rounded-2xl border border-slate-100 bg-white p-2.5 shadow-sm sm:p-3.5">
+            <div className="grid gap-x-2 gap-y-2.5 md:grid-cols-2">
+              <div className="md:col-span-2 space-y-1.5">
                 <label htmlFor="name" className="text-sm font-medium text-slate-800">
                   Name *
                 </label>
                 <input
                   id="name"
                   type="text"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   placeholder="z. B. Laptop, Buch, Werkzeug..."
                   {...register('name')}
                 />
                 {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
               </div>
 
-              <div className="space-y-2 md:col-span-2">
+              <div className="md:col-span-2 space-y-1.5">
                 <label htmlFor="description" className="text-sm font-medium text-slate-800">
                   Beschreibung
                 </label>
                 <textarea
                   id="description"
                   rows={2}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   placeholder="Optionale Beschreibung des Gegenstands..."
                   {...register('description')}
                 />
                 {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="quantity" className="text-sm font-medium text-slate-800">
                   Menge *
                 </label>
@@ -229,13 +227,13 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                   type="number"
                   min="1"
                   step="1"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   {...register('quantity', { valueAsNumber: true })}
                 />
                 {errors.quantity && <p className="text-xs text-red-500">{errors.quantity.message}</p>}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="value" className="text-sm font-medium text-slate-800">
                   Wert (€)
                 </label>
@@ -244,21 +242,21 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                   type="number"
                   step="0.01"
                   min="0"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   placeholder="z. B. 1299.99"
                   {...register('value')}
                 />
                 {errors.value && <p className="text-xs text-red-500">{errors.value.message}</p>}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label htmlFor="purchase_date" className="text-sm font-medium text-slate-800">
                   Kaufdatum
                 </label>
                 <input
                   id="purchase_date"
                   type="date"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   {...register('purchase_date')}
                 />
                 {errors.purchase_date && <p className="text-xs text-red-500">{errors.purchase_date.message}</p>}
@@ -274,7 +272,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                   options={locationOptions}
                   value={selectedLocationOption}
                   onChange={(newValue) => {
-                    setValue('location', newValue?.value ?? null);
+                    setValue('location', newValue?.value ?? null, { shouldDirty: true, shouldValidate: true });
                   }}
                   placeholder="Standort auswählen oder erstellen..."
                   formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
@@ -287,9 +285,9 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                 {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
               </div>
 
-              <div className="space-y-2 md:col-span-2">
+              <div className="md:col-span-2 space-y-1.5">
                 <label className="text-sm font-medium text-slate-800">Tags</label>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-2.5">
                   <Select
                     isMulti
                     isClearable
@@ -298,8 +296,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                     options={tagOptions}
                     value={selectedTagOptions}
                     onChange={(newValue) => {
-                      const values = (newValue as SelectOption[]).map(option => option.value);
-                      setValue('tags', values);
+                      const values = (newValue as MultiValue<SelectOption>).map(option => option.value);
+                      setValue('tags', values, { shouldDirty: true, shouldValidate: true });
                     }}
                     placeholder="Tags auswählen..."
                     noOptionsMessage={() => "Keine Tags gefunden"}
@@ -327,11 +325,12 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                 </div>
                 {errors.tags && <p className="text-xs text-red-500">{errors.tags.message}</p>}
               </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex-shrink-0 border-t border-slate-200 px-3 py-4 sm:px-6 sm:py-5">
+      <div className="flex-shrink-0 border-t border-slate-200 px-3 py-3 sm:px-6 sm:py-4">
         <div className="mx-auto flex w-full max-w-4xl flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" size="md" onClick={onCancel} className="sm:w-auto">
             Abbrechen
