@@ -710,23 +710,12 @@ const ItemsPage: React.FC = () => {
                 Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags und Standorte zu.
               </p>
             </div>
-<AddItemForm
-  locations={locations}
-  tags={tags}
-  onSuccess={handleAddSuccess}
-  onCancel={handleAddCancel}
-/>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm text-slate-600" htmlFor="description">
-                    Beschreibung
-                  </label>
-                  <textarea
-                    id="description"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                </div>
+            <AddItemForm
+              locations={locations}
+              tags={tags}
+              onSuccess={handleAddSuccess}
+              onCancel={handleAddCancel}
+            />
           </div>
         </div>
       )}
