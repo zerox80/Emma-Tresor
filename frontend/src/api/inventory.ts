@@ -124,11 +124,7 @@ export const uploadItemImage = async (itemId: number, file: File): Promise<ItemI
   formData.append('item', String(itemId));
   formData.append('image', file);
 
-  const { data } = await apiClient.post<ItemImage>('/item-images/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  const { data } = await apiClient.post<ItemImage>('/item-images/', formData);
 
   return data;
 };
