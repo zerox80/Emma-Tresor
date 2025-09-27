@@ -104,3 +104,6 @@ Zur Ausübung Ihrer Rechte genügt eine formlose Mitteilung an die unter Ziffer 
 
 Wir behalten uns vor, diese Datenschutzerklärung anzupassen, um sie bei Änderungen der Rechtslage oder unseres Dienstes anzupassen. Für Ihre erneute Nutzung gilt jeweils die aktuelle Fassung.
 
+## 9. Source Code des Projekts
+
+Der Quellcode des Projekts ist unter https://github.com/zerox80/Emma-Tresor aufzufinden. 
