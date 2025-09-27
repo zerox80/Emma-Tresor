@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import Select, { type MultiValue } from 'react-select';
 import { QrScanner } from '@yudiel/react-qr-scanner';
@@ -111,7 +111,7 @@ const ItemsPage: React.FC = () => {
       } catch (err) {
         console.error('Failed to load items', err);
         if (isMounted) {
-          setError('Die Inventardaten konnten nicht aktualisiert werden. PrÃ¼fe deine Verbindung und versuche es noch einmal.');
+          setError('Die Inventardaten konnten nicht aktualisiert werden. Prüfe deine Verbindung und versuche es noch einmal.');
         }
       } finally {
         if (isMounted) {
@@ -252,7 +252,7 @@ const ItemsPage: React.FC = () => {
     if (sortField !== field) {
       return null;
     }
-    return sortDirection === 'asc' ? 'â–²' : 'â–¼';
+    return sortDirection === 'asc' ? '▲' : '▼';
   };
 
   const openEditModalWithItem = useCallback((item: Item) => {
@@ -395,7 +395,7 @@ const ItemsPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to delete item:', err);
-      setError('Der Gegenstand konnte nicht gelÃ¶scht werden. Bitte versuche es erneut.');
+      setError('Der Gegenstand konnte nicht gelöscht werden. Bitte versuche es erneut.');
     } finally {
       setDeleteLoading(false);
     }
@@ -409,18 +409,18 @@ const ItemsPage: React.FC = () => {
   const formatCurrency = (value: string | null) => {
     const numeric = Number(value ?? 0);
     if (!Number.isFinite(numeric)) {
-      return 'â€”';
+      return '—';
     }
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
   };
 
   const formatDate = (value: string | null) => {
     if (!value) {
-      return 'â€”';
+      return '—';
     }
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
-      return 'â€”';
+      return '—';
     }
     return new Intl.DateTimeFormat('de-DE', {
       day: '2-digit',
@@ -435,15 +435,15 @@ const ItemsPage: React.FC = () => {
     <div className="space-y-6 text-slate-700">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">InventarÃ¼bersicht</h2>
+          <h2 className="text-2xl font-semibold text-slate-900">Inventarübersicht</h2>
           <p className="text-sm text-slate-600">
-            Finde GegenstÃ¤nde sekundenschnell Ã¼ber Namen, Beschreibungen oder deine Tags und Standorte.
+            Finde Gegenstände sekundenschnell über Namen, Beschreibungen oder deine Tags und Standorte.
           </p>
         </div>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <div className="flex items-center gap-3">
             <Button type="button" variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
-              Neuen Gegenstand hinzufÃ¼gen
+              Neuen Gegenstand hinzufügen
             </Button>
             <Button type="button" variant="secondary" size="sm" loading={loading} onClick={handleRefresh}>
               Aktualisieren
@@ -454,7 +454,7 @@ const ItemsPage: React.FC = () => {
           </div>
           <input
             type="search"
-            placeholder="Nach GegenstÃ¤nden, Standorten oder Tags suchen â€¦"
+            placeholder="Nach Gegenständen, Standorten oder Tags suchen …"
             className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60 md:w-64"
             value={searchTerm}
             onChange={handleSearchChange}
@@ -471,7 +471,7 @@ const ItemsPage: React.FC = () => {
               options={tagOptions}
               value={selectedTagOptions}
               onChange={handleTagFilterChange}
-              placeholder="Tags auswÃ¤hlenâ€¦"
+              placeholder="Tags auswählen…"
               classNamePrefix="inventory-select"
               isClearable
             />
@@ -483,7 +483,7 @@ const ItemsPage: React.FC = () => {
               options={locationOptions}
               value={selectedLocationOptions}
               onChange={handleLocationFilterChange}
-              placeholder="Standorte auswÃ¤hlenâ€¦"
+              placeholder="Standorte auswählen…"
               classNamePrefix="inventory-select"
               isClearable
             />
@@ -511,7 +511,7 @@ const ItemsPage: React.FC = () => {
                   setCurrentPage(1);
                 }}
               >
-                Filter zurÃ¼cksetzen
+                Filter zurücksetzen
               </Button>
             </div>
           )}
@@ -578,7 +578,7 @@ const ItemsPage: React.FC = () => {
             {loading && (
               <tr>
                 <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
-                  Lade Items â€¦
+                  Lade Items …
                 </td>
               </tr>
             )}
@@ -586,7 +586,7 @@ const ItemsPage: React.FC = () => {
             {!loading && items.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
-                  Keine EintrÃ¤ge gefunden. Erstelle den ersten Gegenstand oder passe deine Suchkriterien an.
+                  Keine Einträge gefunden. Erstelle den ersten Gegenstand oder passe deine Suchkriterien an.
                 </td>
               </tr>
             )}
@@ -644,7 +644,7 @@ const ItemsPage: React.FC = () => {
                         onClick={() => handleDeleteItem(item)}
                         className="text-red-600 hover:text-red-800"
                       >
-                        LÃ¶schen
+                        Löschen
                       </Button>
                       <Button
                         type="button"
@@ -667,7 +667,7 @@ const ItemsPage: React.FC = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
           <div className="text-sm text-slate-600">
-            Zeige Seite {currentPage} von {totalPages} ({totalItems} GegenstÃ¤nde)
+            Zeige Seite {currentPage} von {totalPages} ({totalItems} Gegenstände)
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -677,7 +677,7 @@ const ItemsPage: React.FC = () => {
               disabled={currentPage === 1}
               onClick={() => handlePageChange(currentPage - 1)}
             >
-              ZurÃ¼ck
+              Zurück
             </Button>
             <span className="px-3 py-1 text-sm text-slate-600">{currentPage}</span>
             <Button
@@ -704,13 +704,29 @@ const ItemsPage: React.FC = () => {
           >
             <div className="mb-6">
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
-                Neuen Gegenstand hinzufÃ¼gen
+                Neuen Gegenstand hinzufügen
               </h3>
               <p className="text-sm text-slate-600">
                 Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags und Standorte zu.
               </p>
             </div>
-            <AddItemForm locations={locations} tags={tags} onSuccess={handleAddSuccess} onCancel={handleAddCancel} />
+<AddItemForm
+  locations={locations}
+  tags={tags}
+  onSuccess={handleAddSuccess}
+  onCancel={handleAddCancel}
+/>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm text-slate-600" htmlFor="description">
+                    Beschreibung
+                  </label>
+                  <textarea
+                    id="description"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
           </div>
         </div>
       )}
@@ -728,7 +744,7 @@ const ItemsPage: React.FC = () => {
               <h3 id="edit-item-heading" className="text-xl font-semibold text-slate-900">
                 Gegenstand bearbeiten
               </h3>
-              <p className="text-sm text-slate-600">Bearbeite die Informationen fÃ¼r "{selectedItem.name}".</p>
+              <p className="text-sm text-slate-600">Bearbeite die Informationen für "{selectedItem.name}".</p>
             </div>
             <EditItemForm
               item={selectedItem}
@@ -752,10 +768,10 @@ const ItemsPage: React.FC = () => {
           >
             <div className="mb-6">
               <h3 id="delete-item-heading" className="text-xl font-semibold text-slate-900">
-                Gegenstand lÃ¶schen
+                Gegenstand löschen
               </h3>
               <p className="text-sm text-slate-600">
-                Bist du sicher, dass du "{selectedItem.name}" lÃ¶schen mÃ¶chtest? Diese Aktion kann nicht rÃ¼ckgÃ¤ngig gemacht werden.
+                Bist du sicher, dass du "{selectedItem.name}" löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.
               </p>
             </div>
             <div className="flex gap-3">
@@ -777,7 +793,7 @@ const ItemsPage: React.FC = () => {
                 loading={deleteLoading}
                 className="flex-1"
               >
-                LÃ¶schen
+                Löschen
               </Button>
             </div>
           </div>
@@ -785,7 +801,7 @@ const ItemsPage: React.FC = () => {
       )}
 
       {qrModalItem && qrModalUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm}px-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
           <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={closeQrModal} />
           <div
             role="dialog"
@@ -798,16 +814,16 @@ const ItemsPage: React.FC = () => {
                 <h3 id="qr-modal-heading" className="text-xl font-semibold text-slate-900">
                   QR-Code anzeigen
                 </h3>
-                <p className="text-sm text-slate-600">QR-Code fÃ¼r "{qrModalItem.name}"</p>
+                <p className="text-sm text-slate-600">QR-Code für "{qrModalItem.name}"</p>
               </div>
               <Button type="button" variant="ghost" size="sm" onClick={closeQrModal}>
-                SchlieÃŸen
+                Schließen
               </Button>
             </div>
             <div className="flex justify-center rounded-2xl bg-slate-100 p-6">
               <img
                 src={qrModalUrl}
-                alt={`QR-Code fÃ¼r ${qrModalItem.name}`}
+                alt={`QR-Code für ${qrModalItem.name}`}
                 className="max-h-[60vh] w-full max-w-xs rounded-xl bg-white p-4 shadow-lg"
               />
             </div>
@@ -852,7 +868,7 @@ const ItemsPage: React.FC = () => {
                 QR-Code scannen
               </h3>
               <p className="text-sm text-slate-600">
-                Richte die Kamera auf den QR-Code eines Gegenstands, um ihn sofort zu Ã¶ffnen.
+                Richte die Kamera auf den QR-Code eines Gegenstands, um ihn sofort zu öffnen.
               </p>
             </div>
             {scannerError && (
