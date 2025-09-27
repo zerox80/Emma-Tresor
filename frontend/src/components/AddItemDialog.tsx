@@ -42,8 +42,8 @@ const itemSchema = z.object({
     .optional(),
   quantity: z
     .number({ invalid_type_error: 'Menge muss eine Zahl sein.' })
-    .refine((value) => Number.isFinite(value), 'Menge muss eine Zahl sein.')
     .int('Menge muss eine ganze Zahl sein.')
+    .refine((value) => Number.isFinite(value), 'Menge muss eine Zahl sein.')
     .min(1, 'Menge muss mindestens 1 sein.'),
   purchase_date: z
     .string()
