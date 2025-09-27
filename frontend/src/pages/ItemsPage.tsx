@@ -700,9 +700,9 @@ const ItemsPage: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-heading"
-            className="relative flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[96vh]"
+            className="relative flex h-full w-full max-w-[94vw] lg:max-w-6xl 2xl:max-w-7xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[96vh]"
           >
-            <div className="flex-shrink-0 border-b border-slate-200 px-5 py-4 sm:px-7 sm:py-6">
+            <div className="flex-shrink-0 border-b border-slate-200 px-5 py-4 sm:px-7 sm:py-6 lg:px-10">
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
                 Neuen Gegenstand hinzufügen
               </h3>
@@ -710,7 +710,7 @@ const ItemsPage: React.FC = () => {
                 Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags und Standorte zu.
               </p>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:px-4 xl:px-6">
               <AddItemForm
                 locations={locations}
                 tags={tags}

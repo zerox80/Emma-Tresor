@@ -181,44 +181,44 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
 
   return (
     <form className="flex h-full min-h-0 flex-1 flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="flex-1 overflow-y-auto px-2 py-2 sm:px-6 sm:py-3 xl:overflow-visible">
-        <div className="mx-auto w-full max-w-5xl space-y-3">
+      <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-8 sm:py-6 xl:overflow-visible">
+        <div className="mx-auto w-full max-w-none space-y-4 lg:space-y-5">
           {formError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {formError}
             </div>
           )}
-          <div className="rounded-2xl border border-slate-100 bg-white p-2.5 shadow-sm sm:p-3.5">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <div className="space-y-1.5 sm:col-span-2 xl:col-span-3">
+          <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6 lg:p-8">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="space-y-2 sm:col-span-2 xl:col-span-3">
                 <label htmlFor="name" className="text-sm font-medium text-slate-800">
                   Name *
                 </label>
                 <input
                   id="name"
                   type="text"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   placeholder="z. B. Laptop, Buch, Werkzeug..."
                   {...register('name')}
                 />
                 {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
               </div>
 
-              <div className="space-y-1.5 sm:col-span-2 xl:col-span-3">
+              <div className="space-y-2 sm:col-span-2 xl:col-span-3">
                 <label htmlFor="description" className="text-sm font-medium text-slate-800">
                   Beschreibung
                 </label>
                 <textarea
                   id="description"
                   rows={2}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   placeholder="Optionale Beschreibung des Gegenstands..."
                   {...register('description')}
                 />
                 {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label htmlFor="quantity" className="text-sm font-medium text-slate-800">
                   Menge *
                 </label>
@@ -227,13 +227,13 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                   type="number"
                   min="1"
                   step="1"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   {...register('quantity', { valueAsNumber: true })}
                 />
                 {errors.quantity && <p className="text-xs text-red-500">{errors.quantity.message}</p>}
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label htmlFor="value" className="text-sm font-medium text-slate-800">
                   Wert (€)
                 </label>
@@ -242,27 +242,27 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                   type="number"
                   step="0.01"
                   min="0"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   placeholder="z. B. 1299.99"
                   {...register('value')}
                 />
                 {errors.value && <p className="text-xs text-red-500">{errors.value.message}</p>}
               </div>
 
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label htmlFor="purchase_date" className="text-sm font-medium text-slate-800">
                   Kaufdatum
                 </label>
                 <input
                   id="purchase_date"
                   type="date"
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-800 shadow-sm transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   {...register('purchase_date')}
                 />
                 {errors.purchase_date && <p className="text-xs text-red-500">{errors.purchase_date.message}</p>}
               </div>
 
-              <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+              <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                 <label className="text-sm font-medium text-slate-800">Standort</label>
                 <CreatableSelect
                   isClearable
@@ -278,16 +278,16 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                   formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
                   noOptionsMessage={() => "Keine Standorte gefunden"}
                   loadingMessage={() => "Lade..."}
-                  className="react-select-container"
+                  className="react-select-container text-base"
                   classNamePrefix="react-select"
                 />
                 {locationsError && <p className="text-xs text-red-500">{locationsError}</p>}
                 {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
               </div>
 
-              <div className="space-y-1.5 sm:col-span-2 xl:col-span-3">
+              <div className="space-y-2 sm:col-span-2 xl:col-span-3">
                 <label className="text-sm font-medium text-slate-800">Tags</label>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-2.5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                   <Select
                     isMulti
                     isClearable
@@ -302,7 +302,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                     placeholder="Tags auswählen..."
                     noOptionsMessage={() => "Keine Tags gefunden"}
                     loadingMessage={() => "Lade..."}
-                    className="react-select-container sm:flex-1"
+                    className="react-select-container sm:flex-1 text-base"
                     classNamePrefix="react-select"
                   />
                   <CreatableSelect
@@ -319,7 +319,7 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                     formatCreateLabel={(inputValue) => `"${inputValue}" als Tag erstellen`}
                     noOptionsMessage={() => "Tag eingeben zum Erstellen"}
                     loadingMessage={() => "Erstelle Tag..."}
-                    className="react-select-container sm:flex-1"
+                    className="react-select-container sm:flex-1 text-base"
                     classNamePrefix="react-select"
                   />
                 </div>
@@ -330,8 +330,8 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
         </div>
       </div>
 
-      <div className="flex-shrink-0 border-t border-slate-200 px-3 py-3 sm:px-6 sm:py-4">
-        <div className="mx-auto flex w-full max-w-5xl flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="flex-shrink-0 border-t border-slate-200 px-4 py-4 sm:px-8 sm:py-6">
+        <div className="mx-auto flex w-full max-w-none flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" size="md" onClick={onCancel} className="sm:w-auto">
             Abbrechen
           </Button>
