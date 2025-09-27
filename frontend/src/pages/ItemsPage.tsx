@@ -11,6 +11,7 @@ import {
   fetchItems,
   fetchLocations,
   fetchTags,
+  deleteItem,
 } from '../api/inventory';
 import type { Item, Location, PaginatedResponse, Tag } from '../types/inventory';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -51,12 +52,16 @@ const ItemsPage: React.FC = () => {
   const [page, setPage] = useState(1);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+  const [dialogItem, setDialogItem] = useState<Item | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const [detailItemId, setDetailItemId] = useState<number | null>(null);
   const [detailItem, setDetailItem] = useState<Item | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(
@@ -159,12 +164,28 @@ const ItemsPage: React.FC = () => {
 
   const handleDialogClose = () => {
     setDialogOpen(false);
+    setDialogMode('create');
+    setDialogItem(null);
   };
 
   const handleItemCreated = async (item: Item) => {
     setDialogOpen(false);
+    setDialogMode('create');
+    setDialogItem(null);
     setInfoMessage(`„${item.name}“ wurde erfolgreich angelegt.`);
     await loadItems();
+  };
+
+  const handleItemUpdated = async (item: Item, warning?: string | null) => {
+    setDialogOpen(false);
+    setDialogMode('create');
+    setDialogItem(null);
+    const baseMessage = `„${item.name}“ wurde aktualisiert.`;
+    setInfoMessage(warning ? `${baseMessage} ${warning}` : baseMessage);
+    await loadItems();
+    if (detailItemId === item.id) {
+      setDetailItem(item);
+    }
   };
 
   const loadItemDetails = useCallback(async (itemId: number) => {
@@ -194,6 +215,8 @@ const ItemsPage: React.FC = () => {
     setDetailItemId(null);
     setDetailItem(null);
     setDetailError(null);
+    setDeleteError(null);
+    setDeleteLoading(false);
   }, []);
 
   const handleRetryItemDetails = useCallback(() => {
@@ -201,6 +224,42 @@ const ItemsPage: React.FC = () => {
       void loadItemDetails(detailItemId);
     }
   }, [detailItemId, loadItemDetails]);
+
+  const handleDeleteItem = useCallback(async () => {
+    if (detailItemId == null) {
+      return;
+    }
+    const itemName = detailItem?.name ?? 'Gegenstand';
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      await deleteItem(detailItemId);
+      setInfoMessage(`„${itemName}“ wurde gelöscht.`);
+      handleCloseItemDetails();
+      await loadItems();
+    } catch (error) {
+      setDeleteError('Gegenstand konnte nicht gelöscht werden. Bitte versuche es erneut.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [detailItemId, detailItem, handleCloseItemDetails, loadItems]);
+
+  const handleOpenCreateDialog = useCallback(() => {
+    setDialogMode('create');
+    setDialogItem(null);
+    setDialogOpen(true);
+  }, []);
+
+  const handleEditFromDetails = useCallback(() => {
+    if (!detailItem) {
+      return;
+    }
+    const itemToEdit = detailItem;
+    setDialogMode('edit');
+    setDialogItem(itemToEdit);
+    setDialogOpen(true);
+    handleCloseItemDetails();
+  }, [detailItem, handleCloseItemDetails]);
 
   const totalItemsCount = pagination?.count ?? items.length;
   const totalQuantity = useMemo(
@@ -260,7 +319,7 @@ const ItemsPage: React.FC = () => {
         <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Schnellaktionen</p>
           <div className="mt-3 flex flex-wrap gap-3">
-            <Button variant="primary" size="sm" onClick={() => setDialogOpen(true)}>
+            <Button variant="primary" size="sm" onClick={handleOpenCreateDialog}>
               Gegenstand hinzufügen
             </Button>
             <Button variant="secondary" size="sm" onClick={() => void loadItems()} loading={loadingItems}>
@@ -419,7 +478,7 @@ const ItemsPage: React.FC = () => {
                 : `${pagination?.count ?? items.length} Ergebnisse gesamt${isFiltered ? ' (gefiltert)' : ''}.`}
             </p>
           </div>
-          <Button variant="primary" size="sm" onClick={() => setDialogOpen(true)}>
+          <Button variant="primary" size="sm" onClick={handleOpenCreateDialog}>
             Neuer Gegenstand
           </Button>
         </header>
@@ -456,7 +515,7 @@ const ItemsPage: React.FC = () => {
               Lege deinen ersten Gegenstand an und starte deine Inventarliste. Alles ist in wenigen Schritten erledigt.
             </p>
             <div className="mt-4 flex justify-center">
-              <Button variant="primary" size="md" onClick={() => setDialogOpen(true)}>
+              <Button variant="primary" size="md" onClick={handleOpenCreateDialog}>
                 Jetzt starten
               </Button>
             </div>
@@ -632,17 +691,6 @@ const ItemsPage: React.FC = () => {
         )}
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center pb-6 sm:inset-auto sm:right-8 sm:bottom-8 sm:left-auto sm:pb-0">
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-300 sm:px-6 sm:py-3"
-          onClick={() => setDialogOpen(true)}
-        >
-          <span className="text-lg">＋</span>
-          <span>Gegenstand hinzufügen</span>
-        </button>
-      </div>
-
       <AddItemDialog
         open={dialogOpen}
         onClose={handleDialogClose}
@@ -651,6 +699,9 @@ const ItemsPage: React.FC = () => {
         locations={locations}
         onCreateTag={handleCreateTag}
         onCreateLocation={handleCreateLocation}
+        mode={dialogMode}
+        item={dialogItem}
+        onUpdated={handleItemUpdated}
       />
 
       {detailItemId !== null && (
@@ -659,8 +710,11 @@ const ItemsPage: React.FC = () => {
           loading={detailLoading}
           error={detailError}
           onClose={handleCloseItemDetails}
-          onEdit={() => handleCloseItemDetails()}
+          onEdit={handleEditFromDetails}
           onRetry={handleRetryItemDetails}
+          onDelete={handleDeleteItem}
+          deleteLoading={deleteLoading}
+          deleteError={deleteError}
           tagMap={tagMap}
           locationMap={locationMap}
         />

@@ -13,9 +13,15 @@ interface ItemDetailViewProps {
   onClose: () => void;
   onEdit: () => void;
   onRetry?: () => void;
+  onDelete?: () => void;
+  deleteLoading?: boolean;
+  deleteError?: string | null;
   tagMap: Record<number, string>;
   locationMap: Record<number, string>;
 }
+
+const FOCUSABLE_SELECTOR =
+  'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   item,
@@ -24,6 +30,9 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   onClose,
   onEdit,
   onRetry,
+  onDelete,
+  deleteLoading = false,
+  deleteError = null,
   tagMap,
   locationMap,
 }) => {
@@ -41,6 +50,23 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const copyTimeoutRef = useRef<number | null>(null);
   const qrPreviewRef = useRef<QrPreview | null>(null);
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<number | string | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const confirmDeleteRef = useRef<HTMLDivElement | null>(null);
+
+  const canDelete = typeof onDelete === 'function';
+
+  const getFocusableElements = useCallback(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return [] as HTMLElement[];
+    }
+    return Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+      (element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true',
+    );
+  }, []);
 
   const apiMediaBase = useMemo(() => {
     try {
@@ -104,6 +130,16 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       };
     });
   }, [item, resolveAssetUrl]);
+
+  const deleteConfirmTitleId = useMemo(
+    () => (item ? `item-delete-confirm-${item.id}` : 'item-delete-confirm'),
+    [item],
+  );
+
+  const deleteConfirmDescriptionId = useMemo(
+    () => `${deleteConfirmTitleId}-description`,
+    [deleteConfirmTitleId],
+  );
 
   const releaseQrPreview = useCallback((preview: QrPreview | null) => {
     if (preview?.revokable) {
@@ -221,8 +257,25 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         copyTimeoutRef.current = null;
       }
       setCopySuccess(false);
+      setAttachmentError(null);
     }
   }, [item]);
+
+  useEffect(() => {
+    setConfirmingDelete(false);
+  }, [item, canDelete]);
+
+  useEffect(() => {
+    if (!confirmingDelete) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      confirmDeleteRef.current?.focus({ preventScroll: true });
+    }, 80);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [confirmingDelete]);
 
   useEffect(() => {
     qrPreviewRef.current = qrPreview;
@@ -339,6 +392,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const handleDownloadAttachment = useCallback(
     async (attachment: { key: string | number; url: string; name: string }) => {
       setDownloadingAttachmentId(attachment.key);
+      setAttachmentError(null);
       try {
         const headers: HeadersInit = {};
         const { access } = tokenStorage.getTokens();
@@ -363,7 +417,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } catch (downloadError) {
-        // Failed to download attachment
+        setAttachmentError('Anhang konnte nicht heruntergeladen werden. Bitte überprüfe deine Verbindung und versuche es erneut.');
       } finally {
         setDownloadingAttachmentId(null);
       }
@@ -390,6 +444,66 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
   }, [shareLink]);
 
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog || !item) {
+      return;
+    }
+
+    previouslyFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const focusables = getFocusableElements();
+    const focusTimer = window.setTimeout(() => {
+      focusables[0]?.focus({ preventScroll: true });
+    }, 50);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const elements = getFocusableElements();
+      if (elements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      const activeElement = document.activeElement as HTMLElement | null;
+
+      if (event.shiftKey) {
+        if (activeElement === first || !dialog.contains(activeElement)) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+
+      if (activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    dialog.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      dialog.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocusedElementRef.current) {
+        previouslyFocusedElementRef.current.focus({ preventScroll: true });
+      }
+    };
+  }, [getFocusableElements, item, onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
       <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={onClose} />
@@ -398,6 +512,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         aria-modal="true"
         aria-labelledby="item-detail-heading"
         className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
+        ref={dialogRef}
       >
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
@@ -409,7 +524,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
               Vollständige Ansicht des Inventargegenstands
             </p>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="Schließen">
             ✕
           </Button>
         </div>
@@ -510,10 +625,14 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
                     <p className="font-semibold text-slate-700">Direktlink</p>
                     <p className="mt-1 break-all font-mono text-[11px] text-slate-500">{shareLink || '—'}</p>
-                    {copySuccess && <p className="mt-2 text-xs text-emerald-600">Link in Zwischenablage kopiert.</p>}
-                    {qrError && !qrLoading && !qrPreview?.url && (
-                      <p className="mt-2 text-xs text-red-500">{qrError}</p>
-                    )}
+                    <div role="status" aria-live="polite">
+                      {copySuccess && (
+                        <p className="mt-2 text-xs text-emerald-600">Link in Zwischenablage kopiert.</p>
+                      )}
+                      {qrError && !qrLoading && !qrPreview?.url && (
+                        <p className="mt-2 text-xs text-red-500">{qrError}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -522,7 +641,12 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
             {/* Images Section */}
             {attachments.length > 0 ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-                <h4 className="mb-4 text-lg זיך font-semibold text-slate-900">Anhänge</h4>
+                <h4 className="mb-4 text-lg font-semibold text-slate-900">Anhänge</h4>
+                {attachmentError && (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+                    {attachmentError}
+                  </div>
+                )}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {attachments.map((attachment) => (
                     <div key={attachment.key} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -688,13 +812,69 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
         {/* Actions */}
         {!loading && !error && item && (
-          <div className="mt-8 flex justify-end gap-3">
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Schließen
-            </Button>
-            <Button type="button" variant="primary" onClick={onEdit}>
-              Bearbeiten
-            </Button>
+          <div className="mt-8 space-y-4">
+            {deleteError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+                {deleteError}
+              </div>
+            )}
+            {confirmingDelete && canDelete ? (
+              <div
+                className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                role="alertdialog"
+                aria-modal="false"
+                aria-labelledby={deleteConfirmTitleId}
+                aria-describedby={deleteConfirmDescriptionId}
+                ref={confirmDeleteRef}
+                tabIndex={-1}
+              >
+                <div>
+                  <p id={deleteConfirmTitleId} className="text-sm font-semibold text-red-700">
+                    Gegenstand wirklich löschen?
+                  </p>
+                  <p id={deleteConfirmDescriptionId} className="mt-1 text-sm text-red-600">
+                    Diese Aktion kann nicht rückgängig gemacht werden. Alle Daten und Dateien des Gegenstands werden entfernt.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setConfirmingDelete(false)}
+                    disabled={deleteLoading}
+                  >
+                    Abbrechen
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    onClick={() => onDelete?.()}
+                    loading={deleteLoading}
+                    disabled={deleteLoading}
+                  >
+                    Jetzt löschen
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {canDelete && (
+                  <Button type="button" variant="danger" size="sm" onClick={() => setConfirmingDelete(true)}>
+                    Gegenstand löschen
+                  </Button>
+                )}
+                <div className="flex justify-end gap-3">
+                  <Button type="button" variant="secondary" onClick={onClose}>
+                    Schließen
+                  </Button>
+                  <Button type="button" variant="primary" onClick={onEdit}>
+                    Bearbeiten
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

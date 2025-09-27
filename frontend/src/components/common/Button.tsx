@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 type ButtonSize = 'sm' | 'md' | 'lg';
 
@@ -18,6 +18,8 @@ const variantStyles: Record<ButtonVariant, string> = {
     'bg-white text-slate-700 border border-slate-200 hover:border-brand-200 hover:text-brand-600 focus-visible:outline-brand-300 disabled:bg-slate-100 disabled:text-slate-400',
   ghost:
     'bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:outline-brand-300 disabled:text-slate-300',
+  danger:
+    'bg-red-500 text-white hover:bg-red-600 focus-visible:outline-red-300 disabled:bg-red-200 disabled:text-red-100',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
