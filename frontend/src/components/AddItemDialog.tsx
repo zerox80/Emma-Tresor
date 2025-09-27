@@ -152,16 +152,12 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
     resetState();
 
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
     const focusTimer = window.setTimeout(() => {
       const nameInput = document.getElementById('add-item-name');
       nameInput?.focus();
     }, 120);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.clearTimeout(focusTimer);
     };
   }, [open, resetState]);
@@ -386,13 +382,13 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   if (completedItem) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
+      <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto px-3 py-4 sm:items-center sm:overflow-visible sm:px-6 sm:py-6">
         <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleClose} />
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-item-success-heading"
-          className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-white p-8 shadow-2xl ring-1 ring-slate-900/10"
+          className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:rounded-3xl sm:p-8"
         >
           <div className="mb-6 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
@@ -461,16 +457,16 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-6">
       <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-item-heading"
-        className="relative flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10"
+        className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 sm:h-auto sm:max-h-[90vh] sm:rounded-3xl lg:max-w-5xl"
       >
-        <header className="border-b border-slate-200 bg-slate-50/70 px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
+        <header className="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div>
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
                 Neuer Gegenstand
@@ -483,7 +479,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
               ✕
             </Button>
           </div>
-          <nav className="mt-4 grid grid-cols-3 gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <nav className="mt-4 grid grid-cols-1 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid-cols-3 sm:gap-3 lg:grid-cols-3 lg:gap-4">
             {steps.map((step, index) => {
               const active = index === currentStep;
               const reached = index <= currentStep;
@@ -515,7 +511,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         </header>
 
         <form className="flex flex-1 flex-col" onSubmit={onSubmit} noValidate>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {formError}
@@ -523,7 +519,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
             )}
 
             {currentStep === 0 && (
-              <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+              <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 sm:gap-5 lg:max-w-3xl">
                 <div className="space-y-2">
                   <label htmlFor="add-item-name" className="text-sm font-medium text-slate-800">
                     Name *
@@ -602,7 +598,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
             )}
 
             {currentStep === 1 && (
-              <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+              <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 sm:gap-5 lg:max-w-3xl">
                 <div className="space-y-2">
                   <label htmlFor="add-item-location" className="text-sm font-medium text-slate-800">
                     Standort
@@ -622,10 +618,10 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                   {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
                 </div>
 
-                <div className="space-y-3 rounded-lg border border-dashed border-slate-200 p-4">
+                <div className="space-y-3 rounded-lg border border-dashed border-slate-200 p-4 lg:p-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-medium text-slate-800">Neuen Standort hinzufügen</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                       <input
                         type="text"
                         value={newLocationName}
@@ -695,10 +691,10 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
             )}
 
             {currentStep === 2 && (
-              <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-                <section className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+              <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 sm:gap-6 lg:max-w-4xl">
+                <section className="rounded-xl border border-slate-200 bg-slate-50 p-5 lg:p-6">
                   <h4 className="text-sm font-semibold uppercase text-slate-500">Zusammenfassung</h4>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div>
                       <p className="text-xs uppercase tracking-wide text-slate-500">Name</p>
                       <p className="mt-1 text-sm font-semibold text-slate-900">{watchedValues.name || '—'}</p>
@@ -786,9 +782,9 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                     }}
                   >
                     {files.length === 0 ? (
-                      <p>Hierhin ziehen oder oben auf „Dateien auswählen“ klicken.</p>
+                      <p className="text-center text-sm text-slate-500">Hierhin ziehen oder oben auf „Dateien auswählen“ klicken.</p>
                     ) : (
-                      <div className="grid w-full gap-3 sm:grid-cols-2">
+                      <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {filePreviews.map((preview) => (
                           <div
                             key={preview.url}
@@ -823,14 +819,14 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
             )}
           </div>
 
-          <footer className="border-t border-slate-200 bg-white px-6 py-5">
+          <footer className="border-t border-slate-200 bg-white px-4 py-4 sm:px-6 sm:py-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">
                   Schritt {currentStep + 1} von {steps.length}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 {currentStep > 0 && (
                   <Button type="button" variant="secondary" size="md" onClick={handlePreviousStep}>
                     Zurück

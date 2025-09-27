@@ -313,3 +313,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Erlaubt es, den Link zum React-Login zentral zu konfigurieren. Fällt auf die
 # lokale Entwicklungsinstanz zurück, wenn keine Umgebungsvariable gesetzt ist.
 FRONTEND_LOGIN_URL = os.environ.get('EMMATRESOR_FRONTEND_LOGIN_URL', 'http://127.0.0.1:5173/login')
+FRONTEND_BASE_URL = os.environ.get('EMMATRESOR_FRONTEND_BASE_URL', 'http://127.0.0.1:5173')
