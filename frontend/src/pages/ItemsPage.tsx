@@ -735,26 +735,25 @@ const ItemsPage: React.FC = () => {
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 flex items-start justify-center px-2 pt-8 pb-6 sm:px-6 sm:pt-10 sm:pb-8">
           <div
             className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isAddPanelOpen ? 'opacity-100' : 'opacity-0'}`}
             aria-hidden="true"
             onClick={handleAddCancel}
           />
-          <div className="absolute inset-0 flex justify-end">
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="add-item-heading"
-              className={`flex h-full w-full max-w-2xl transform flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${isAddPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
-            >
-              <AddItemForm
-                locations={locations}
-                tags={tags}
-                onSuccess={handleAddSuccess}
-                onCancel={handleAddCancel}
-              />
-            </div>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-item-heading"
+            className={`relative flex w-full max-w-2xl flex-col transform rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 transition-all duration-300 ease-out max-h-[96vh] ${isAddPanelOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <AddItemForm
+              locations={locations}
+              tags={tags}
+              onSuccess={handleAddSuccess}
+              onCancel={handleAddCancel}
+            />
           </div>
         </div>
       )}
