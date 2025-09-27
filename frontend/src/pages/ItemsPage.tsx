@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import Select, { type MultiValue } from 'react-select';
 import { QrScanner } from '@yudiel/react-qr-scanner';
@@ -44,6 +44,7 @@ const ItemsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isAddPanelOpen, setIsAddPanelOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -66,6 +67,46 @@ const ItemsPage: React.FC = () => {
   const [detailItem, setDetailItem] = useState<Item | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+
+  const addPanelCloseTimeoutRef = useRef<number | null>(null);
+
+  const clearAddPanelCloseTimeout = useCallback(() => {
+    if (addPanelCloseTimeoutRef.current != null) {
+      window.clearTimeout(addPanelCloseTimeoutRef.current);
+      addPanelCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  const openAddPanel = useCallback(() => {
+    clearAddPanelCloseTimeout();
+    setShowAddModal(true);
+
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setIsAddPanelOpen(true);
+        });
+      });
+    } else {
+      setIsAddPanelOpen(true);
+    }
+  }, [clearAddPanelCloseTimeout]);
+
+  const closeAddPanel = useCallback(() => {
+    setIsAddPanelOpen(false);
+    clearAddPanelCloseTimeout();
+
+    if (typeof window !== 'undefined') {
+      addPanelCloseTimeoutRef.current = window.setTimeout(() => {
+        setShowAddModal(false);
+        addPanelCloseTimeoutRef.current = null;
+      }, 300);
+    } else {
+      setShowAddModal(false);
+    }
+  }, [clearAddPanelCloseTimeout]);
+
+  useEffect(() => () => clearAddPanelCloseTimeout(), [clearAddPanelCloseTimeout]);
 
   useEffect(() => {
     const handler = window.setTimeout(() => {
@@ -174,7 +215,7 @@ const ItemsPage: React.FC = () => {
         return;
       }
       if (showAddModal) {
-        setShowAddModal(false);
+        closeAddPanel();
       }
       if (showEditModal) {
         setShowEditModal(false);
@@ -202,7 +243,7 @@ const ItemsPage: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [handleCloseScanner, handleDetailClose, showAddModal, showDeleteModal, showDetailModal, showEditModal, showScannerModal]);
+  }, [closeAddPanel, handleCloseScanner, handleDetailClose, showAddModal, showDeleteModal, showDetailModal, showEditModal, showScannerModal]);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(() => Object.fromEntries(locations.map((loc) => [loc.id, loc.name])), [locations]);
@@ -348,15 +389,15 @@ const ItemsPage: React.FC = () => {
     setShowEditModal(true);
   }, [detailItem]);
 
-  const handleAddSuccess = () => {
-    setShowAddModal(false);
+  const handleAddSuccess = useCallback(() => {
+    closeAddPanel();
     setRefreshCounter((prev) => prev + 1);
     setCurrentPage(1);
-  };
+  }, [closeAddPanel]);
 
-  const handleAddCancel = () => {
-    setShowAddModal(false);
-  };
+  const handleAddCancel = useCallback(() => {
+    closeAddPanel();
+  }, [closeAddPanel]);
 
   const handleEditSuccess = () => {
     setShowEditModal(false);
@@ -442,7 +483,7 @@ const ItemsPage: React.FC = () => {
         </div>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
           <div className="flex items-center gap-3">
-            <Button type="button" variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
+            <Button type="button" variant="primary" size="sm" onClick={openAddPanel}>
               Neuen Gegenstand hinzufügen
             </Button>
             <Button type="button" variant="secondary" size="sm" loading={loading} onClick={handleRefresh}>
@@ -694,23 +735,19 @@ const ItemsPage: React.FC = () => {
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6 sm:py-10">
-          <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleAddCancel} />
+        <div className="fixed inset-0 z-50">
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-item-heading"
-            className="relative flex h-full max-h-[90vh] w-full max-w-5xl flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10"
-          >
-            <div className="flex-shrink-0 border-b border-slate-200 px-5 py-4 sm:px-7 sm:py-6 lg:px-10">
-              <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
-                Neuen Gegenstand hinzufügen
-              </h3>
-              <p className="mt-2 text-sm text-slate-600">
-                Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags und Standorte zu.
-              </p>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 sm:px-6 lg:px-8 xl:px-10">
+            className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isAddPanelOpen ? 'opacity-100' : 'opacity-0'}`}
+            aria-hidden="true"
+            onClick={handleAddCancel}
+          />
+          <div className="absolute inset-0 flex justify-end">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="add-item-heading"
+              className={`flex h-full w-full max-w-2xl transform flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${isAddPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}
+            >
               <AddItemForm
                 locations={locations}
                 tags={tags}

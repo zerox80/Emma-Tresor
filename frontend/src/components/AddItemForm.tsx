@@ -180,210 +180,184 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
   const selectedTagOptions = tagOptions.filter(option => watchedTags.includes(option.value));
 
   return (
-    <form className="flex h-full min-h-0 flex-1 flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+    <form className="flex h-full flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <div className="flex-shrink-0 border-b border-slate-200 px-6 py-5">
+        <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
+          Neuen Gegenstand hinzufügen
+        </h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags und Standorte zu.
+        </p>
+      </div>
+
+      <div className="flex-grow overflow-y-auto p-8">
         {formError && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
             {formError}
           </div>
         )}
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-6">
-          {/* Linke Spalte - Hauptbereich (2/3 der Breite) */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="space-y-4">
-              <label htmlFor="name" className="block text-base font-semibold text-slate-800">
+
+        <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">
+          <div className="space-y-3 lg:col-span-2">
+            <div>
+              <label htmlFor="name" className="block text-sm font-semibold text-slate-800">
                 Name *
               </label>
               <input
                 id="name"
                 type="text"
-                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring focus:ring-brand-200 focus:ring-opacity-50 bg-slate-50 p-3 text-base"
-                placeholder="z. B. Laptop, Buch, Werkzeug..."
+                className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                placeholder="z. B. Laptop, Buch, Werkzeug"
                 {...register('name')}
               />
-              {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>}
+              {errors.name && <p className="mt-1 text-xs font-medium text-red-600">{errors.name.message}</p>}
             </div>
 
-            <div className="space-y-4">
-              <label htmlFor="description" className="block text-base font-semibold text-slate-800">
+            <div>
+              <label htmlFor="description" className="block text-sm font-semibold text-slate-800">
                 Beschreibung
               </label>
               <textarea
                 id="description"
-                rows={5}
-                className="block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring focus:ring-brand-200 focus:ring-opacity-50 bg-slate-50 p-3 text-base"
-                placeholder="Optionale Beschreibung des Gegenstands..."
+                rows={4}
+                className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                placeholder="Optionale Beschreibung des Gegenstands"
                 {...register('description')}
               />
-              {errors.description && <p className="text-xs text-red-600 mt-1">{errors.description.message}</p>}
-            </div>
-
-            {/* Bilder-Upload Bereich */}
-            <div className="space-y-4">
-              <label className="block text-base font-semibold text-slate-800">
-                Bilder
-              </label>
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors">
-                <div className="space-y-3">
-                  <div className="mx-auto h-12 w-12 text-slate-400">
-                    <svg className="h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-600">Bilder hierher ziehen oder klicken zum Auswählen</p>
-                    <p className="text-xs text-slate-500 mt-1">PNG, JPG, GIF bis zu 10MB</p>
-                  </div>
-                </div>
-              </div>
+              {errors.description && <p className="mt-1 text-xs font-medium text-red-600">{errors.description.message}</p>}
             </div>
           </div>
 
-          {/* Rechte Spalte - Seitenleiste (1/3 der Breite) */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Status Gruppe */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-slate-800 border-b pb-2 mb-4">Status</h3>
-              
-              <div className="space-y-3">
-                <label htmlFor="quantity" className="block text-sm font-medium text-slate-700">
-                  Menge *
-                </label>
-                <input
-                  id="quantity"
-                  type="number"
-                  min="1"
-                  step="1"
-                  className="block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring focus:ring-brand-200 focus:ring-opacity-50 bg-slate-50 p-3"
-                  {...register('quantity', { valueAsNumber: true })}
-                />
-                {errors.quantity && <p className="text-xs text-red-600 mt-1">{errors.quantity.message}</p>}
-              </div>
+          <div>
+            <label htmlFor="quantity" className="block text-sm font-semibold text-slate-800">
+              Menge *
+            </label>
+            <input
+              id="quantity"
+              type="number"
+              min="1"
+              step="1"
+              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              {...register('quantity', { valueAsNumber: true })}
+            />
+            {errors.quantity && <p className="mt-1 text-xs font-medium text-red-600">{errors.quantity.message}</p>}
+          </div>
 
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-slate-700">Standort</label>
-                <CreatableSelect
-                  isClearable
-                  isDisabled={isCreatingLocation}
-                  isLoading={locationsLoading || isCreatingLocation}
-                  onCreateOption={handleCreateLocation}
-                  options={locationOptions}
-                  value={selectedLocationOption}
-                  onChange={(newValue) => {
-                    setValue('location', newValue?.value ?? null, { shouldDirty: true, shouldValidate: true });
-                  }}
-                  placeholder="Standort auswählen..."
-                  formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
-                  noOptionsMessage={() => "Keine Standorte gefunden"}
-                  loadingMessage={() => "Lade..."}
-                  className="react-select-container text-sm"
-                  classNamePrefix="react-select"
-                />
-                {locationsError && <p className="text-xs text-red-600 mt-1">{locationsError}</p>}
-                {errors.location && <p className="text-xs text-red-600 mt-1">{errors.location.message}</p>}
-              </div>
+          <div>
+            <label htmlFor="value" className="block text-sm font-semibold text-slate-800">
+              Wert
+            </label>
+            <div className="relative mt-2">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-slate-500">
+                €
+              </span>
+              <input
+                id="value"
+                type="number"
+                step="0.01"
+                min="0"
+                className="block w-full rounded-xl border border-slate-300 bg-white py-3 pl-9 pr-4 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                placeholder="z. B. 1299,99"
+                {...register('value')}
+              />
             </div>
+            {errors.value && <p className="mt-1 text-xs font-medium text-red-600">{errors.value.message}</p>}
+          </div>
 
-            {/* Kaufdetails Gruppe */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-slate-800 border-b pb-2 mb-4">Kaufdetails</h3>
-              
-              <div className="space-y-3">
-                <label htmlFor="value" className="block text-sm font-medium text-slate-700">
-                  Wert (€)
-                </label>
-                <input
-                  id="value"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring focus:ring-brand-200 focus:ring-opacity-50 bg-slate-50 p-3"
-                  placeholder="z. B. 1299.99"
-                  {...register('value')}
-                />
-                {errors.value && <p className="text-xs text-red-600 mt-1">{errors.value.message}</p>}
-              </div>
+          <div>
+            <label htmlFor="purchase_date" className="block text-sm font-semibold text-slate-800">
+              Kaufdatum
+            </label>
+            <input
+              id="purchase_date"
+              type="date"
+              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              {...register('purchase_date')}
+            />
+            {errors.purchase_date && <p className="mt-1 text-xs font-medium text-red-600">{errors.purchase_date.message}</p>}
+          </div>
 
-              <div className="space-y-3">
-                <label htmlFor="purchase_date" className="block text-sm font-medium text-slate-700">
-                  Kaufdatum
-                </label>
-                <input
-                  id="purchase_date"
-                  type="date"
-                  className="block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring focus:ring-brand-200 focus:ring-opacity-50 bg-slate-50 p-3"
-                  {...register('purchase_date')}
-                />
-                {errors.purchase_date && <p className="text-xs text-red-600 mt-1">{errors.purchase_date.message}</p>}
-              </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-800">Standort</label>
+            <div className="mt-2">
+              <CreatableSelect
+                isClearable
+                isDisabled={isCreatingLocation}
+                isLoading={locationsLoading || isCreatingLocation}
+                onCreateOption={handleCreateLocation}
+                options={locationOptions}
+                value={selectedLocationOption}
+                onChange={(newValue) => {
+                  setValue('location', newValue?.value ?? null, { shouldDirty: true, shouldValidate: true });
+                }}
+                placeholder="Standort auswählen …"
+                formatCreateLabel={(inputValue) => `"${inputValue}" erstellen`}
+                noOptionsMessage={() => 'Keine Standorte gefunden'}
+                loadingMessage={() => 'Lade…'}
+                className="react-select-container text-sm"
+                classNamePrefix="react-select"
+              />
             </div>
+            {locationsError && <p className="mt-1 text-xs font-medium text-red-600">{locationsError}</p>}
+            {errors.location && <p className="mt-1 text-xs font-medium text-red-600">{errors.location.message}</p>}
+          </div>
 
-            {/* Kategorisierung Gruppe */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-slate-800 border-b pb-2 mb-4">Kategorisierung</h3>
-              
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-slate-700">Tags</label>
-                <Select
-                  isMulti
-                  isClearable
-                  isDisabled={isCreatingTag}
-                  isLoading={isCreatingTag}
-                  options={tagOptions}
-                  value={selectedTagOptions}
-                  onChange={(newValue) => {
-                    const values = (newValue as MultiValue<SelectOption>).map(option => option.value);
-                    setValue('tags', values, { shouldDirty: true, shouldValidate: true });
-                  }}
-                  placeholder="Tags auswählen..."
-                  noOptionsMessage={() => "Keine Tags gefunden"}
-                  loadingMessage={() => "Lade..."}
-                  className="react-select-container text-sm"
-                  classNamePrefix="react-select"
-                />
-                
-                <CreatableSelect
-                  isClearable
-                  isDisabled={isCreatingTag}
-                  isLoading={isCreatingTag}
-                  onCreateOption={async (inputValue: string) => {
-                    await handleCreateTag(inputValue);
-                  }}
-                  options={[]}
-                  value={null}
-                  onChange={() => {}}
-                  placeholder="Neuen Tag erstellen..."
-                  formatCreateLabel={(inputValue) => `"${inputValue}" als Tag erstellen`}
-                  noOptionsMessage={() => "Tag eingeben zum Erstellen"}
-                  loadingMessage={() => "Erstelle Tag..."}
-                  className="react-select-container text-sm"
-                  classNamePrefix="react-select"
-                />
-                {errors.tags && <p className="text-xs text-red-600 mt-1">{errors.tags.message}</p>}
-              </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-800">Tags</label>
+            <div className="mt-2 space-y-3">
+              <Select
+                isMulti
+                isClearable
+                isDisabled={isCreatingTag}
+                isLoading={isCreatingTag}
+                options={tagOptions}
+                value={selectedTagOptions}
+                onChange={(newValue) => {
+                  const values = (newValue as MultiValue<SelectOption>).map((option) => option.value);
+                  setValue('tags', values, { shouldDirty: true, shouldValidate: true });
+                }}
+                placeholder="Tags auswählen …"
+                noOptionsMessage={() => 'Keine Tags gefunden'}
+                loadingMessage={() => 'Lade…'}
+                className="react-select-container text-sm"
+                classNamePrefix="react-select"
+              />
+
+              <CreatableSelect
+                isClearable
+                isDisabled={isCreatingTag}
+                isLoading={isCreatingTag}
+                onCreateOption={async (inputValue: string) => {
+                  await handleCreateTag(inputValue);
+                }}
+                options={[]}
+                value={null}
+                onChange={() => {}}
+                placeholder="Neuen Tag erstellen …"
+                formatCreateLabel={(inputValue) => `"${inputValue}" als Tag erstellen`}
+                noOptionsMessage={() => 'Tag eingeben zum Erstellen'}
+                loadingMessage={() => 'Erstelle Tag…'}
+                className="react-select-container text-sm"
+                classNamePrefix="react-select"
+              />
             </div>
+            {errors.tags && <p className="mt-1 text-xs font-medium text-red-600">{errors.tags.message}</p>}
           </div>
         </div>
       </div>
 
-      {/* Fixierter Footer */}
-      <div className="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-slate-200 px-6 py-4 flex justify-end gap-3 mt-8">
-        <Button type="button" variant="secondary" size="md" onClick={onCancel}>
-          Abbrechen
-        </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          size="md"
-          loading={isSubmitting}
-          className="min-w-[12rem]"
-        >
-          Gegenstand hinzufügen
-        </Button>
+      <div className="flex-shrink-0 border-t border-slate-200 bg-white/70 px-6 py-4 backdrop-blur-sm">
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="secondary" size="md" onClick={onCancel}>
+            Abbrechen
+          </Button>
+          <Button type="submit" variant="primary" size="md" loading={isSubmitting} className="min-w-[12rem]">
+            Gegenstand speichern
+          </Button>
+        </div>
       </div>
     </form>
   );
-};
+}
 
 export default AddItemForm;
