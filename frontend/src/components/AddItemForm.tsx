@@ -327,13 +327,12 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
                 </div>
                 {errors.tags && <p className="text-xs text-red-500">{errors.tags.message}</p>}
               </div>
-            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex-shrink-0 border-t border-slate-200 px-3 py-4 sm:px-5 sm:py-5">
-        <div className="mx-auto flex w-full max-w-3xl flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <div className="flex-shrink-0 border-t border-slate-200 px-3 py-4 sm:px-6 sm:py-5">
+        <div className="mx-auto flex w-full max-w-4xl flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" size="md" onClick={onCancel} className="sm:w-auto">
             Abbrechen
           </Button>
