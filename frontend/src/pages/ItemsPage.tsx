@@ -694,13 +694,13 @@ const ItemsPage: React.FC = () => {
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-3 sm:px-6">
+        <div className="fixed inset-0 z-50 flex items-start justify-center px-3 py-10 sm:px-6">
           <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleAddCancel} />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-heading"
-            className="relative flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[94vh] min-h-[50vh]"
+            className="relative mt-6 flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[94vh] min-h-[50vh]"
           >
             <div className="flex-shrink-0 border-b border-slate-200 px-5 py-5 sm:px-7 sm:py-7">
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
@@ -723,13 +723,13 @@ const ItemsPage: React.FC = () => {
       )}
 
       {showEditModal && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-3 sm:px-6">
+        <div className="fixed inset-0 z-50 flex items-start justify-center px-3 py-10 sm:px-6">
           <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleEditCancel} />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-item-heading"
-            className="relative flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[94vh] min-h-[50vh]"
+            className="relative mt-6 flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[94vh] min-h-[50vh]"
           >
             <div className="flex-shrink-0 border-b border-slate-200 px-5 py-5 sm:px-7 sm:py-7">
               <h3 id="edit-item-heading" className="text-xl font-semibold text-slate-900">
