@@ -81,7 +81,7 @@ class Item(TimeStampedModel):
 
 class ItemImage(TimeStampedModel):
     item = models.ForeignKey('Item', on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='item_images/')
+    image = models.FileField(upload_to='item_attachments/')
 
     class Meta:
         verbose_name = 'Gegenstandsbild'

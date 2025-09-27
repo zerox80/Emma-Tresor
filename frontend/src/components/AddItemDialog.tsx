@@ -33,6 +33,7 @@ interface TagOption {
 
 const MAX_FILES = 6;
 const MAX_FILE_SIZE_MB = 8;
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.avif', '.heic', '.heif', '.pdf'];
 
 const itemSchema = z.object({
   name: z
@@ -214,6 +215,17 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, [currentStep, open]);
 
+  const determineFileKind = useCallback((file: File): 'image' | 'pdf' | 'file' => {
+    const lowerName = file.name.toLowerCase();
+    if (file.type.startsWith('image/')) {
+      return 'image';
+    }
+    if (file.type === 'application/pdf' || lowerName.endsWith('.pdf')) {
+      return 'pdf';
+    }
+    return 'file';
+  }, []);
+
   const filePreviews = useMemo(
     () =>
       files.map((file) => ({
@@ -221,8 +233,9 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         url: URL.createObjectURL(file),
         size: file.size,
         type: file.type,
+        kind: determineFileKind(file),
       })),
-    [files],
+    [determineFileKind, files],
   );
 
   useEffect(() => {
@@ -309,11 +322,14 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       let rejected = false;
 
       Array.from(selectedFiles).forEach((file) => {
-        const isImage = file.type.startsWith('image/');
+        const lowerName = file.name.toLowerCase();
         const withinSize = file.size <= MAX_FILE_SIZE_MB * 1024 * 1024;
-        const hasValidExtension = /\.(jpg|jpeg|png|gif|webp|bmp|avif|heic|heif)$/i.test(file.name);
-        
-        if (isImage && withinSize && hasValidExtension) {
+        const isImage = file.type.startsWith('image/') ||
+          ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.avif', '.heic', '.heif'].some((ext) => lowerName.endsWith(ext));
+        const isPdf = file.type === 'application/pdf' || lowerName.endsWith('.pdf');
+        const hasValidExtension = ALLOWED_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+
+        if ((isImage || isPdf) && withinSize && hasValidExtension) {
           accepted.push(file);
         } else {
           rejected = true;
@@ -323,7 +339,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       if (accepted.length === 0) {
         if (rejected) {
           setFileFeedback(
-            `Einige Dateien wurden ignoriert. Erlaubt sind nur Bilddateien bis ${MAX_FILE_SIZE_MB} MB.`,
+            `Einige Dateien wurden ignoriert. Erlaubt sind nur Bild- oder PDF-Dateien bis ${MAX_FILE_SIZE_MB} MB.`,
           );
         }
         return;
@@ -338,13 +354,13 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         if (combined.length > MAX_FILES) {
           // Set feedback asynchronously to avoid state update conflicts
           setTimeout(() => {
-            setFileFeedback(`Es sind maximal ${MAX_FILES} Bilder erlaubt.`);
+            setFileFeedback(`Es sind maximal ${MAX_FILES} Dateien erlaubt.`);
           }, 0);
           return combined.slice(0, MAX_FILES);
         } else if (rejected) {
           setTimeout(() => {
             setFileFeedback(
-              `Einige Dateien wurden ignoriert. Erlaubt sind nur Bilddateien bis ${MAX_FILE_SIZE_MB} MB.`,
+              `Einige Dateien wurden ignoriert. Erlaubt sind nur Bild- oder PDF-Dateien bis ${MAX_FILE_SIZE_MB} MB.`,
             );
           }, 0);
         } else {
@@ -908,7 +924,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                     <div>
                       <h4 className="text-sm font-semibold uppercase text-slate-500">Bilder (optional)</h4>
                       <p className="text-xs text-slate-500">
-                        Ziehe Dateien hierher oder wähle sie aus. Maximal {MAX_FILES} Bilder à {MAX_FILE_SIZE_MB} MB.
+                        Ziehe Dateien hierher oder wähle sie aus. Maximal {MAX_FILES} Dateien (Bild oder PDF) à {MAX_FILE_SIZE_MB} MB.
                       </p>
                     </div>
                     <div>
@@ -924,7 +940,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                       <input
                         id="add-item-images"
                         type="file"
-                        accept="image/*"
+                        accept="image/*,.pdf"
                         multiple
                         hidden
                         onChange={(event) => handleSelectFiles(event.target.files)}
@@ -952,7 +968,29 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                             key={preview.url}
                             className="relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
                           >
-                            <img src={preview.url} alt={preview.name} className="h-36 w-full object-cover" />
+                            {preview.kind === 'image' ? (
+                              <img src={preview.url} alt={preview.name} className="h-36 w-full object-cover" />
+                            ) : (
+                              <div className="flex h-36 w-full flex-col items-center justify-center bg-slate-100 text-slate-600">
+                                <svg
+                                  className="h-10 w-10"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zm7 0v5h5"
+                                  />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6M9 17h6" />
+                                </svg>
+                                <span className="mt-2 text-xs font-semibold uppercase">
+                                  {preview.kind === 'pdf' ? 'PDF' : 'DATEI'}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex items-center justify-between px-3 py-2 text-xs text-slate-600">
                               <span className="truncate pr-2" title={preview.name}>
                                 {preview.name}
