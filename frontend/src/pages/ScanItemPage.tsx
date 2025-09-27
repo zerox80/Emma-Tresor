@@ -47,7 +47,6 @@ const ScanItemPage: React.FC = () => {
         setTags(fetchedTags);
         setLocations(fetchedLocations);
       } catch (err) {
-        console.error('Failed to load item via QR scan', err);
         if (!active) {
           return;
         }
