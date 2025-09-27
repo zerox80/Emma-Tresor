@@ -700,7 +700,7 @@ const ItemsPage: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-heading"
-            className="relative flex h-full max-h-[92vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 sm:max-w-5xl lg:max-w-6xl"
+            className="relative flex h-full max-h-[90vh] w-full max-w-5xl flex-col rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10"
           >
             <div className="flex-shrink-0 border-b border-slate-200 px-5 py-4 sm:px-7 sm:py-6 lg:px-10">
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
