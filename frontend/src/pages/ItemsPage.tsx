@@ -66,6 +66,7 @@ const ItemsPage: React.FC = () => {
   const [pendingDetailNavigation, setPendingDetailNavigation] = useState<'next' | 'previous' | null>(null);
   const [itemsVersion, setItemsVersion] = useState(0);
   const navStartItemsVersionRef = useRef<number | null>(null);
+  const [detailNavigationTarget, setDetailNavigationTarget] = useState<number | null>(null);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(
@@ -238,6 +239,7 @@ const ItemsPage: React.FC = () => {
     setDeleteLoading(false);
     setPendingDetailNavigation(null);
     setDetailNavigationDirection(null);
+    setDetailNavigationTarget(null);
     navStartItemsVersionRef.current = null;
   }, []);
 
@@ -328,6 +330,7 @@ const ItemsPage: React.FC = () => {
           setDetailNavigationDirection('next');
           navStartItemsVersionRef.current = itemsVersion;
           setPendingDetailNavigation('next');
+          setDetailNavigationTarget(null);
           setPage((prev) => prev + 1);
         }
         return;
@@ -343,6 +346,7 @@ const ItemsPage: React.FC = () => {
           setDetailNavigationDirection('previous');
           navStartItemsVersionRef.current = itemsVersion;
           setPendingDetailNavigation('previous');
+          setDetailNavigationTarget(null);
           setPage((prev) => Math.max(prev - 1, 1));
         }
       }
@@ -380,7 +384,18 @@ const ItemsPage: React.FC = () => {
       return;
     }
 
-    const targetItem = pendingDetailNavigation === 'next' ? items[0] : items[items.length - 1];
+    const targetItem = (() => {
+      if (detailNavigationTarget != null) {
+        return items.find((candidate) => candidate.id === detailNavigationTarget) ?? null;
+      }
+      if (pendingDetailNavigation === 'next') {
+        return items[0] ?? null;
+      }
+      if (pendingDetailNavigation === 'previous') {
+        return items[items.length - 1] ?? null;
+      }
+      return null;
+    })();
 
     if (targetItem) {
       handleOpenItemDetails(targetItem.id, { fromNavigation: pendingDetailNavigation });
@@ -389,8 +404,9 @@ const ItemsPage: React.FC = () => {
     }
 
     setPendingDetailNavigation(null);
+    setDetailNavigationTarget(null);
     navStartItemsVersionRef.current = null;
-  }, [handleOpenItemDetails, items, itemsVersion, pendingDetailNavigation]);
+  }, [detailNavigationTarget, handleOpenItemDetails, items, itemsVersion, pendingDetailNavigation]);
 
   const isFiltered =
     debouncedSearchTerm.length > 0 || selectedTagIds.length > 0 || selectedLocationIds.length > 0 || ordering !== '-purchase_date';

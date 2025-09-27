@@ -68,10 +68,14 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const qrPreviewRef = useRef<QrPreview | null>(null);
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | number | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const confirmDeleteRef = useRef<HTMLDivElement | null>(null);
+  const navigationLockRef = useRef(false);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchNavigatedRef = useRef(false);
 
   const canDelete = typeof onDelete === 'function';
 
@@ -256,23 +260,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       }
     }
   ), []);
-
-  useEffect(() => {
-    const body = document.body;
-    const previousOverflow = body.style.overflow;
-    const previousPaddingRight = body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-    body.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) {
-      body.style.paddingRight = `${scrollbarWidth}px`;
-    }
-
-    return () => {
-      body.style.overflow = previousOverflow;
-      body.style.paddingRight = previousPaddingRight;
-    };
-  }, []);
 
   useEffect(() => {
     if (!item) {
@@ -553,412 +540,548 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     onNavigatePrevious,
   ]);
 
+  useEffect(() => {
+    if (!navigationDirection) {
+      navigationLockRef.current = false;
+      touchNavigatedRef.current = false;
+    }
+  }, [navigationDirection]);
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer || !showNavigation) {
+      return;
+    }
+
+    const threshold = 12;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (navigationLockRef.current || navigationDirection || loading) {
+        return;
+      }
+
+      const atTop = scrollContainer.scrollTop <= threshold;
+      const atBottom =
+        scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight <= threshold;
+
+      if (event.deltaY > 0 && atBottom && canNavigateNext && onNavigateNext) {
+        navigationLockRef.current = true;
+        event.preventDefault();
+        onNavigateNext();
+        return;
+      }
+
+      if (event.deltaY < 0 && atTop && canNavigatePrevious && onNavigatePrevious) {
+        navigationLockRef.current = true;
+        event.preventDefault();
+        onNavigatePrevious();
+      }
+    };
+
+    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      scrollContainer.removeEventListener('wheel', handleWheel);
+    };
+  }, [
+    canNavigateNext,
+    canNavigatePrevious,
+    loading,
+    navigationDirection,
+    onNavigateNext,
+    onNavigatePrevious,
+    showNavigation,
+  ]);
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer || !showNavigation) {
+      return;
+    }
+
+    const positionalThreshold = 16;
+    const swipeThreshold = 80;
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (loading) {
+        return;
+      }
+      const touch = event.touches[0];
+      touchStartYRef.current = touch?.clientY ?? null;
+      touchNavigatedRef.current = false;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (
+        navigationLockRef.current ||
+        navigationDirection ||
+        loading ||
+        touchNavigatedRef.current ||
+        touchStartYRef.current === null
+      ) {
+        return;
+      }
+
+      const touch = event.touches[0];
+      if (!touch) {
+        return;
+      }
+
+      const deltaY = touchStartYRef.current - touch.clientY;
+      const atTop = scrollContainer.scrollTop <= positionalThreshold;
+      const atBottom =
+        scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight <= positionalThreshold;
+
+      if (deltaY > swipeThreshold && atBottom && canNavigateNext && onNavigateNext) {
+        navigationLockRef.current = true;
+        touchNavigatedRef.current = true;
+        event.preventDefault();
+        onNavigateNext();
+        return;
+      }
+
+      if (deltaY < -swipeThreshold && atTop && canNavigatePrevious && onNavigatePrevious) {
+        navigationLockRef.current = true;
+        touchNavigatedRef.current = true;
+        event.preventDefault();
+        onNavigatePrevious();
+      }
+    };
+
+    const handleTouchEnd = () => {
+      touchStartYRef.current = null;
+      touchNavigatedRef.current = false;
+    };
+
+    scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+    scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+    scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+    scrollContainer.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+    return () => {
+      scrollContainer.removeEventListener('touchstart', handleTouchStart);
+      scrollContainer.removeEventListener('touchmove', handleTouchMove);
+      scrollContainer.removeEventListener('touchend', handleTouchEnd);
+      scrollContainer.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [
+    canNavigateNext,
+    canNavigatePrevious,
+    loading,
+    navigationDirection,
+    onNavigateNext,
+    onNavigatePrevious,
+    showNavigation,
+  ]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
+    <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={onClose} />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="item-detail-heading"
-        className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
-        ref={dialogRef}
-      >
-        {/* Header */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 id="item-detail-heading" className="text-2xl font-semibold text-slate-900">
-              {loading ? 'Lade Details...' : item?.name || 'Gegenstand Details'}
-            </h3>
-            <p className="text-sm text-slate-600">Vollständige Ansicht des Inventargegenstands</p>
-          </div>
-          <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center sm:gap-3">
-            {showNavigation && (
-              <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
-                {positionInfo && (
-                  <span className="text-xs font-medium text-slate-500 sm:text-sm">
-                    {positionInfo.current} von {positionInfo.total}
-                  </span>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onNavigatePrevious?.()}
-                    disabled={previousDisabled}
-                    loading={isNavigatingPrevious}
-                    aria-label="Vorheriger Gegenstand"
-                  >
-                    ← Zurück
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onNavigateNext?.()}
-                    disabled={nextDisabled}
-                    loading={isNavigatingNext}
-                    aria-label="Nächster Gegenstand"
-                  >
-                    Weiter →
+      <div className="relative flex h-full">
+        <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
+          <div className="flex min-h-full items-start justify-center px-3 py-6 sm:px-6">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="item-detail-heading"
+              className="relative z-10 w-full max-w-4xl rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
+              ref={dialogRef}
+            >
+              {/* Header */}
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 id="item-detail-heading" className="text-2xl font-semibold text-slate-900">
+                    {loading ? 'Lade Details...' : item?.name || 'Gegenstand Details'}
+                  </h3>
+                  <p className="text-sm text-slate-600">Vollständige Ansicht des Inventargegenstands</p>
+                </div>
+                <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center sm:gap-3">
+                  {showNavigation && (
+                    <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
+                      {positionInfo && (
+                        <span className="text-xs font-medium text-slate-500 sm:text-sm">
+                          {positionInfo.current} von {positionInfo.total}
+                        </span>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onNavigatePrevious?.()}
+                          disabled={previousDisabled}
+                          loading={isNavigatingPrevious}
+                          aria-label="Vorheriger Gegenstand"
+                        >
+                          ← Zurück
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onNavigateNext?.()}
+                          disabled={nextDisabled}
+                          loading={isNavigatingNext}
+                          aria-label="Nächster Gegenstand"
+                        >
+                          Weiter →
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="Schließen">
+                    ✕
                   </Button>
                 </div>
               </div>
-            )}
-            <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="Schließen">
-              ✕
-            </Button>
+
+              {/* Loading State */}
+              {loading && (
+                <div className="flex h-64 items-center justify-center">
+                  <div className="text-center">
+                    <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-brand-600" />
+                    <p className="text-slate-600">Lade Gegenstand-Details...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error State */}
+              {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+                  <p className="mb-4 text-red-700">{error}</p>
+                  {onRetry && (
+                    <Button type="button" variant="secondary" onClick={onRetry}>
+                      Erneut versuchen
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Content */}
+              {!loading && !error && item && (
+                <div className="space-y-8">
+                  <section className="rounded-xl border border-slate-200 bg-white p-6">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+                      <div className="flex w-full justify-center lg:w-auto">
+                        <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                          {qrLoading && (
+                            <div className="flex flex-col items-center gap-3 text-center text-sm text-slate-500">
+                              <span className="inline-flex h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-brand-600" />
+                              <span>QR-Code wird erstellt …</span>
+                            </div>
+                          )}
+                          {!qrLoading && qrPreview?.url && (
+                            <img
+                              src={qrPreview.url}
+                              alt={`QR-Code für ${item.name ?? 'Inventargegenstand'}`}
+                              className="h-full w-full object-contain"
+                            />
+                          )}
+                          {!qrLoading && !qrPreview?.url && !qrError && (
+                            <div className="text-center text-sm text-slate-500">QR-Code wird vorbereitet …</div>
+                          )}
+                          {!qrLoading && qrError && !qrPreview?.url && (
+                            <div className="flex flex-col items-center gap-3 text-center text-sm text-red-500">
+                              <span>QR-Code konnte nicht geladen werden.</span>
+                              <Button type="button" variant="secondary" size="sm" onClick={handleRefreshQr}>
+                                Erneut versuchen
+                              </Button>
+                            </div>
+                          )}
+                          {!qrLoading && qrError && qrPreview?.url && (
+                            <div className="flex flex-col items-center gap-3 text-center text-sm text-amber-500">
+                              <span>{qrError}</span>
+                              <Button type="button" variant="secondary" size="sm" onClick={handleRefreshQr}>
+                                Erneut versuchen
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1 space-y-4">
+                        <div>
+                          <h4 className="text-lg font-semibold text-slate-900">QR-Code für schnellen Zugriff</h4>
+                          <p className="mt-1 text-sm text-slate-600">
+                            Scanne den Code, um diesen Gegenstand sofort zu öffnen. Teile den Link mit deinem Team oder drucke den Code für dein Inventar aus.
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                          <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            onClick={handleDownloadQr}
+                            loading={qrDownloadLoading}
+                            disabled={!item || (!qrPreview?.url && !qrLoading)}
+                          >
+                            QR-Code herunterladen
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleCopyShareLink}
+                            disabled={!shareLink}
+                          >
+                            Link kopieren
+                          </Button>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                          <p className="font-semibold text-slate-700">Direktlink</p>
+                          <p className="mt-1 break-all font-mono text-[11px] text-slate-500">{shareLink || '—'}</p>
+                          <div role="status" aria-live="polite">
+                            {copySuccess && <p className="mt-2 text-xs text-emerald-600">Link in Zwischenablage kopiert.</p>}
+                            {qrError && !qrLoading && !qrPreview?.url && (
+                              <p className="mt-2 text-xs text-red-500">{qrError}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Images Section */}
+                  {attachments.length > 0 ? (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
+                      <h4 className="mb-4 text-lg font-semibold text-slate-900">Anhänge</h4>
+                      {attachmentError && (
+                        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+                          {attachmentError}
+                        </div>
+                      )}
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {attachments.map((attachment) => (
+                          <div key={attachment.key} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                            {attachment.type === 'image' ? (
+                              <figure className="relative">
+                                <img
+                                  src={attachment.url}
+                                  alt={`${item.name ?? 'Inventargegenstand'} – ${attachment.name}`}
+                                  className="h-56 w-full object-cover"
+                                />
+                                <figcaption className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-slate-900/80 to-transparent px-4 pb-4 pt-6 text-xs text-white">
+                                  <span className="truncate pr-2 font-semibold" title={attachment.name}>
+                                    {attachment.name}
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenAttachment(attachment.url)}>
+                                      Öffnen
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="primary"
+                                      size="sm"
+                                      loading={downloadingAttachmentId === attachment.key}
+                                      onClick={() => handleDownloadAttachment(attachment)}
+                                    >
+                                      Download
+                                    </Button>
+                                  </div>
+                                </figcaption>
+                              </figure>
+                            ) : (
+                              <div className="flex h-full flex-col justify-between p-5">
+                                <div className="flex items-start gap-3">
+                                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                                    {attachment.type === 'pdf' ? '📄' : '📁'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold text-slate-900" title={attachment.name}>
+                                      {attachment.name}
+                                    </p>
+                                    <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
+                                      {attachment.extension?.toUpperCase() || 'Datei'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="mt-4 flex gap-2">
+                                  <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenAttachment(attachment.url)}>
+                                    Öffnen
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    loading={downloadingAttachmentId === attachment.key}
+                                    onClick={() => handleDownloadAttachment(attachment)}
+                                  >
+                                    Download
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center">
+                      <p className="text-slate-500">Keine Dateien verfügbar</p>
+                    </div>
+                  )}
+
+                  {/* Details Grid */}
+                  <div className="grid gap-8 lg:grid-cols-2">
+                    {/* Basic Information */}
+                    <div className="rounded-xl border border-slate-200 bg-white p-6">
+                      <h4 className="mb-4 text-lg font-semibold text-slate-900">Grundinformationen</h4>
+                      <dl className="space-y-4">
+                        <div>
+                          <dt className="text-sm font-medium text-slate-500">Name</dt>
+                          <dd className="mt-1 text-sm text-slate-900">{item.name}</dd>
+                        </div>
+                        {item.description && (
+                          <div>
+                            <dt className="text-sm font-medium text-slate-500">Beschreibung</dt>
+                            <dd className="mt-1 text-sm text-slate-900">{item.description}</dd>
+                          </div>
+                        )}
+                        <div>
+                          <dt className="text-sm font-medium text-slate-500">Menge</dt>
+                          <dd className="mt-1 text-sm text-slate-900">{item.quantity}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-slate-500">Wert</dt>
+                          <dd className="mt-1 text-sm font-semibold text-slate-900">{formatCurrency(item.value)}</dd>
+                        </div>
+                        {item.purchase_date && (
+                          <div>
+                            <dt className="text-sm font-medium text-slate-500">Kaufdatum</dt>
+                            <dd className="mt-1 text-sm text-slate-900">{formatDate(item.purchase_date)}</dd>
+                          </div>
+                        )}
+                        {item.asset_tag && (
+                          <div>
+                            <dt className="text-sm font-medium text-slate-500">Asset-Tag</dt>
+                            <dd className="mt-1 text-sm font-mono text-slate-900">{item.asset_tag}</dd>
+                          </div>
+                        )}
+                      </dl>
+                    </div>
+
+                    {/* Location and Tags */}
+                    <div className="rounded-xl border border-slate-200 bg-white p-6">
+                      <h4 className="mb-4 text-lg font-semibold text-slate-900">Zuordnung</h4>
+                      <dl className="space-y-4">
+                        <div>
+                          <dt className="text-sm font-medium text-slate-500">Standort</dt>
+                          <dd className="mt-1">
+                            <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                              {locationMap[item.location ?? 0] ?? 'Kein Standort'}
+                            </span>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-slate-500">Tags</dt>
+                          <dd className="mt-1">
+                            {item.tags.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                {item.tags.map((tagId) => (
+                                  <span
+                                    key={tagId}
+                                    className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-800"
+                                  >
+                                    {tagMap[tagId] ?? `Tag ${tagId}`}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-slate-500">Keine Tags zugewiesen</span>
+                            )}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </div>
+
+                  {/* Audit Log Section (Placeholder) */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-6">
+                    <h4 className="mb-4 text-lg font-semibold text-slate-900">Änderungshistorie</h4>
+                    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200">
+                        <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-slate-900">Dieses Feature wird bald verfügbar sein</p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Hier werden zukünftig alle Änderungen an diesem Gegenstand protokolliert.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              {!loading && !error && item && (
+                <div className="mt-8 space-y-4">
+                  {deleteError && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+                      {deleteError}
+                    </div>
+                  )}
+                  {confirmingDelete && canDelete ? (
+                    <div
+                      className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                      role="alertdialog"
+                      aria-modal="false"
+                      aria-labelledby={deleteConfirmTitleId}
+                      aria-describedby={deleteConfirmDescriptionId}
+                      ref={confirmDeleteRef}
+                      tabIndex={-1}
+                    >
+                      <div>
+                        <p id={deleteConfirmTitleId} className="text-sm font-semibold text-red-700">
+                          Gegenstand wirklich löschen?
+                        </p>
+                        <p id={deleteConfirmDescriptionId} className="mt-1 text-sm text-red-600">
+                          Diese Aktion kann nicht rückgängig gemacht werden. Alle Daten und Dateien des Gegenstands werden entfernt.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setConfirmingDelete(false)}
+                          disabled={deleteLoading}
+                        >
+                          Abbrechen
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={() => onDelete?.()}
+                          loading={deleteLoading}
+                          disabled={deleteLoading}
+                        >
+                          Jetzt löschen
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      {canDelete && (
+                        <Button type="button" variant="danger" size="sm" onClick={() => setConfirmingDelete(true)}>
+                          Gegenstand löschen
+                        </Button>
+                      )}
+                      <div className="flex justify-end gap-3">
+                        <Button type="button" variant="secondary" onClick={onClose}>
+                          Schließen
+                        </Button>
+                        <Button type="button" variant="primary" onClick={onEdit}>
+                          Bearbeiten
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Loading State */}
-        {loading && (
-          <div className="flex h-64 items-center justify-center">
-            <div className="text-center">
-              <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-brand-600 mx-auto"></div>
-              <p className="text-slate-600">Lade Gegenstand-Details...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-            <p className="mb-4 text-red-700">{error}</p>
-            {onRetry && (
-              <Button type="button" variant="secondary" onClick={onRetry}>
-                Erneut versuchen
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Content */}
-        {!loading && !error && item && (
-          <div className="space-y-8">
-            <section className="rounded-xl border border-slate-200 bg-white p-6">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
-                <div className="flex w-full justify-center lg:w-auto">
-                  <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
-                    {qrLoading && (
-                      <div className="flex flex-col items-center gap-3 text-center text-sm text-slate-500">
-                        <span className="inline-flex h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-brand-600" />
-                        <span>QR-Code wird erstellt …</span>
-                      </div>
-                    )}
-                    {!qrLoading && qrPreview?.url && (
-                      <img
-                        src={qrPreview.url}
-                        alt={`QR-Code für ${item.name ?? 'Inventargegenstand'}`}
-                        className="h-full w-full object-contain"
-                      />
-                    )}
-                    {!qrLoading && !qrPreview?.url && !qrError && (
-                      <div className="text-center text-sm text-slate-500">
-                        QR-Code wird vorbereitet …
-                      </div>
-                    )}
-                    {!qrLoading && qrError && !qrPreview?.url && (
-                      <div className="flex flex-col items-center gap-3 text-center text-sm text-red-500">
-                        <span>QR-Code konnte nicht geladen werden.</span>
-                        <Button type="button" variant="secondary" size="sm" onClick={handleRefreshQr}>
-                          Erneut versuchen
-                        </Button>
-                      </div>
-                    )}
-                    {!qrLoading && qrError && qrPreview?.url && (
-                      <div className="flex flex-col items-center gap-3 text-center text-sm text-amber-500">
-                        <span>{qrError}</span>
-                        <Button type="button" variant="secondary" size="sm" onClick={handleRefreshQr}>
-                          Erneut versuchen
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <h4 className="text-lg font-semibold text-slate-900">QR-Code für schnellen Zugriff</h4>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Scanne den Code, um diesen Gegenstand sofort zu öffnen. Teile den Link mit deinem Team oder drucke den Code für dein Inventar aus.
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      onClick={handleDownloadQr}
-                      loading={qrDownloadLoading}
-                      disabled={!item || (!qrPreview?.url && !qrLoading)}
-                    >
-                      QR-Code herunterladen
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleCopyShareLink}
-                      disabled={!shareLink}
-                    >
-                      Link kopieren
-                    </Button>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                    <p className="font-semibold text-slate-700">Direktlink</p>
-                    <p className="mt-1 break-all font-mono text-[11px] text-slate-500">{shareLink || '—'}</p>
-                    <div role="status" aria-live="polite">
-                      {copySuccess && (
-                        <p className="mt-2 text-xs text-emerald-600">Link in Zwischenablage kopiert.</p>
-                      )}
-                      {qrError && !qrLoading && !qrPreview?.url && (
-                        <p className="mt-2 text-xs text-red-500">{qrError}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Images Section */}
-            {attachments.length > 0 ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-                <h4 className="mb-4 text-lg font-semibold text-slate-900">Anhänge</h4>
-                {attachmentError && (
-                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
-                    {attachmentError}
-                  </div>
-                )}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {attachments.map((attachment) => (
-                    <div key={attachment.key} className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                      {attachment.type === 'image' ? (
-                        <figure className="relative">
-                          <img
-                            src={attachment.url}
-                            alt={`${item.name ?? 'Inventargegenstand'} – ${attachment.name}`}
-                            className="h-56 w-full object-cover"
-                          />
-                          <figcaption className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-slate-900/80 to-transparent px-4 pb-4 pt-6 text-xs text-white">
-                            <span className="truncate pr-2 font-semibold" title={attachment.name}>
-                              {attachment.name}
-                            </span>
-                            <div className="flex gap-2">
-                              <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenAttachment(attachment.url)}>
-                                Öffnen
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="primary"
-                                size="sm"
-                                loading={downloadingAttachmentId === attachment.key}
-                                onClick={() => handleDownloadAttachment(attachment)}
-                              >
-                                Download
-                              </Button>
-                            </div>
-                          </figcaption>
-                        </figure>
-                      ) : (
-                        <div className="flex h-full flex-col justify-between p-5">
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                              {attachment.type === 'pdf' ? '📄' : '📁'}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-slate-900" title={attachment.name}>
-                                {attachment.name}
-                              </p>
-                              <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
-                                {attachment.extension?.toUpperCase() || 'Datei'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="mt-4 flex gap-2">
-                            <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenAttachment(attachment.url)}>
-                              Öffnen
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="primary"
-                              size="sm"
-                              loading={downloadingAttachmentId === attachment.key}
-                              onClick={() => handleDownloadAttachment(attachment)}
-                            >
-                              Download
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center">
-                <p className="text-slate-500">Keine Dateien verfügbar</p>
-              </div>
-            )}
-
-            {/* Details Grid */}
-            <div className="grid gap-8 lg:grid-cols-2">
-              {/* Basic Information */}
-              <div className="rounded-xl border border-slate-200 bg-white p-6">
-                <h4 className="mb-4 text-lg font-semibold text-slate-900">Grundinformationen</h4>
-                <dl className="space-y-4">
-                  <div>
-                    <dt className="text-sm font-medium text-slate-500">Name</dt>
-                    <dd className="mt-1 text-sm text-slate-900">{item.name}</dd>
-                  </div>
-                  {item.description && (
-                    <div>
-                      <dt className="text-sm font-medium text-slate-500">Beschreibung</dt>
-                      <dd className="mt-1 text-sm text-slate-900">{item.description}</dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt className="text-sm font-medium text-slate-500">Menge</dt>
-                    <dd className="mt-1 text-sm text-slate-900">{item.quantity}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-slate-500">Wert</dt>
-                    <dd className="mt-1 text-sm font-semibold text-slate-900">{formatCurrency(item.value)}</dd>
-                  </div>
-                  {item.purchase_date && (
-                    <div>
-                      <dt className="text-sm font-medium text-slate-500">Kaufdatum</dt>
-                      <dd className="mt-1 text-sm text-slate-900">{formatDate(item.purchase_date)}</dd>
-                    </div>
-                  )}
-                  {item.asset_tag && (
-                    <div>
-                      <dt className="text-sm font-medium text-slate-500">Asset-Tag</dt>
-                      <dd className="mt-1 text-sm font-mono text-slate-900">{item.asset_tag}</dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-
-              {/* Location and Tags */}
-              <div className="rounded-xl border border-slate-200 bg-white p-6">
-                <h4 className="mb-4 text-lg font-semibold text-slate-900">Zuordnung</h4>
-                <dl className="space-y-4">
-                  <div>
-                    <dt className="text-sm font-medium text-slate-500">Standort</dt>
-                    <dd className="mt-1">
-                      <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-                        {locationMap[item.location ?? 0] ?? 'Kein Standort'}
-                      </span>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-slate-500">Tags</dt>
-                    <dd className="mt-1">
-                      {item.tags.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {item.tags.map((tagId) => (
-                            <span
-                              key={tagId}
-                              className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-800"
-                            >
-                              {tagMap[tagId] ?? `Tag ${tagId}`}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-slate-500">Keine Tags zugewiesen</span>
-                      )}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
-
-            {/* Audit Log Section (Placeholder) */}
-            <div className="rounded-xl border border-slate-200 bg-white p-6">
-              <h4 className="mb-4 text-lg font-semibold text-slate-900">Änderungshistorie</h4>
-              <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-slate-200 flex items-center justify-center">
-                  <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium text-slate-900">Dieses Feature wird bald verfügbar sein</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Hier werden zukünftig alle Änderungen an diesem Gegenstand protokolliert.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        {!loading && !error && item && (
-          <div className="mt-8 space-y-4">
-            {deleteError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
-                {deleteError}
-              </div>
-            )}
-            {confirmingDelete && canDelete ? (
-              <div
-                className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between"
-                role="alertdialog"
-                aria-modal="false"
-                aria-labelledby={deleteConfirmTitleId}
-                aria-describedby={deleteConfirmDescriptionId}
-                ref={confirmDeleteRef}
-                tabIndex={-1}
-              >
-                <div>
-                  <p id={deleteConfirmTitleId} className="text-sm font-semibold text-red-700">
-                    Gegenstand wirklich löschen?
-                  </p>
-                  <p id={deleteConfirmDescriptionId} className="mt-1 text-sm text-red-600">
-                    Diese Aktion kann nicht rückgängig gemacht werden. Alle Daten und Dateien des Gegenstands werden entfernt.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setConfirmingDelete(false)}
-                    disabled={deleteLoading}
-                  >
-                    Abbrechen
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    onClick={() => onDelete?.()}
-                    loading={deleteLoading}
-                    disabled={deleteLoading}
-                  >
-                    Jetzt löschen
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                {canDelete && (
-                  <Button type="button" variant="danger" size="sm" onClick={() => setConfirmingDelete(true)}>
-                    Gegenstand löschen
-                  </Button>
-                )}
-                <div className="flex justify-end gap-3">
-                  <Button type="button" variant="secondary" onClick={onClose}>
-                    Schließen
-                  </Button>
-                  <Button type="button" variant="primary" onClick={onEdit}>
-                    Bearbeiten
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
