@@ -39,6 +39,10 @@ export default defineConfig(({ mode }) => {
           drop_console: true,
           drop_debugger: true,
         },
+        format: {
+          ascii_only: false,
+          comments: false,
+        },
       },
       rollupOptions: {
         output: {
