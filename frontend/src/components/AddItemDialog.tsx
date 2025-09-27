@@ -135,32 +135,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   const reviewSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!open || typeof document === 'undefined') {
-      return;
-    }
-
-    const body = document.body;
-    const html = document.documentElement;
-    const previousBodyOverflow = body.style.overflow;
-    const previousHtmlOverflow = html.style.overflow;
-    const previousPaddingRight = body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-    // Allow scrolling in the modal container instead of preventing it entirely
-    body.style.overflow = 'hidden';
-    html.style.overflow = 'hidden';
-    if (scrollbarWidth > 0) {
-      body.style.paddingRight = `${scrollbarWidth}px`;
-    }
-
-    return () => {
-      body.style.overflow = previousBodyOverflow;
-      html.style.overflow = previousHtmlOverflow;
-      body.style.paddingRight = previousPaddingRight;
-    };
-  }, [open]);
-
-  useEffect(() => {
     if (open) {
       const sortedTags = [...tags].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')); 
       setTagOptions(sortedTags.map((tag) => ({ label: tag.name, value: tag.id })));
@@ -545,39 +519,48 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   if (completedItem && completionMode === 'create') {
     return (
-      <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-6">
-        <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleRequestClose} />
+      <div className="fixed inset-0 z-50 overflow-y-auto">
         <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-item-success-heading"
-          className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:rounded-3xl sm:p-8"
+          className="flex min-h-full items-start justify-center bg-slate-900/40 p-4 sm:p-6"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              handleRequestClose();
+            }
+          }}
         >
-          <div className="mb-6 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 id="add-item-success-heading" className="text-2xl font-semibold text-slate-900">
-              Gegenstand erfolgreich angelegt
-            </h3>
-            <p className="mt-1 text-sm text-slate-600">
-              „{completedItem.name}“ wurde deinem Inventar hinzugefügt.
-            </p>
-            {uploadWarning && (
-              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                {uploadWarning}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-item-success-heading"
+            className="relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:rounded-3xl sm:p-8"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-6 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-            )}
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button variant="primary" size="md" onClick={handleAddAnother}>
-              Weiteren Gegenstand anlegen
-            </Button>
-            <Button variant="secondary" size="md" onClick={closeDialog}>
-              Schließen
-            </Button>
+              <h3 id="add-item-success-heading" className="text-2xl font-semibold text-slate-900">
+                Gegenstand erfolgreich angelegt
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                „{completedItem.name}“ wurde deinem Inventar hinzugefügt.
+              </p>
+              {uploadWarning && (
+                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  {uploadWarning}
+                </div>
+              )}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button variant="primary" size="md" onClick={handleAddAnother}>
+                Weiteren Gegenstand anlegen
+              </Button>
+              <Button variant="secondary" size="md" onClick={closeDialog}>
+                Schließen
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -620,63 +603,71 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleRequestClose} />
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-item-heading"
-        className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 sm:h-auto sm:max-h-[calc(100vh-2rem)] sm:rounded-3xl lg:max-w-5xl"
+        className="flex min-h-full items-start justify-center bg-slate-900/40 p-4 sm:p-6"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            handleRequestClose();
+          }
+        }}
       >
-        <header className="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-start justify-between gap-3 sm:gap-4">
-            <div>
-              <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
-                {isEditMode ? 'Gegenstand bearbeiten' : 'Neuer Gegenstand'}
-              </h3>
-              <p className="mt-1 text-sm text-slate-600">
-                {isEditMode
-                  ? 'Aktualisiere Details, Standorte und Dateien in drei strukturierten Schritten.'
-                  : 'Erfasse neue Gegenstände in drei Schritten – sauber strukturiert und jederzeit bearbeitbar.'}
-              </p>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-item-heading"
+          className="relative w-full max-w-4xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 sm:rounded-3xl lg:max-w-5xl"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <header className="border-b border-slate-200 bg-slate-50/70 px-4 py-4 sm:px-6 sm:py-5">
+            <div className="flex items-start justify-between gap-3 sm:gap-4">
+              <div>
+                <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
+                  {isEditMode ? 'Gegenstand bearbeiten' : 'Neuer Gegenstand'}
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  {isEditMode
+                    ? 'Aktualisiere Details, Standorte und Dateien in drei strukturierten Schritten.'
+                    : 'Erfasse neue Gegenstände in drei Schritten – sauber strukturiert und jederzeit bearbeitbar.'}
+                </p>
+              </div>
+              <Button type="button" variant="ghost" size="sm" onClick={handleRequestClose}>
+                ✕
+              </Button>
             </div>
-            <Button type="button" variant="ghost" size="sm" onClick={handleRequestClose}>
-              ✕
-            </Button>
-          </div>
-          <nav className="mt-4 grid grid-cols-1 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid-cols-3 sm:gap-3 lg:grid-cols-3 lg:gap-4">
-            {steps.map((step, index) => {
-              const active = index === currentStep;
-              const reached = index <= currentStep;
-              return (
-                <div
-                  key={step}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
-                    active
-                      ? 'border-brand-300 bg-brand-50 text-brand-700'
-                      : reached
-                      ? 'border-brand-200 bg-brand-25 text-brand-600'
-                      : 'border-slate-200 bg-white text-slate-400'
-                  }`}
-                >
-                  <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs ${
-                      active || reached
-                        ? 'border-brand-400 bg-brand-100 text-brand-700'
-                        : 'border-slate-200 text-slate-400'
+            <nav className="mt-4 grid grid-cols-1 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid-cols-3 sm:gap-3 lg:grid-cols-3 lg:gap-4">
+              {steps.map((step, index) => {
+                const active = index === currentStep;
+                const reached = index <= currentStep;
+                return (
+                  <div
+                    key={step}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
+                      active
+                        ? 'border-brand-300 bg-brand-50 text-brand-700'
+                        : reached
+                        ? 'border-brand-200 bg-brand-25 text-brand-600'
+                        : 'border-slate-200 bg-white text-slate-400'
                     }`}
                   >
-                    {index + 1}
-                  </span>
-                  <span>{step}</span>
-                </div>
-              );
-            })}
-          </nav>
-        </header>
+                    <span
+                      className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs ${
+                        active || reached
+                          ? 'border-brand-400 bg-brand-100 text-brand-700'
+                          : 'border-slate-200 text-slate-400'
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                    <span>{step}</span>
+                  </div>
+                );
+              })}
+            </nav>
+          </header>
 
-        <form className="flex flex-1 flex-col" onSubmit={onSubmit} noValidate>
-          <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+          <form className="flex flex-col" onSubmit={onSubmit} noValidate>
+            <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                 {formError}
@@ -985,38 +976,36 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                       {fileFeedback}
                     </div>
                   )}
-                </section>
+              </section>
               </div>
             )}
-          </div>
-
-          <footer className="border-t border-slate-200 bg-white px-4 py-4 sm:px-6 sm:py-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            </div>
+            <footer className="border-t border-slate-200 bg-white px-4 py-4 sm:px-6 sm:py-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs uppercase tracking-wide text-slate-500">
                   Schritt {currentStep + 1} von {steps.length}
                 </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  {currentStep > 0 && (
+                    <Button type="button" variant="secondary" size="md" onClick={handlePreviousStep}>
+                      Zurück
+                    </Button>
+                  )}
+                  {currentStep < 2 && (
+                    <Button type="button" variant="primary" size="md" onClick={handleNextStep}>
+                      Weiter
+                    </Button>
+                  )}
+                  {currentStep === 2 && (
+                    <Button type="submit" variant="primary" size="md" loading={isSubmitting}>
+                      {isEditMode ? 'Änderungen speichern' : 'Gegenstand anlegen'}
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                {currentStep > 0 && (
-                  <Button type="button" variant="secondary" size="md" onClick={handlePreviousStep}>
-                    Zurück
-                  </Button>
-                )}
-                {currentStep < 2 && (
-                  <Button type="button" variant="primary" size="md" onClick={handleNextStep}>
-                    Weiter
-                  </Button>
-                )}
-                {currentStep === 2 && (
-                  <Button type="submit" variant="primary" size="md" loading={isSubmitting}>
-                    {isEditMode ? 'Änderungen speichern' : 'Gegenstand anlegen'}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </footer>
-        </form>
+            </footer>
+          </form>
+        </div>
       </div>
     </div>
   );
