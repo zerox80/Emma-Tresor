@@ -66,7 +66,7 @@ const itemSchema = z.object({
         (!Number.isNaN(Number(val)) && Number(val) >= 0),
       'Der Wert muss eine positive Zahl sein.',
     ),
-  location: z.string().optional(),
+  location: z.number().nullable().optional(),
   tags: z.array(z.number()).optional(),
 });
 
@@ -80,7 +80,7 @@ const DEFAULT_VALUES: ItemFormSchema = {
   quantity: 1,
   purchase_date: '',
   value: '',
-  location: '',
+  location: null,
   tags: [],
 };
 
@@ -150,7 +150,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
             quantity: sourceItem.quantity ?? 1,
             purchase_date: sourceItem.purchase_date ?? '',
             value: sourceItem.value ?? '',
-            location: sourceItem.location ? String(sourceItem.location) : '',
+            location: sourceItem.location ?? null,
             tags: sourceItem.tags ?? [],
           }
         : DEFAULT_VALUES;
@@ -200,10 +200,12 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   );
 
   useEffect(() => {
+    // Clean up URLs when component unmounts or when files change
+    const urls = filePreviews.map(preview => preview.url);
     return () => {
-      filePreviews.forEach((preview) => URL.revokeObjectURL(preview.url));
+      urls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [filePreviews]);
+  }, [files]); // Changed dependency to files instead of filePreviews to avoid recreation
 
   const handleClose = useCallback(() => {
     if (isSubmitting) {
@@ -248,24 +250,39 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         }
       });
 
-      if (rejected) {
-        setFileFeedback(
-          `Einige Dateien wurden ignoriert. Erlaubt sind nur Bilddateien bis ${MAX_FILE_SIZE_MB} MB.`,
-        );
-      } else {
-        setFileFeedback(null);
-      }
-
       if (accepted.length === 0) {
+        if (rejected) {
+          setFileFeedback(
+            `Einige Dateien wurden ignoriert. Erlaubt sind nur Bilddateien bis ${MAX_FILE_SIZE_MB} MB.`,
+          );
+        }
         return;
       }
 
+      // Use functional update to prevent race conditions
       setFiles((prev) => {
-        const combined = [...prev, ...accepted];
+        const existingNames = new Set(prev.map(f => f.name));
+        const newFiles = accepted.filter(f => !existingNames.has(f.name));
+        const combined = [...prev, ...newFiles];
+        
         if (combined.length > MAX_FILES) {
-          setFileFeedback(`Es sind maximal ${MAX_FILES} Bilder erlaubt.`);
+          // Set feedback asynchronously to avoid state update conflicts
+          setTimeout(() => {
+            setFileFeedback(`Es sind maximal ${MAX_FILES} Bilder erlaubt.`);
+          }, 0);
+          return combined.slice(0, MAX_FILES);
+        } else if (rejected) {
+          setTimeout(() => {
+            setFileFeedback(
+              `Einige Dateien wurden ignoriert. Erlaubt sind nur Bilddateien bis ${MAX_FILE_SIZE_MB} MB.`,
+            );
+          }, 0);
+        } else {
+          setTimeout(() => {
+            setFileFeedback(null);
+          }, 0);
         }
-        return combined.slice(0, MAX_FILES);
+        return combined;
       });
     },
     [],
@@ -280,7 +297,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     const trimmedDescription = values.description?.trim() ?? '';
     const trimmedValue = values.value?.trim() ?? '';
     const trimmedPurchaseDate = values.purchase_date?.trim() ?? '';
-    const locationId = values.location && values.location.trim().length > 0 ? Number(values.location) : null;
 
     return {
       name: trimmedName,
@@ -288,7 +304,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       quantity: values.quantity,
       purchase_date: trimmedPurchaseDate.length > 0 ? trimmedPurchaseDate : null,
       value: trimmedValue.length > 0 ? trimmedValue : null,
-      location: Number.isFinite(locationId) && locationId !== null ? locationId : null,
+      location: values.location ?? null,
       tags: values.tags ?? [],
     };
   }, []);
@@ -309,7 +325,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         );
         fieldOnChange([...(currentValue ?? []), newTag.id]);
       } catch (error) {
-        console.error('Failed to create tag', error);
         setTagCreationError('Tag konnte nicht erstellt werden. Bitte versuche es erneut.');
       } finally {
         setIsCreatingTag(false);
@@ -334,11 +349,10 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       );
       reset({
         ...watch(),
-        location: String(newLocation.id),
+        location: newLocation.id,
       });
       setNewLocationName('');
     } catch (error) {
-      console.error('Failed to create location', error);
       setLocationCreationError('Standort konnte nicht erstellt werden.');
     } finally {
       setIsCreatingLocation(false);
@@ -363,7 +377,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
               const uploaded = await uploadItemImage(updatedItem.id, file);
               uploadedImages.push(uploaded);
             } catch (error) {
-              console.error('Failed to upload image', error);
               failedUploads.push(file.name);
             }
           }
@@ -395,7 +408,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
             const uploaded = await uploadItemImage(createdItem.id, file);
             uploadedImages.push(uploaded);
           } catch (error) {
-            console.error('Failed to upload image', error);
             failedUploads.push(file.name);
           }
         }
@@ -415,7 +427,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         setCompletedItem(enrichedItem);
         setCompletionMode('create');
       } catch (error) {
-        console.error('Failed to create item', error);
         setFormError('Der Gegenstand konnte nicht erstellt werden. Bitte versuche es erneut.');
       }
     },
@@ -479,7 +490,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   const selectedLocationName =
     (watchedValues.location &&
-      sortedLocations.find((location) => String(location.id) === watchedValues.location)?.name) ||
+      sortedLocations.find((location) => location.id === watchedValues.location)?.name) ||
     'Kein Standort';
 
   const selectedTags = (watchedValues.tags ?? [])
@@ -664,7 +675,9 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                   <select
                     id="add-item-location"
                     className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                    {...register('location')}
+                    {...register('location', { 
+                      setValueAs: (v) => v === '' || v === 0 ? null : Number(v)
+                    })}
                   >
                     <option value="">Kein Standort ausgewählt</option>
                     {sortedLocations.map((location) => (

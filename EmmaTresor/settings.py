@@ -235,7 +235,7 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Increased from 5 to 30 minutes
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -273,7 +273,8 @@ SECURE_HSTS_PRELOAD = False
 SECURE_SSL_REDIRECT = FORCE_SSL and not TESTING
 
 CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = 'None' if FORCE_SSL else 'Lax'
+# Only use 'None' for SameSite when both FORCE_SSL is enabled AND cookie is secure
+CSRF_COOKIE_SAMESITE = 'None' if (FORCE_SSL and CSRF_COOKIE_SECURE) else 'Lax'
 
 # Compression settings
 USE_GZIP = True

@@ -23,7 +23,16 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: proxyTarget,
           changeOrigin: true,
-          secure: false,
+          // Only allow insecure connections in development mode
+          secure: mode === 'production',
+          configure: (proxy) => {
+            proxy.on('error', (err) => {
+              // Log proxy errors silently in production
+              if (mode !== 'production') {
+                console.error('Proxy error:', err);
+              }
+            });
+          },
         },
       },
     },

@@ -35,13 +35,18 @@ python manage.py createsuperuser
 Falls du das Konto skriptgesteuert erzeugen möchtest (z. B. für CI/CD), kannst du die folgenden Umgebungsvariablen setzen und das Kommando ohne Interaktion ausführen:
 
 ```powershell
-$env:DJANGO_SUPERUSER_USERNAME = "admin"
-$env:DJANGO_SUPERUSER_EMAIL = "admin@example.com"
-$env:DJANGO_SUPERUSER_PASSWORD = "Str0ngPassw0rd!"
+# SICHERHEITSHINWEIS: Verwende niemals diese Beispieldaten in Produktion!
+$env:DJANGO_SUPERUSER_USERNAME = "<your-admin-username>"
+$env:DJANGO_SUPERUSER_EMAIL = "<your-admin-email>"
+$env:DJANGO_SUPERUSER_PASSWORD = "<your-secure-password>"
 .\.venv\Scripts\python.exe manage.py createsuperuser --noinput
 ```
 
-> **Wichtig:** Wähle ein starkes Passwort und speichere die Variablen nicht dauerhaft in der Versionsverwaltung.
+> **WICHTIG - SICHERHEIT:** 
+> - Verwende NIEMALS die Beispielwerte in einer echten Umgebung
+> - Generiere ein starkes, einzigartiges Passwort (mindestens 16 Zeichen)
+> - Speichere Passwörter NIEMALS in Versionskontrolle oder Textdateien
+> - Nutze einen Passwort-Manager oder Umgebungsvariablen aus sicheren Quellen
 
 ## 5. Server & Frontend starten
 

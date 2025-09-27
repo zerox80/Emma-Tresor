@@ -32,7 +32,6 @@ const DashboardPage: React.FC = () => {
           setStats({ items, lists, tags, locations });
         }
       } catch (err) {
-        console.error('Failed to load dashboard data', err);
         if (isMounted) {
           setError('Das Dashboard konnte nicht aktualisiert werden. Bitte überprüfe deine Verbindung und versuche es erneut.');
         }

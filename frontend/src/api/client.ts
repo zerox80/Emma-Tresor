@@ -27,7 +27,7 @@ const resolveBaseURL = () => {
     const normalised = url.toString().replace(/\/$/, '');
     return normalised;
   } catch (error) {
-    console.warn('Falling back to default API base URL due to invalid VITE_API_BASE_URL', error);
+    // Falling back to default API base URL due to invalid VITE_API_BASE_URL
     return fallback;
   }
 };

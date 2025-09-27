@@ -41,7 +41,6 @@ const ListsPage: React.FC = () => {
           })),
         );
       } catch (err) {
-        console.error('Failed to load lists', err);
         if (isMounted) {
           setError('Die Listen konnten nicht synchronisiert werden. Prüfe deine Verbindung und versuche es in Kürze erneut.');
         }
@@ -78,7 +77,6 @@ const ListsPage: React.FC = () => {
       );
       setError(null);
     } catch (err) {
-      console.error('Failed to refresh lists', err);
       setError('Aktualisieren fehlgeschlagen. Bitte versuche es gleich erneut.');
     } finally {
       setLoading(false);
@@ -103,7 +101,6 @@ const ListsPage: React.FC = () => {
       setShowCreateModal(false);
       setNewListName('');
     } catch (err) {
-      console.error('Failed to create list:', err);
       setCreateError('Liste konnte nicht erstellt werden. Bitte versuche es erneut.');
     } finally {
       setIsCreating(false);

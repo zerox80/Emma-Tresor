@@ -72,7 +72,6 @@ const SettingsPage: React.FC = () => {
           setLocations(locationResponse);
         }
       } catch (error) {
-        console.error('Failed to load settings data', error);
       }
     };
 
@@ -96,7 +95,6 @@ const SettingsPage: React.FC = () => {
       setTags((prev) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name)));
       setTagName('');
     } catch (error) {
-      console.error('Failed to create tag', error);
       setTagError(extractApiError(error, 'Der Tag konnte nicht erstellt werden. Bitte versuche es gleich erneut.'));
     } finally {
       setLoadingTags(false);
@@ -109,7 +107,6 @@ const SettingsPage: React.FC = () => {
       await deleteTag(id);
       setTags((prev) => prev.filter((tag) => tag.id !== id));
     } catch (error) {
-      console.error('Failed to delete tag', error);
       setTagError(extractApiError(error, 'Der Tag konnte nicht gelöscht werden. Bitte lade die Seite neu und versuche es dann erneut.'));
     } finally {
       setLoadingTags(false);
@@ -129,7 +126,6 @@ const SettingsPage: React.FC = () => {
       setLocations((prev) => [...prev, newLocation].sort((a, b) => a.name.localeCompare(b.name)));
       setLocationName('');
     } catch (error) {
-      console.error('Failed to create location', error);
       setLocationError(
         extractApiError(error, 'Der Standort konnte nicht erstellt werden. Versuche es bitte kurz darauf erneut.'),
       );
@@ -144,7 +140,6 @@ const SettingsPage: React.FC = () => {
       await deleteLocation(id);
       setLocations((prev) => prev.filter((location) => location.id !== id));
     } catch (error) {
-      console.error('Failed to delete location', error);
       setLocationError(
         extractApiError(
           error,

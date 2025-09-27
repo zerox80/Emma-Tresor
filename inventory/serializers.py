@@ -142,6 +142,27 @@ class ItemImageSerializer(serializers.ModelSerializer):
             self.fields['item'].queryset = Item.objects.filter(owner=request.user)
         else:
             self.fields['item'].queryset = Item.objects.none()
+    
+    def validate_image(self, value):
+        """Validate uploaded image file"""
+        # Check file size (8MB max)
+        max_size = 8 * 1024 * 1024  # 8MB in bytes
+        if value.size > max_size:
+            raise serializers.ValidationError(f'Die Bilddatei ist zu groß. Maximal 8 MB erlaubt.')
+        
+        # Check file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']
+        if value.content_type not in allowed_types:
+            raise serializers.ValidationError('Nur Bilddateien (JPEG, PNG, GIF, WebP, BMP) sind erlaubt.')
+        
+        # Additional check for file extension
+        import os
+        ext = os.path.splitext(value.name)[1].lower()
+        allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+        if ext not in allowed_extensions:
+            raise serializers.ValidationError('Ungültige Dateierweiterung. Nur Bilddateien sind erlaubt.')
+        
+        return value
 
 
 class ItemSerializer(serializers.ModelSerializer):

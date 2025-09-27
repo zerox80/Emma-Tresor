@@ -80,7 +80,6 @@ const ItemsPage: React.FC = () => {
         setTags(sortedTags);
         setLocations(sortedLocations);
       } catch (error) {
-        console.error('Failed to load tag/location metadata', error);
         if (active) {
           setMetaError('Tags und Standorte konnten nicht geladen werden. Bitte versuche es erneut.');
         }
@@ -113,7 +112,6 @@ const ItemsPage: React.FC = () => {
       setItems(response.results);
       setPagination(response);
     } catch (error) {
-      console.error('Failed to load items', error);
       setItemsError('Deine Gegenstände konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.');
     } finally {
       setLoadingItems(false);
@@ -176,7 +174,6 @@ const ItemsPage: React.FC = () => {
       const itemData = await fetchItem(itemId);
       setDetailItem(itemData);
     } catch (error) {
-      console.error('Failed to load item details', error);
       setDetailError('Details konnten nicht geladen werden. Bitte versuche es erneut.');
     } finally {
       setDetailLoading(false);

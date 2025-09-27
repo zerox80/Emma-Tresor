@@ -45,7 +45,6 @@ const decodeToken = (token: string | null): UserProfile | null => {
       email: decoded.email ?? '',
     };
   } catch (error) {
-    console.error('Failed to decode token', error);
     return null;
   }
 };
@@ -89,7 +88,6 @@ export const useAuthStore = create<AuthState>()(
           try {
             await get().refreshAccessToken();
           } catch (error) {
-            console.warn('Refresh on initialise failed', error);
             resetState(set);
           }
           return;
@@ -166,7 +164,7 @@ export const useAuthStore = create<AuthState>()(
             await apiClient.post('/auth/logout/', { refresh });
           }
         } catch (error) {
-          console.warn('Logout endpoint returned an error', error);
+          // Ignore logout errors silently
         }
         resetState(set);
       },
