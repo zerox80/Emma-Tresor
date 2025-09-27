@@ -469,7 +469,10 @@ const ItemsPage: React.FC = () => {
         {!loadingItems && items.length > 0 && viewMode === 'grid' && (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => (
-              <article key={item.id} className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <article
+                key={item.id}
+                className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+              >
                 <header className="flex items-start justify-between gap-3">
                   <div>
                     <h4 className="text-lg font-semibold text-slate-900">{item.name}</h4>
@@ -522,7 +525,7 @@ const ItemsPage: React.FC = () => {
                   </Button>
                 </div>
               </article>
-            )))}
+            ))}
           </div>
         )}
 
