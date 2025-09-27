@@ -183,16 +183,16 @@ const AddItemForm: React.FC<AddItemFormProps> = ({ locations, tags, onSuccess, o
 
   return (
     <form className="flex h-full min-h-0 flex-1 flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
-        <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-col gap-5">
+      <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-5 sm:py-5">
+        <div className="mx-auto flex w-full max-w-2xl min-h-0 flex-col gap-4">
           {formError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {formError}
             </div>
           )}
 
-          <div className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-md sm:p-6">
-            <div className="grid gap-5 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-md sm:p-5">
+            <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-3 md:col-span-2">
             <label htmlFor="name" className="text-sm font-medium text-slate-800">
               Name *

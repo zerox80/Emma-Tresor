@@ -96,8 +96,8 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
 
   return (
     <form className="flex h-full flex-col text-slate-700" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="flex-grow overflow-y-auto px-6 py-6 sm:px-8 sm:py-8">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <div className="flex-grow overflow-y-auto px-3 py-3 sm:px-5 sm:py-5">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
           {formError && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {formError}
@@ -220,7 +220,7 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
         </div>
       </div>
 
-      <div className="flex-shrink-0 border-t border-slate-200 px-6 py-4 sm:px-8 sm:py-6">
+      <div className="flex-shrink-0 border-t border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
         <div className="mx-auto flex w-full max-w-2xl gap-3 sm:justify-end">
           <Button type="button" variant="secondary" size="md" onClick={onCancel}>
             Abbrechen
