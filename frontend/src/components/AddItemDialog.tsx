@@ -94,11 +94,15 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   open,
   onClose,
   onCreated,
+  onUpdated,
   tags,
   locations,
   onCreateTag,
   onCreateLocation,
+  mode = 'create',
+  item = null,
 }) => {
+  const isEditMode = mode === 'edit';
   const {
     control,
     register,
@@ -124,6 +128,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   const [files, setFiles] = useState<File[]>([]);
   const [fileFeedback, setFileFeedback] = useState<string | null>(null);
   const [completedItem, setCompletedItem] = useState<Item | null>(null);
+  const [completionMode, setCompletionMode] = useState<'create' | 'edit' | null>(null);
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
 
   const watchedValues = watch();
@@ -136,8 +141,21 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     }
   }, [open, tags, locations]);
 
-  const resetState = useCallback(() => {
-    reset(DEFAULT_VALUES);
+  const resetState = useCallback(
+    (sourceItem: Item | null = null) => {
+      const initialValues: ItemFormSchema = sourceItem
+        ? {
+            name: sourceItem.name ?? '',
+            description: sourceItem.description ?? '',
+            quantity: sourceItem.quantity ?? 1,
+            purchase_date: sourceItem.purchase_date ?? '',
+            value: sourceItem.value ?? '',
+            location: sourceItem.location ? String(sourceItem.location) : '',
+            tags: sourceItem.tags ?? [],
+          }
+        : DEFAULT_VALUES;
+
+      reset(initialValues);
     setCurrentStep(0);
     setFormError(null);
     setFiles([]);
@@ -147,14 +165,18 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     setTagCreationError(null);
     setLocationCreationError(null);
     setNewLocationName('');
-  }, [reset]);
+      setCompletionMode(null);
+    },
+    [reset],
+  );
 
   useEffect(() => {
     if (!open) {
       return;
     }
 
-    resetState();
+    const initialItem = mode === 'edit' ? item ?? null : null;
+    resetState(initialItem);
 
     const focusTimer = window.setTimeout(() => {
       const nameInput = document.getElementById('add-item-name');
@@ -164,7 +186,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     return () => {
       window.clearTimeout(focusTimer);
     };
-  }, [open, resetState]);
+  }, [open, resetState, mode, item]);
 
   const filePreviews = useMemo(
     () =>
@@ -188,6 +210,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       return;
     }
     setCompletedItem(null);
+    setCompletionMode(null);
     onClose();
   }, [isSubmitting, onClose]);
 
@@ -261,7 +284,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
     return {
       name: trimmedName,
-      description: trimmedDescription.length > 0 ? trimmedDescription : null,
+      description: trimmedDescription.length > 0 ? trimmedDescription : '',
       quantity: values.quantity,
       purchase_date: trimmedPurchaseDate.length > 0 ? trimmedPurchaseDate : null,
       value: trimmedValue.length > 0 ? trimmedValue : null,
@@ -329,6 +352,40 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
       try {
         const payload = normalisePayload(values);
+
+        if (mode === 'edit' && item) {
+          const updatedItem = await updateItem(item.id, payload);
+          const uploadedImages: ItemImage[] = [];
+          const failedUploads: string[] = [];
+
+          for (const file of files) {
+            try {
+              const uploaded = await uploadItemImage(updatedItem.id, file);
+              uploadedImages.push(uploaded);
+            } catch (error) {
+              console.error('Failed to upload image', error);
+              failedUploads.push(file.name);
+            }
+          }
+
+          const warningMessage =
+            failedUploads.length > 0
+              ? `Es konnten ${failedUploads.length} Datei(en) nicht hochgeladen werden: ${failedUploads.join(', ')}.`
+              : null;
+
+          const enrichedItem: Item = {
+            ...updatedItem,
+            images: [...updatedItem.images, ...uploadedImages],
+          };
+
+          onUpdated?.(enrichedItem, warningMessage);
+          if (warningMessage) {
+            setUploadWarning(warningMessage);
+          }
+          handleClose();
+          return;
+        }
+
         const createdItem = await createItem(payload);
         const uploadedImages: ItemImage[] = [];
         const failedUploads: string[] = [];
@@ -356,27 +413,22 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
         onCreated(enrichedItem);
         setCompletedItem(enrichedItem);
+        setCompletionMode('create');
       } catch (error) {
         console.error('Failed to create item', error);
         setFormError('Der Gegenstand konnte nicht erstellt werden. Bitte versuche es erneut.');
       }
     },
-    [files, normalisePayload, onCreated],
+    [files, normalisePayload, onCreated, onUpdated, mode, item, handleClose],
   );
 
   const onSubmit = handleSubmit(submitHandler);
 
   const handleAddAnother = useCallback(() => {
-    reset(DEFAULT_VALUES);
-    setFiles([]);
-    setCurrentStep(0);
-    setCompletedItem(null);
-    setFormError(null);
-    setUploadWarning(null);
-    setFileFeedback(null);
+    resetState(null);
     const nameInput = document.getElementById('add-item-name');
     nameInput?.focus();
-  }, [reset]);
+  }, [resetState]);
 
   if (!open) {
     return null;
@@ -384,12 +436,13 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   const steps = ['Grunddaten', 'Zuordnung', 'Review & Abschluss'];
 
-  if (completedItem) {
+  if (completedItem && completionMode === 'create') {
     return (
-      <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto px-3 py-4 sm:items-center sm:overflow-visible sm:px-6 sm:py-6">
+      <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto px-3 py-4 sm:items-center sm:px-6 sm:py-6">
         <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleClose} />
         <div
           role="dialog"
+{{ ... }}
           aria-modal="true"
           aria-labelledby="add-item-success-heading"
           className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:rounded-3xl sm:p-8"
@@ -473,10 +526,12 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
           <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div>
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
-                Neuer Gegenstand
+                {isEditMode ? 'Gegenstand bearbeiten' : 'Neuer Gegenstand'}
               </h3>
               <p className="mt-1 text-sm text-slate-600">
-                Erfasse neue Gegenstände in drei Schritten – sauber strukturiert und jederzeit bearbeitbar.
+                {isEditMode
+                  ? 'Aktualisiere Details, Standorte und Dateien in drei strukturierten Schritten.'
+                  : 'Erfasse neue Gegenstände in drei Schritten – sauber strukturiert und jederzeit bearbeitbar.'}
               </p>
             </div>
             <Button type="button" variant="ghost" size="sm" onClick={handleClose}>
@@ -843,7 +898,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                 )}
                 {currentStep === 2 && (
                   <Button type="submit" variant="primary" size="md" loading={isSubmitting}>
-                    Gegenstand anlegen
+                    {isEditMode ? 'Änderungen speichern' : 'Gegenstand anlegen'}
                   </Button>
                 )}
               </div>
