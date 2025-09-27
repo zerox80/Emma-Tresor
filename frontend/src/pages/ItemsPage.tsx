@@ -700,22 +700,24 @@ const ItemsPage: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-item-heading"
-            className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
+            className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[90vh]"
           >
-            <div className="mb-6">
+            <div className="flex-shrink-0 border-b border-slate-200 px-6 py-6 sm:px-8 sm:py-8">
               <h3 id="add-item-heading" className="text-xl font-semibold text-slate-900">
                 Neuen Gegenstand hinzufügen
               </h3>
-              <p className="text-sm text-slate-600">
+              <p className="mt-2 text-sm text-slate-600">
                 Erstelle einen neuen Inventargegenstand und weise ihm optionale Tags und Standorte zu.
               </p>
             </div>
-            <AddItemForm
-              locations={locations}
-              tags={tags}
-              onSuccess={handleAddSuccess}
-              onCancel={handleAddCancel}
-            />
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <AddItemForm
+                locations={locations}
+                tags={tags}
+                onSuccess={handleAddSuccess}
+                onCancel={handleAddCancel}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -727,21 +729,23 @@ const ItemsPage: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-item-heading"
-            className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
+            className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10 max-h-[90vh]"
           >
-            <div className="mb-6">
+            <div className="flex-shrink-0 border-b border-slate-200 px-6 py-6 sm:px-8 sm:py-8">
               <h3 id="edit-item-heading" className="text-xl font-semibold text-slate-900">
                 Gegenstand bearbeiten
               </h3>
-              <p className="text-sm text-slate-600">Bearbeite die Informationen für "{selectedItem.name}".</p>
+              <p className="mt-2 text-sm text-slate-600">Bearbeite die Informationen für "{selectedItem.name}".</p>
             </div>
-            <EditItemForm
-              item={selectedItem}
-              locations={locations}
-              tags={tags}
-              onSuccess={handleEditSuccess}
-              onCancel={handleEditCancel}
-            />
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <EditItemForm
+                item={selectedItem}
+                locations={locations}
+                tags={tags}
+                onSuccess={handleEditSuccess}
+                onCancel={handleEditCancel}
+              />
+            </div>
           </div>
         </div>
       )}
