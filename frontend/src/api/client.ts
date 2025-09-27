@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 import { tokenStorage } from '../utils/tokenStorage';
 
@@ -24,6 +24,16 @@ const resolveBaseURL = () => {
     if (!url.pathname || url.pathname === '/') {
       url.pathname = '/api';
     }
+    if (typeof window !== 'undefined') {
+      try {
+        const { protocol, host } = window.location;
+        if (protocol === 'https:' && url.protocol === 'http:' && url.host === host) {
+          url.protocol = 'https:';
+        }
+      } catch (error) {
+        // Fallback to resolved url below
+      }
+    }
     const normalised = url.toString().replace(/\/$/, '');
     return normalised;
   } catch (error) {
@@ -39,12 +49,11 @@ const apiClient = axios.create({
   withCredentials: true,
   timeout: 45000,
   headers: {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });
 
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config: AxiosRequestConfig) => {
   const headers = config.headers ?? {};
   const { access } = tokenStorage.getTokens();
   if (access) {
