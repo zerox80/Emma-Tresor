@@ -142,6 +142,9 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
       // Ignore logout errors silently
     }
     resetState(set);
+    // Clear persisted state from browser storage
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
   },
 });
 
