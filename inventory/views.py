@@ -284,11 +284,12 @@ class LogoutView(APIView):
                 token = RefreshToken(refresh_token)
                 token_user_id = token.payload.get('user_id')
                 if token_user_id != request.user.id:
-                    _clear_token_cookies(response)
-                    return Response(
+                    error_response = Response(
                         {'detail': 'Aktualisierungstoken gehört nicht zu deinem Konto.'},
                         status=status.HTTP_403_FORBIDDEN,
                     )
+                    _clear_token_cookies(error_response)
+                    return error_response
                 try:
                     token.blacklist()
                 except TokenError:

@@ -41,6 +41,16 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
   remembering: false,
 
   initialise: async () => {
+    // Check if we have persisted state that indicates we should be logged in
+    const currentState = get();
+    if (!currentState.isAuthenticated && !currentState.remembering) {
+      // No indication that we should be logged in, skip initialization
+      set({
+        hasInitialised: true,
+      });
+      return;
+    }
+
     const fetchProfile = async () => {
       const { data } = await apiClient.get<UserProfile>('/auth/me/');
       set({
@@ -153,6 +163,8 @@ const persistOptions: PersistOptions<AuthState> = {
   partialize: (state: AuthState) => ({
     user: state.user,
     isAuthenticated: state.isAuthenticated,
+    hasInitialised: state.hasInitialised,
+    remembering: state.remembering,
   }),
 };
 
