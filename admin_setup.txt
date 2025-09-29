@@ -1,0 +1,67 @@
+# Admin Konto Einrichtung (EmmaTresor Inventory)
+
+Folge diesen Schritten, um ein Administrator-Konto für das Django-Backend anzulegen.
+
+---
+
+## 1. Umgebung vorbereiten
+
+1. Sicherstellen, dass Python 3.13 (oder neuer) und Node.js installiert sind.
+2. Projekt-Setup und Serverstart automatisieren:
+   ```powershell
+   py -3.13 run_backend.py --skip-tests
+   ```
+   *Dies erstellt/aktualisiert die virtuelle Umgebung `.venv/`, installiert Abhängigkeiten, führt Migrationen aus und startet `manage.py runserver`. Beende den Server anschließend mit `Ctrl+C`.*
+
+## 2. Virtuelle Umgebung aktivieren
+
+```powershell
+.\.venv\Scripts\activate
+```
+
+(Alternativ: `.\.venv\Scripts\python.exe` direkt verwenden, ohne zu aktivieren.)
+
+## 3. Administrator anlegen (interaktiv)
+
+```powershell
+python manage.py createsuperuser
+```
+
+- Gewünschten Benutzernamen, E-Mail und Passwort eingeben.
+- Nach erfolgreicher Anlage kannst du dich im Django-Admin (`http://127.0.0.1:8000/admin/`) anmelden.
+
+## 4. Administrator automatisiert anlegen (optional)
+
+Falls du das Konto skriptgesteuert erzeugen möchtest (z. B. für CI/CD), kannst du die folgenden Umgebungsvariablen setzen und das Kommando ohne Interaktion ausführen:
+
+```powershell
+# SICHERHEITSHINWEIS: Verwende niemals diese Beispieldaten in Produktion!
+$env:DJANGO_SUPERUSER_USERNAME = "<your-admin-username>"
+$env:DJANGO_SUPERUSER_EMAIL = "<your-admin-email>"
+$env:DJANGO_SUPERUSER_PASSWORD = "<your-secure-password>"
+.\.venv\Scripts\python.exe manage.py createsuperuser --noinput
+```
+
+> **WICHTIG - SICHERHEIT:** 
+> - Verwende NIEMALS die Beispielwerte in einer echten Umgebung
+> - Generiere ein starkes, einzigartiges Passwort (mindestens 16 Zeichen)
+> - Speichere Passwörter NIEMALS in Versionskontrolle oder Textdateien
+> - Nutze einen Passwort-Manager oder Umgebungsvariablen aus sicheren Quellen
+
+## 5. Server & Frontend starten
+
+- Nur Backend:
+  ```powershell
+  py -3.13 run_backend.py
+  ```
+- Backend + Frontend (Vite-Entwicklungsserver):
+  ```powershell
+  py -3.13 run_backend.py --start-frontend
+  ```
+
+Nach dem Start:
+- Backend-Landingpage: `http://127.0.0.1:8000/`
+- Django-Admin: `http://127.0.0.1:8000/admin/`
+- React-Frontend: `http://127.0.0.1:5173/`
+
+Viel Erfolg mit EmmaTresor Inventory! 💼📦
