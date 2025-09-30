@@ -319,11 +319,42 @@ https://deine-domain.de/scan/{asset-tag-uuid}
 cp env.example .env
 # ✏️ .env bearbeiten (siehe Konfiguration)
 
-# 2️⃣ Stack starten
+# 2️⃣ Security Logs Verzeichnis erstellen
+mkdir -p logs
+chmod 755 logs
+
+# 3️⃣ Stack starten
 docker compose up --build -d
 
-# 3️⃣ Status prüfen
+# 4️⃣ Volume Permissions setzen (WICHTIG für erste Installation!)
+docker compose run --rm --user root backend \
+  chown -R 1000:1000 /vol/web/static /vol/web/media /vol/web/private_media
+chown 1000:1000 logs
+
+# 5️⃣ Backend neustarten (nach Permission Fix)
+docker compose restart backend
+
+# 6️⃣ Status prüfen
 docker compose ps
+```
+
+### ⚠️ Troubleshooting: Backend crasht beim Start
+
+Wenn das Backend mit `Restarting (1)` Status crasht:
+
+```bash
+# 1. Logs checken
+docker compose logs backend --tail=50
+
+# 2. Häufigste Ursache: Permission-Fehler
+# Falls "Permission denied: '/vol/web/static/...'" in Logs:
+docker compose stop backend
+docker compose run --rm --user root backend \
+  chown -R 1000:1000 /vol/web/static /vol/web/media /vol/web/private_media
+docker compose up -d backend
+
+# 3. Status verifizieren
+docker compose ps  # Backend sollte "Up" sein, nicht "Restarting"
 ```
 
 ### 📊 Monitoring & Logs
