@@ -24,7 +24,7 @@
 ## ✨ Hauptmerkmale
 
 - 🔐 **Sicherheit**: Argon2-Hashing, JWT-Authentifizierung, CSRF/CORS-Schutz
-- 📱 **QR-Code-Integration**: Automatische Generierung und Scanner-Funktionalität
+- 📱 **QR-Code-Integration**: Automatische Generierung mit Asset-Tag-URLs
 - 🚀 **Moderne Technologien**: React 19.1, Django 5.2, TypeScript 5.6, Vite 6, Tailwind CSS 3.4
 - 🐳 **Docker-Ready**: Vollständige Containerisierung mit Docker Compose
 - 📊 **Dashboard**: Übersichtliche Statistiken und Inventarauswertungen
@@ -61,10 +61,10 @@
 
 ### 🏷️ QR-Code-System
 - **Automatische UUID-Asset-Tags** für jeden Gegenstand (kollisionssicher)
-- **Dynamische QR-Code-Generierung** als PNG-Download (qrcode[pil])
-- **Integrierter Scanner** mit Kamerazugriff (@yudiel/react-qr-scanner)
-- **Direkte Bearbeitung** nach dem Scannen
-- **Backend-Validierung** von QR-Code-Formaten
+- **Dynamische QR-Code-Generierung** als PNG-Download (qrcode[pil] Backend)
+- **URL-basierte Scan-Integration** (über `/scan/{asset_tag}` Route)
+- **Direkte Detailansicht** nach dem Scannen mit QR-App
+- **Frontend QR-Code-Anzeige** (qrcode Library für Client-Side-Generierung)
 
 ### 📊 Listen und Dashboard
 - **Benutzerdefinierte Listen** für Projekte und Übergaben
@@ -259,8 +259,8 @@ npm run preview      # Build testen
 npm run typecheck    # TypeScript prüfen
 ```
 
-> 📱 **QR-Scanner auf mobilen Geräten:** 
-> Für HTTPS-Tests verwende `npm run dev -- --host --https` 
+> 📱 **Produktions-Deployment:** 
+> Für HTTPS verwende `npm run dev -- --host --https` 
 > oder nutze einen Reverse Proxy mit TLS-Terminierung.
 
 ## 📱 QR-Code-Integration
@@ -276,7 +276,7 @@ sequenceDiagram
     
     U->>F: Klick auf "QR-Code"
     F->>B: GET /api/inventory/items/{id}/generate_qr_code/
-    B->>Q: Generiere QR mit asset_tag (UUID)
+    B->>Q: Generiere QR mit Scan-URL (UUID)
     Q->>B: PNG-Datei
     B->>F: QR-Code als Download
     F->>U: Automatischer Download
@@ -288,28 +288,27 @@ sequenceDiagram
 3. 📥 **PNG herunterladen** für Labels/Etiketten
 4. 🖨️ **Ausdrucken** und an Gegenstand anbringen
 
+**🔑 QR-Code-Format:**
+Der generierte QR-Code enthält eine URL im Format:
+```
+https://deine-domain.de/scan/{asset-tag-uuid}
+```
+
 ### 📸 QR-Code scannen
 
-**🎥 Scanner starten:**
-- 📷 Klicke "QR-Code scannen" in der Inventarübersicht
-- 🗺️ Browser-Kamerazugriff bestätigen
-- 🎯 Code mit Kamera erfassen
+**📱 Scannen mit beliebiger QR-App:**
+1. 📷 **Standard-QR-Scanner** oder Kamera-App verwenden
+2. 🔍 **QR-Code erfassen** - Link wird automatisch erkannt
+3. 🌐 **Link öffnen** - führt direkt zu `/scan/{asset_tag}`
+4. 📊 **Detailansicht** des Items wird angezeigt
 
-**⚙️ Automatischer Workflow:**
-```
-QR-Code erkannt → Asset-Tag extrahiert → Item geladen → Bearbeiten-Modal geöffnet
-```
+**📝 Direkte Ansicht & Bearbeitung:**
+- 📊 Alle Item-Details einsehen
+- 📍 Standorte und Tags anzeigen
+- 🖼️ Bildanhänge betrachten
+- ✏️ "Bearbeiten"-Button für Aktualisierungen
 
-**📝 Direkte Bearbeitung:**
-- 📊 Mengen aktualisieren
-- 📍 Standorte ändern  
-- 🏷️ Tags hinzufügen
-- 💰 Werte anpassen
-
-> ⚠️ **Kamera-Hinweise:**
-> - 🔒 HTTPS erforderlich (außer localhost)
-> - 📱 iOS: Safari oder HTTPS obligatorisch
-> - 🖥️ Desktop: localhost funktioniert ohne HTTPS
+> 💡 **Hinweis:** Das Projekt verwendet **URL-basierte QR-Codes**, die mit jeder Standard-QR-Scanner-App funktionieren. Eine In-App-Kamera-Integration ist vorbereitet (Dependencies installiert), aber noch nicht implementiert.
 
 ## 🐳 Docker Deployment
 
@@ -518,13 +517,13 @@ npm run preview
 
 ## 🔧 Troubleshooting
 
-### 📷 QR-Scanner Probleme
+### 📷 QR-Code Probleme
 
 | Problem | Lösung |
 |---------|--------|
-| 🚫 **Kamera-Zugriff verweigert** | ✅ HTTPS verwenden oder localhost nutzen<br/>✅ Browser-Berechtigung erteilen<br/>✅ Systemeinstellungen prüfen (Windows: Datenschutz → Kamera) |
-| 🔍 **Scanner findet Item nicht** | ✅ QR-Code muss gültigen `asset_tag` (UUID) enthalten<br/>✅ Neue Labels über Item-Ansicht generieren |
-| 📥 **QR-Code Download fehlgeschlagen** | ✅ Erneut einloggen (JWT-Token erneuern)<br/>✅ Browser-Cache leeren |
+| 📥 **QR-Code Download fehlgeschlagen** | ✅ Erneut einloggen (JWT-Token erneuern)<br/>✅ Backend erreichbar? Netzwerkfehler? |
+| 🔍 **Scan führt zu 404** | ✅ Asset-Tag korrekt? Item existiert noch?<br/>✅ Backend läuft und ist erreichbar? |
+| 🖨️ **QR-Code drucken schlägt fehl** | ✅ Browser-Druckeinstellungen prüfen<br/>✅ PNG herunterladen und separat drucken |
 
 ### 🐍 Backend-Probleme
 
@@ -548,9 +547,9 @@ npm run preview
 ## 🗺️ Roadmap
 
 ### 🔜 **Kurzfristig (2025 Q1-Q2)**
+- 📸 **In-App QR-Scanner** mit Kamerazugriff (@yudiel/react-qr-scanner implementieren)
 - 📋 **Drag & Drop** für Listen-Management
 - 📥 **Bulk-Import** für CSV/Excel-Dateien
-- 📱 **Mobile-optimierter** QR-Scanner mit verbesserter UX
 - 🖼️ **Erweiterte Bildergalerie** mit Vollbild-Ansicht
 - 📊 **Statistik-Exporte** (PDF, Excel)
 
