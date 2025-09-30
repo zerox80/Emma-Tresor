@@ -10,9 +10,9 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![React](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![Django](https://img.shields.io/badge/django-5.x-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
-[![TypeScript](https://img.shields.io/badge/typescript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/react-19.1-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Django](https://img.shields.io/badge/django-5.2-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![TypeScript](https://img.shields.io/badge/typescript-5.6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
 </div>
@@ -25,7 +25,7 @@
 
 - 🔐 **Sicherheit**: Argon2-Hashing, JWT-Authentifizierung, CSRF/CORS-Schutz
 - 📱 **QR-Code-Integration**: Automatische Generierung und Scanner-Funktionalität
-- 🚀 **Moderne Technologien**: React 19, Django 5, TypeScript, Tailwind CSS
+- 🚀 **Moderne Technologien**: React 19.1, Django 5.2, TypeScript 5.6, Vite 6, Tailwind CSS 3.4
 - 🐳 **Docker-Ready**: Vollständige Containerisierung mit Docker Compose
 - 📊 **Dashboard**: Übersichtliche Statistiken und Inventarauswertungen
 - 🏷️ **Asset-Management**: UUID-basierte Asset-Tags für eindeutige Identifikation
@@ -55,13 +55,16 @@
 - **CRUD-Operationen** für alle Inventargegenstände
 - **Mengen- und Werttracking** mit Kaufdatum und monetärem Wert
 - **Standort- und Tag-Management** für bessere Organisation
-- **Benutzerspezifische Trennung** der Daten
+- **Benutzerspezifische Trennung** der Daten mit Datenisolation
+- **Änderungsprotokoll** (ItemChangeLog) für Audit-Trails
+- **Bildanhänge** mit privater Storage-Implementierung (max. 8MB, PDF-Support)
 
 ### 🏷️ QR-Code-System
-- **Automatische UUID-Asset-Tags** für jeden Gegenstand
-- **Dynamische QR-Code-Generierung** als PNG-Download
-- **Integrierter Scanner** mit Kamerazugriff
+- **Automatische UUID-Asset-Tags** für jeden Gegenstand (kollisionssicher)
+- **Dynamische QR-Code-Generierung** als PNG-Download (qrcode[pil])
+- **Integrierter Scanner** mit Kamerazugriff (@yudiel/react-qr-scanner)
 - **Direkte Bearbeitung** nach dem Scannen
+- **Backend-Validierung** von QR-Code-Formaten
 
 ### 📊 Listen und Dashboard
 - **Benutzerdefinierte Listen** für Projekte und Übergaben
@@ -70,10 +73,12 @@
 - **Responsive Design** für alle Geräte
 
 ### 🔒 Sicherheit und Authentifizierung
-- **JWT-basierte Authentifizierung** mit SimpleJWT
-- **Rate-Limiting** und Logout-Blacklisting
-- **CSRF/CORS-Schutz** mit gehärteter Konfiguration
-- **Sichere Token-Verwaltung** im Frontend
+- **JWT-basierte Authentifizierung** mit SimpleJWT und Cookie-Support
+- **Rate-Limiting** (5 Login-Versuche/min) und Logout-Blacklisting
+- **CSRF/CORS-Schutz** mit gehärteter Konfiguration und Custom Middleware
+- **Sichere Token-Verwaltung** (HttpOnly Cookies, SameSite, Secure flags)
+- **CSP-Header** (Content Security Policy) für XSS-Schutz
+- **HSTS** für HTTPS-Erzwingung in Produktion
 
 ## 🛠️ Technologie-Stack
 
@@ -91,11 +96,11 @@
 <tr>
 <td><strong>⚛️ Frontend</strong></td>
 <td>
-<img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React" />
-<img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
-<img src="https://img.shields.io/badge/Vite-5.x-646CFF?logo=vite&logoColor=white" alt="Vite" />
-<img src="https://img.shields.io/badge/Tailwind-3.x-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind" />
-<img src="https://img.shields.io/badge/Zustand-Store-orange" alt="Zustand" />
+<img src="https://img.shields.io/badge/React-19.1-61DAFB?logo=react&logoColor=white" alt="React" />
+<img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
+<img src="https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite&logoColor=white" alt="Vite" />
+<img src="https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind" />
+<img src="https://img.shields.io/badge/Zustand-5.0-orange" alt="Zustand" />
 </td>
 </tr>
 <tr>
@@ -103,8 +108,8 @@
 <td>
 <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker" />
 <img src="https://img.shields.io/badge/Nginx-Proxy-009639?logo=nginx&logoColor=white" alt="Nginx" />
-<img src="https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
-<img src="https://img.shields.io/badge/Gunicorn-WSGI-499848" alt="Gunicorn" />
+<img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
+<img src="https://img.shields.io/badge/Gunicorn-22-499848" alt="Gunicorn" />
 </td>
 </tr>
 </table>
@@ -163,15 +168,17 @@ graph TB
 ### 📦 Setup über Skripte
 
 **📋 Voraussetzungen:**
-- 🐍 Python 3.12+
-- 📦 Node.js 20+
+- 🐍 Python 3.12+ (getestet mit 3.12 und 3.13)
+- 📦 Node.js 22+
 - 📋 npm
-- 🐳 Docker (optional)
+- 🐳 Docker & Docker Compose (optional)
 
 #### Windows (PowerShell)
 ```powershell
 # 1️⃣ Backend-Setup (erstellt .venv, installiert deps, führt Migrationen aus)
 py -3.12 setup_backend.py --use-venv
+# oder mit Python 3.13:
+py -3.13 setup_backend.py --use-venv
 
 # 2️⃣ Starte Backend + Frontend
 py -3.12 run_backend.py --use-venv --start-frontend
@@ -180,10 +187,10 @@ py -3.12 run_backend.py --use-venv --start-frontend
 #### Linux/macOS (Bash)
 ```bash
 # 1️⃣ Backend-Setup
-python3.12 setup_backend.py --use-venv
+python3 setup_backend.py --use-venv
 
 # 2️⃣ Starte Backend + Frontend
-python3.12 run_backend.py --use-venv --start-frontend
+python3 run_backend.py --use-venv --start-frontend
 ```
 
 **🎯 Ergebnis:**
@@ -341,14 +348,14 @@ docker compose down -v
 
 | Service | Port | Beschreibung | Volumes |
 |---------|------|--------------|----------|
-| 🐘 **postgres** | 5432 | PostgreSQL Datenbank | `postgres_data` |
-| 🐍 **backend** | 8000 | Django + Gunicorn API | `backend_static`, `backend_media` |
-| 🌐 **nginx** | 80 | Reverse Proxy + Frontend | `backend_static`, `backend_media` |
+| 🐘 **postgres** | 5432 | PostgreSQL 16 Datenbank | `postgres_data` |
+| 🐍 **backend** | 8000 | Django 5.2 + Gunicorn 22 API | `backend_static`, `backend_media`, `backend_private_media` |
+| 🌐 **nginx** | 8888:80 | Reverse Proxy + Frontend | `backend_static`, `backend_media` |
 
 **🌐 Zugriff nach Deployment:**
-- Frontend: `http://localhost/`
-- API: `http://localhost/api/`
-- Admin: `http://localhost/admin/`
+- Frontend: `http://localhost:8888/`
+- API: `http://localhost:8888/api/`
+- Admin: `http://localhost:8888/admin/`
 
 ## ⚙️ Konfiguration
 
@@ -374,7 +381,9 @@ docker compose down -v
 
 | Variable | Beschreibung | Standard |
 |----------|--------------|----------|
-| `DJANGO_DEBUG` | Debug-Modus | `True` |
+| `DJANGO_DEBUG` | Debug-Modus | `True` (Dev), `False` (Prod) |
+| `DJANGO_FORCE_SSL` | HTTPS-Erzwingung | `0` (Dev), `1` (Prod) |
+| `DJANGO_SSL_REDIRECT` | Django SSL-Redirect | `0` |
 | `ALLOW_USER_REGISTRATION` | Nutzerregistrierung | `false` |
 | `AUTO_CREATE_SUPERUSER` | Auto-Admin erstellen | `false` |
 | `VITE_ENABLE_QR_SCANNER` | QR-Scanner aktivieren | `true` |
@@ -395,6 +404,9 @@ docker compose down -v
 ```bash
 # Django Tests ausführen
 python manage.py test
+
+# Oder mit setup_backend.py
+python setup_backend.py --tests-only --use-venv
 
 # Mit Coverage (optional)
 pip install coverage
@@ -429,34 +441,52 @@ npm run preview
 ├── 🐍 EmmaTresor/            # Django Projektkonfiguration
 │   ├── settings.py        # ⚙️ Hauptkonfiguration
 │   ├── urls.py            # 🌐 URL-Routing
-│   └── wsgi.py/asgi.py     # 🚀 Server-Schnittstellen
+│   ├── middleware.py      # 🔧 Custom Middleware (CSRF-Exempt für API)
+│   ├── wsgi.py            # 🚀 WSGI Server-Schnittstelle
+│   └── asgi.py            # 🚀 ASGI Server-Schnittstelle
 ├── 📦 inventory/             # Backend-App (Kern)
-│   ├── models.py          # 📊 Datenmodelle
+│   ├── models.py          # 📊 Datenmodelle (Item, Tag, Location, ItemList)
 │   ├── views.py           # 🔌 API-Endpunkte
 │   ├── serializers.py     # 🔄 JSON-Serialisierung
-│   └── urls.py            # 🌐 App-URLs
+│   ├── authentication.py  # 🔐 Cookie-JWT-Auth
+│   ├── storage.py         # 💾 Private Media Storage
+│   ├── urls.py            # 🌐 App-URLs
+│   └── migrations/        # 📝 Datenbank-Migrationen
 ├── ⚛️ frontend/              # React/Vite Frontend
 │   ├── src/
 │   │   ├── components/    # 🧩 UI-Komponenten
 │   │   ├── pages/         # 📱 Seiten-Komponenten
-│   │   ├── api/           # 📡 API-Client
-│   │   └── store/         # 💾 Zustand-Management
+│   │   ├── routes/        # 🛣️ Route Guards & Konfiguration
+│   │   ├── api/           # 📡 API-Client (Axios)
+│   │   ├── store/         # 💾 Zustand-Management (Zustand)
+│   │   ├── hooks/         # 🎣 Custom React Hooks
+│   │   ├── types/         # 📝 TypeScript Typen
+│   │   └── utils/         # 🔧 Utility-Funktionen
 │   ├── package.json       # 📦 Dependencies
-│   └── vite.config.ts     # ⚙️ Vite-Konfiguration
+│   ├── vite.config.ts     # ⚙️ Vite-Konfiguration
+│   └── tsconfig.json      # ⚙️ TypeScript-Konfiguration
 ├── 🐳 docker/                # Container-Setup
-│   ├── backend/Dockerfile # 🐍 Backend-Image
+│   ├── backend/
+│   │   ├── Dockerfile     # 🐍 Backend-Image
+│   │   └── entrypoint.sh  # 🚀 Container-Startskript
 │   ├── frontend/Dockerfile# ⚛️ Frontend-Image
 │   └── nginx/Dockerfile   # 🌐 Proxy-Image
 ├── 📄 docs/                  # Dokumentation
 │   └── SECURITY.md        # 🔐 Sicherheitshinweise
+├── 🔐 nginx/                 # Nginx-Konfiguration
+│   ├── emmatresor.conf    # 🌐 Docker Compose Konfiguration
+│   └── emmatresor_host.conf # 🌐 Host-System Konfiguration
+├── 📋 templates/             # Django-Templates
 ├── 🚀 Setup & Scripts
-│   ├── setup_backend.py   # 🔧 Auto-Setup
+│   ├── setup_backend.py   # 🔧 Auto-Setup (Python 3.12+)
 │   ├── run_backend.py     # ▶️ Dev-Server
+│   ├── deploy_ubuntu.sh   # 🐧 Ubuntu Deployment-Skript
 │   └── manage.py          # 🐍 Django CLI
 └── 📄 Konfiguration
     ├── requirements.txt   # 🐍 Python-Deps
-    ├── docker-compose.yml # 🐳 Services
-    └── env.example        # ⚙️ Umgebungsvariablen
+    ├── docker-compose.yml # 🐳 Services (postgres, backend, nginx)
+    ├── env.example        # ⚙️ Umgebungsvariablen-Template
+    └── .env.production    # 🏭 Produktions-Konfiguration
 ```
 
 ## 🔐 Sicherheit
@@ -503,34 +533,41 @@ npm run preview
 | 📦 **qrcode[pil] fehlt** | `pip install -r requirements.txt` ausführen |
 | 📊 **Migrationen fehlgeschlagen** | `python manage.py migrate --run-syncdb` |
 | 🔑 **Authentifizierung-Fehler** | `.env`-Datei prüfen, `DJANGO_SECRET_KEY` setzen |
+| 🐘 **PostgreSQL-Verbindung** | `POSTGRES_PASSWORD` in `.env` gesetzt? `DB_VENDOR=postgres`? |
+| 📁 **Encoding-Probleme** | `fix_charset_live.sh` ausführen (UTF-8 Fix) |
 
 ### ⚛️ Frontend-Probleme
 
 | Problem | Lösung |
 |---------|--------|
-| 📡 **API-Verbindung fehlgeschlagen** | Backend-Server läuft auf Port 8000? |
-| 🔄 **Build-Fehler** | `npm run typecheck` ausführen |
-| 📏 **Routing-Probleme** | Browser-Cache leeren, Hard-Refresh |
+| 📡 **API-Verbindung fehlgeschlagen** | Backend-Server läuft auf Port 8000? CORS konfiguriert? |
+| 🔄 **Build-Fehler** | `npm run typecheck` ausführen, Dependencies aktuell? |
+| 📏 **Routing-Probleme** | Browser-Cache leeren, Hard-Refresh (Ctrl+F5) |
+| 🍪 **Cookie-Authentifizierung** | `JWT_COOKIE_SECURE=0` in Dev, Cookies aktiviert? |
 
 ## 🗺️ Roadmap
 
-### 🔜 **Kurzfristig (Q1 2025)**
+### 🔜 **Kurzfristig (2025 Q1-Q2)**
 - 📋 **Drag & Drop** für Listen-Management
 - 📥 **Bulk-Import** für CSV/Excel-Dateien
-- 📱 **Mobile-optimierter** QR-Scanner
-- 🖼️ **Item-Detailseiten** mit Bildergalerie
+- 📱 **Mobile-optimierter** QR-Scanner mit verbesserter UX
+- 🖼️ **Erweiterte Bildergalerie** mit Vollbild-Ansicht
+- 📊 **Statistik-Exporte** (PDF, Excel)
 
-### 🔝 **Mittelfristig (Q2-Q3 2025)**
-- 🧪 **Test-Suites** (pytest, Jest, Cypress)
+### 🔝 **Mittelfristig (2025 Q2-Q3)**
+- 🧪 **Erweiterte Test-Suites** (pytest, Jest, Cypress E2E)
 - 🔄 **CI/CD-Pipeline** mit GitHub Actions
-- 📈 **Analytics-Dashboard** mit erweiterten Metriken
+- 📈 **Analytics-Dashboard** mit erweiterten Metriken und Charts
 - 📱 **PWA-Support** für Offline-Nutzung
+- 🔔 **Benachrichtigungssystem** für wichtige Events
 
-### 🔞 **Langfristig (Q4 2025+)**
+### 🔞 **Langfristig (2025 Q4+)**
 - 🔐 **SECRET_KEY-Rotation** und erweiterte Sicherheit
-- 🌐 **Multi-Tenant-Support** für Teams
-- ☁️ **Cloud-Storage** (S3/MinIO) für Medien
+- 🌐 **Multi-Tenant-Support** für Teams und Organisationen
+- ☁️ **Cloud-Storage** (S3/MinIO) für Medien mit automatischer Migration
 - 📄 **OpenAPI-Dokumentation** mit DRF Spectacular
+- 🔍 **Erweiterte Suchfunktion** (Elasticsearch/Meilisearch)
+- 🌍 **Multi-Language-Support** (i18n)
 
 ## 🤝 Beitragen
 
