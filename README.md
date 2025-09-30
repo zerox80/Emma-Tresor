@@ -1,7 +1,7 @@
 # 📦 EmmaTresor - Modern Inventory Management
 
 <div align="center">
-  <img width="1489" height="669" alt="EmmaTresor Dashboard Screenshot" src="https://github.com/user-attachments/assets/bb06fc46-2eef-4ef7-aa99-af33cd00eaa9" />
+<img width="1907" height="800" alt="{0D310489-5F20-4A2F-907E-4FF80C9D4419}" src="https://github.com/user-attachments/assets/46ad2f00-e775-4386-bd2a-5563044a8874" />
   
   <p><em>Minimalistische und sichere Inventarverwaltung mit QR-Code-Integration</em></p>
 </div>
