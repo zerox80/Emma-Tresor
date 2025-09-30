@@ -3,8 +3,28 @@
 Dieser Leitfaden fasst die wichtigsten Sicherheitsmaßnahmen und empfohlenen Betriebsrichtlinien für EmmaTresor zusammen. 
 
 **Stand:** 2025-09-30  
-**Version:** 1.0.0  
+**Version:** 1.1.0  
 **Tech Stack:** Django 5.2+, Django REST Framework, React 19, PostgreSQL 16, Nginx 1.27, Docker
+
+## 🔒 Letzte Security Updates (v1.1.0)
+
+**Datum:** 2025-09-30
+
+### Behobene Schwachstellen:
+- ✅ **CSRF-Middleware entfernt** - API-Endpoints sind jetzt durch Django's Standard-CSRF-Schutz gesichert
+- ✅ **HSTS konfiguriert** - 1-Jahres HSTS Header für Produktion aktiviert (`SECURE_HSTS_SECONDS=31536000`)
+- ✅ **JWT Access Token Lifetime reduziert** - Von 30 auf 15 Minuten für bessere Sicherheit
+- ✅ **Docker Non-Root User** - Backend-Container läuft als `appuser` (UID 1000) statt Root
+- ✅ **Security Event Logging** - 401/403/429 Responses werden strukturiert geloggt
+- ✅ **Enhanced Nginx Security Headers** - Permissions-Policy, COOP, CORP hinzugefügt
+- ✅ **Rate Limiting für Static Files** - /static/ und /media/ haben jetzt 50req/s Limit
+- ✅ **User Enumeration Prevention** - Generische Fehlermeldungen beim Login
+- ✅ **Input Length Validation** - Max 10.000 Zeichen für Item-Beschreibungen
+
+### Neue Features:
+- 📝 **Security Logging** - Automatisches Logging von Security Events in `logs/security.log`
+- 🔒 **.gitignore erstellt** - `.env.production` wird nie mehr ins Repository committed
+- 📋 **.env.production.template** - Sichere Template-Datei für Production Deployments
 
 ## Zusammenfassung
 
@@ -33,7 +53,7 @@ EmmaTresor ist eine sichere Inventarverwaltung mit:
 
 - **Passworthashing:** Django verwendet den `Argon2PasswordHasher` als primären Hasher. Bei der Migration bestehender Installationen werden Passwörter beim nächsten Login automatisch auf Argon2 aktualisiert. Fallback-Hasher (PBKDF2, BCrypt, Scrypt) sind für Legacy-Kompatibilität vorhanden.
 - **JWT-Konfiguration:**
-  - Access-Token Gültigkeit: 30 Minuten
+  - Access-Token Gültigkeit: 15 Minuten (reduziert für bessere Sicherheit)
   - Refresh-Token Gültigkeit: 7 Tage, inklusive Rotation & Blacklisting (`ROTATE_REFRESH_TOKENS=True`, `BLACKLIST_AFTER_ROTATION=True`)
   - Tokens werden ausschließlich als httpOnly-/SameSite-Cookies gesetzt (konfigurierbare Cookie-Namen: `emmatresor_access_token`, `emmatresor_refresh_token`), wodurch kein Zugriff per JavaScript möglich ist
   - Cookie-Pfade: Access-Token auf `/`, Refresh-Token auf `/api/` limitiert

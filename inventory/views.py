@@ -154,6 +154,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        import logging
+        security_logger = logging.getLogger('security')
+        
         email = attrs.get('email')
         if email:
             email = email.strip().lower()
@@ -163,10 +166,21 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if email and not username:
             try:
                 user = User.objects.get(email__iexact=email)
+                attrs[self.username_field] = getattr(user, self.username_field)
             except User.DoesNotExist as exc:
-                raise AuthenticationFailed('Kein aktives Konto mit dieser E-Mail gefunden.') from exc
-            attrs[self.username_field] = getattr(user, self.username_field)
-        data = super().validate(attrs)
+                # Use generic error message to prevent user enumeration
+                security_logger.warning(
+                    'Login attempt with non-existent email',
+                    extra={'email': email}
+                )
+                raise AuthenticationFailed('Ungültige Anmeldedaten.') from exc
+        
+        try:
+            data = super().validate(attrs)
+        except AuthenticationFailed:
+            # Generic error message for failed authentication
+            raise AuthenticationFailed('Ungültige Anmeldedaten.')
+        
         data['user'] = {
             'id': self.user.id,
             'username': self.user.username,

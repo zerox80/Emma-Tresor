@@ -278,7 +278,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
 class ItemSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
-    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=10000)
     asset_tag = serializers.UUIDField(read_only=True)
     images = ItemImageSerializer(many=True, read_only=True)
 

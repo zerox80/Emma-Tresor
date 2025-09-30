@@ -158,10 +158,10 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'EmmaTresor.middleware.CsrfExemptAPIMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'EmmaTresor.middleware.SecurityEventLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'EmmaTresor.urls'
@@ -293,7 +293,7 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Increased from 5 to 30 minutes
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Reduced from 30 to 15 minutes for better security
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -344,8 +344,10 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SESSION_COOKIE_SECURE = FORCE_SSL
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-SECURE_HSTS_PRELOAD = True
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# HSTS Configuration - Only active when FORCE_SSL is enabled
+SECURE_HSTS_SECONDS = 31536000 if FORCE_SSL else 0  # 1 year for production
+SECURE_HSTS_PRELOAD = FORCE_SSL
+SECURE_HSTS_INCLUDE_SUBDOMAINS = FORCE_SSL
 # Disable SSL redirect when behind CDN/proxy to prevent redirect loops
 SECURE_SSL_REDIRECT = SSL_REDIRECT and not TESTING
 
@@ -396,6 +398,48 @@ ALLOW_USER_REGISTRATION = _env_bool(os.environ.get('ALLOW_USER_REGISTRATION'), d
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Security Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'json': {
+            'format': '{"time": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s", "path": "%(pathname)s"}',
+        },
+    },
+    'handlers': {
+        'security_file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'security.log',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
 
 # Frontend-Integration
 # Erlaubt es, den Link zum React-Login zentral zu konfigurieren. Fällt auf die

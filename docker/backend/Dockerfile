@@ -12,16 +12,29 @@ RUN apt-get update \
     && apt-get install --no-install-recommends -y curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && \
+    mkdir -p /vol/web/media /vol/web/static /vol/web/private_media && \
+    chown -R appuser:appuser /vol && \
+    chown -R appuser:appuser /app
+
 COPY requirements.txt ./
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY docker/backend/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh && \
+    chown appuser:appuser /entrypoint.sh
 
-COPY . .
+COPY --chown=appuser:appuser . .
+
+# Create logs directory for security logging
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
 
 ENV DJANGO_SETTINGS_MODULE=EmmaTresor.settings
+
+# Switch to non-root user
+USER appuser
 
 EXPOSE 8000
 
