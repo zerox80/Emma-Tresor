@@ -11,6 +11,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework import filters, mixins, permissions, serializers, status, throttling, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -124,6 +126,7 @@ class QRGenerateRateThrottle(throttling.UserRateThrottle):
     scope = 'qr_generate'
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
@@ -189,6 +192,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
     throttle_classes = [LoginRateThrottle]
@@ -227,6 +231,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         return response
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_cookie = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
