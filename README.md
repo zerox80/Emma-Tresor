@@ -374,6 +374,50 @@ docker compose down
 docker compose down -v
 ```
 
+### 💾 Datenbank-Backup & Wiederherstellung
+
+#### Backup erstellen
+```bash
+# Manuelles Backup mit Zeitstempel
+docker compose exec postgres pg_dump -U emmatresor -d emmatresor > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Komprimiertes Backup
+docker compose exec postgres pg_dump -U emmatresor -d emmatresor | gzip > backup_$(date +%Y%m%d_%H%M%S).sql.gz
+
+# Backup in Verzeichnis speichern
+mkdir -p db_backups
+docker compose exec postgres pg_dump -U emmatresor -d emmatresor > db_backups/backup_$(date +%Y%m%d).sql
+```
+
+#### Backup wiederherstellen
+```bash
+# Aus SQL-Datei wiederherstellen
+docker compose exec -T postgres psql -U emmatresor -d emmatresor < backup_20250930.sql
+
+# Aus komprimierter Datei
+gunzip -c backup_20250930.sql.gz | docker compose exec -T postgres psql -U emmatresor -d emmatresor
+
+# ⚠️ WARNUNG: Datenbank zuvor leeren
+docker compose exec postgres psql -U emmatresor -d emmatresor -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+```
+
+#### Automatische Backups (Cron)
+```bash
+# Crontab bearbeiten
+crontab -e
+
+# Tägliches Backup um 2 Uhr nachts
+0 2 * * * cd /pfad/zu/emmatresor && docker compose exec postgres pg_dump -U emmatresor -d emmatresor > db_backups/backup_$(date +\%Y\%m\%d).sql 2>&1
+
+# Wöchentliches Backup mit Cleanup (nur letzte 4 Wochen behalten)
+0 3 * * 0 cd /pfad/zu/emmatresor && docker compose exec postgres pg_dump -U emmatresor -d emmatresor | gzip > db_backups/backup_$(date +\%Y\%m\%d).sql.gz && find db_backups/ -name "*.sql.gz" -mtime +28 -delete
+```
+
+> 💡 **Tipp:** Für automatisierte Backups verwende Umgebungsvariablen aus `.env`:
+> ```bash
+> source .env && docker compose exec postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > backup.sql
+> ```
+
 ### 🏢 Service-Architektur
 
 | Service | Port | Beschreibung | Volumes |

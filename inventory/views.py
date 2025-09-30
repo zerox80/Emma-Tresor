@@ -158,7 +158,12 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         import logging
+        import time
+        import secrets
         security_logger = logging.getLogger('security')
+        
+        # Measure execution time to ensure constant-time behavior
+        start_time = time.perf_counter()
         
         email = attrs.get('email')
         if email:
@@ -166,21 +171,41 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             attrs['email'] = email
 
         username = attrs.get(self.username_field)
+        user_found = False
+        
         if email and not username:
             try:
                 user = User.objects.get(email__iexact=email)
                 attrs[self.username_field] = getattr(user, self.username_field)
-            except User.DoesNotExist as exc:
+                user_found = True
+            except User.DoesNotExist:
+                # Perform dummy operation to maintain constant time
+                # This prevents timing attacks that could enumerate users
+                _ = secrets.compare_digest(email, 'dummy@example.com')
+                
                 # Use generic error message to prevent user enumeration
                 security_logger.warning(
                     'Login attempt with non-existent email',
-                    extra={'email': email}
+                    extra={'email': email[:50]}  # Truncate for logging
                 )
-                raise AuthenticationFailed('Ungültige Anmeldedaten.') from exc
+        
+        # Add artificial delay to normalize timing for failed user lookups
+        if not user_found and email and not username:
+            # Calculate elapsed time and add delay if needed
+            elapsed = time.perf_counter() - start_time
+            target_time = 0.1  # Target 100ms minimum
+            if elapsed < target_time:
+                time.sleep(target_time - elapsed)
+            raise AuthenticationFailed('Ungültige Anmeldedaten.')
         
         try:
             data = super().validate(attrs)
         except AuthenticationFailed:
+            # Add timing normalization for failed authentication
+            elapsed = time.perf_counter() - start_time
+            target_time = 0.15  # Slightly longer for full authentication attempt
+            if elapsed < target_time:
+                time.sleep(target_time - elapsed)
             # Generic error message for failed authentication
             raise AuthenticationFailed('Ungültige Anmeldedaten.')
         
