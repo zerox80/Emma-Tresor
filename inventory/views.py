@@ -463,7 +463,7 @@ class ItemViewSet(viewsets.ModelViewSet):
         if item.owner != request.user:
             raise PermissionDenied('Dieser Gegenstand gehört nicht zu deinem Konto.')
 
-        qr = qrcode.QRCode(version=1, box_size=6, border=4)
+        qr = qrcode.QRCode(version=1, box_size=5, border=4)
         scan_url = f"{settings.FRONTEND_BASE_URL.rstrip('/')}/scan/{item.asset_tag}"
         qr.add_data(scan_url)
         qr.make(fit=True)
