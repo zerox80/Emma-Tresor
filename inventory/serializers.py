@@ -192,7 +192,8 @@ class ItemImageSerializer(serializers.ModelSerializer):
         if value.size > max_size:
             raise serializers.ValidationError('Die Datei ist zu groß. Maximal 8 MB erlaubt.')
 
-        # Check file type
+        # SECURITY FIX: Validate Content-Type (MIME type from HTTP header)
+        # This prevents MIME confusion attacks where malicious files are renamed
         allowed_types = {
             'image/jpeg',
             'image/jpg',
@@ -205,8 +206,13 @@ class ItemImageSerializer(serializers.ModelSerializer):
             'image/heif',
             'application/pdf',
         }
-        if value.content_type not in allowed_types:
-            raise serializers.ValidationError('Nur Bild- oder PDF-Dateien sind erlaubt.')
+        
+        content_type = value.content_type
+        if content_type not in allowed_types:
+            raise serializers.ValidationError(
+                f'Ungültiger Dateityp: {content_type}. '
+                'Nur Bild- oder PDF-Dateien sind erlaubt.'
+            )
 
         # Additional check for file extension
         ext = os.path.splitext(value.name)[1].lower()
@@ -224,6 +230,28 @@ class ItemImageSerializer(serializers.ModelSerializer):
         }
         if ext not in allowed_extensions:
             raise serializers.ValidationError('Ungültige Dateierweiterung. Erlaubt sind Bild- oder PDF-Dateien.')
+        
+        # SECURITY FIX: Cross-validate Content-Type against file extension
+        # This prevents attacks where file extension doesn't match actual content
+        content_to_ext = {
+            'image/jpeg': {'.jpg', '.jpeg'},
+            'image/jpg': {'.jpg', '.jpeg'},
+            'image/png': {'.png'},
+            'image/gif': {'.gif'},
+            'image/webp': {'.webp'},
+            'image/bmp': {'.bmp'},
+            'image/avif': {'.avif'},
+            'image/heic': {'.heic'},
+            'image/heif': {'.heif'},
+            'application/pdf': {'.pdf'},
+        }
+        
+        expected_exts = content_to_ext.get(content_type, set())
+        if ext not in expected_exts:
+            raise serializers.ValidationError(
+                f'Dateiendung {ext} passt nicht zum Dateityp {content_type}. '
+                'Die Datei könnte manipuliert worden sein.'
+            )
 
         return value
 

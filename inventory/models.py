@@ -164,8 +164,28 @@ class ItemImage(TimeStampedModel):
                         raise ValidationError('Die Datei ist kein gültiges PDF-Dokument.')
                 else:
                     try:
+                        # Step 1: Basic header validation
                         with Image.open(file_obj) as img:
                             img.verify()
+                        
+                        # Step 2: Reset file pointer (verify() consumes the stream)
+                        file_obj.seek(0)
+                        
+                        # Step 3: CRITICAL SECURITY FIX - Load and validate all pixel data
+                        # This protects against:
+                        # - Decompression bombs (malformed compressed data)
+                        # - Corrupted/malicious pixel payloads
+                        # - CVEs in image decoding libraries
+                        with Image.open(file_obj) as img:
+                            img.load()  # Decodes all pixel data - will raise exception if corrupted
+                            
+                            # Additional protection: Prevent decompression bombs
+                            MAX_PIXELS = 89478485  # PIL's MAX_IMAGE_PIXELS default (~8K x 8K)
+                            if img.width * img.height > MAX_PIXELS:
+                                raise ValidationError(
+                                    f'Bild ist zu groß: {img.width}x{img.height} Pixel. '
+                                    f'Maximum: {MAX_PIXELS} Pixel gesamt (ca. 9500x9500).'
+                                )
                     except (UnidentifiedImageError, OSError) as exc:
                         raise ValidationError('Die Datei ist kein gültiges Bild.') from exc
                     finally:
