@@ -375,20 +375,23 @@ _csp_script_sources = ["'self'"]
 if DEBUG and _env_bool(os.environ.get('DJANGO_DEBUG_UNSAFE_EVAL'), default=False):
     _csp_script_sources.append("'unsafe-eval'")
 
-CSP_DIRECTIVES = {
-    'default-src': ("'self'",),
-    'script-src': tuple(_csp_script_sources),
-    'style-src': ("'self'",),
-    'img-src': ("'self'", 'data:', 'blob:'),
-    'font-src': ("'self'", 'data:'),
-    'connect-src': tuple(dict.fromkeys(_csp_connect_sources)),
-    'frame-ancestors': ("'self'",),
-    'base-uri': ("'self'",),
-    'object-src': ("'none'",),
-    'form-action': ("'self'",),
-    'frame-src': ("'none'",),
-    'worker-src': ("'self'", 'blob:'),
-    'media-src': ("'self'", 'blob:'),
+# Content Security Policy - django-csp 4.0 format
+CONTENT_SECURITY_POLICY = {
+    'DIRECTIVES': {
+        'default-src': ["'self'"],
+        'script-src': list(_csp_script_sources),
+        'style-src': ["'self'"],
+        'img-src': ["'self'", 'data:', 'blob:'],
+        'font-src': ["'self'", 'data:'],
+        'connect-src': list(dict.fromkeys(_csp_connect_sources)),
+        'frame-ancestors': ["'self'"],
+        'base-uri': ["'self'"],
+        'object-src': ["'none'"],
+        'form-action': ["'self'"],
+        'frame-src': ["'none'"],
+        'worker-src': ["'self'", 'blob:'],
+        'media-src': ["'self'", 'blob:'],
+    },
 }
 
 
