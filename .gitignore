@@ -34,7 +34,7 @@ db.sqlite3-journal
 # Only ignore actual .env files with real secrets
 .env
 .env.local
-# Keep .env.example and .env.production as templates for GitHubocal
+# Keep .env.example and .env.production as templates for GitHub
 
 # IDEs
 .vscode/
