@@ -20,7 +20,6 @@ import {
 } from '../api/inventory';
 import type { Item, ItemList, Location, PaginatedResponse, Tag } from '../types/inventory';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { useAuth } from '../hooks/useAuth';
 
 const PAGE_SIZE = 20;
 
@@ -102,20 +101,6 @@ const ItemsPage: React.FC = () => {
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
 
-  const { logout } = useAuth();
-
-  const handleUnauthorized = useCallback(
-    async (error: AxiosError | null, setMessage: (message: string) => void) => {
-      if (error?.response?.status === 401) {
-        await logout();
-        setMessage('Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
-        return true;
-      }
-      return false;
-    },
-    [logout],
-  );
-
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(
     () => Object.fromEntries(locations.map((location) => [location.id, location.name])),
@@ -171,10 +156,6 @@ const ItemsPage: React.FC = () => {
       setPagination(response);
       setItemsVersion((prev) => prev + 1);
     } catch (error) {
-      const axiosError = error as AxiosError;
-      if (await handleUnauthorized(axiosError, (message: string) => setItemsError(message))) {
-        return;
-      }
       setItemsError('Deine Gegenstände konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.');
       setPendingDetailNavigation(null);
       setDetailNavigationDirection(null);
@@ -194,15 +175,11 @@ const ItemsPage: React.FC = () => {
         setListsInitialized(true);
       }
     } catch (error) {
-      const axiosError = error as AxiosError;
-      if (await handleUnauthorized(axiosError, (message: string) => setListsError(message))) {
-        return;
-      }
       setListsError('Deine Listen konnten nicht geladen werden. Bitte versuche es erneut.');
     } finally {
       setListsLoading(false);
     }
-  }, [handleUnauthorized, listsInitialized]);
+  }, [listsInitialized]);
 
   useEffect(() => {
     setPage(1);
@@ -306,9 +283,6 @@ const ItemsPage: React.FC = () => {
         }
       } catch (error) {
         const axiosError = error as AxiosError;
-        if (await handleUnauthorized(axiosError, (message: string) => setAssignError(message))) {
-          throw axiosError;
-        }
         const message = extractDetailMessage(axiosError) ?? 'Zuweisung fehlgeschlagen. Bitte versuche es erneut.';
         setAssignError(message);
         throw new Error(message);
@@ -316,7 +290,7 @@ const ItemsPage: React.FC = () => {
         setAssignLoading(false);
       }
     },
-    [handleUnauthorized, lists, listsInitialized, selectedItemIds],
+    [lists, listsInitialized, selectedItemIds],
   );
 
   const handleCreateListFromAssign = useCallback(
@@ -330,13 +304,10 @@ const ItemsPage: React.FC = () => {
         return newList;
       } catch (error) {
         const axiosError = error as AxiosError;
-        if (await handleUnauthorized(axiosError, (message: string) => setAssignError(message))) {
-          throw axiosError;
-        }
         throw new Error(extractDetailMessage(axiosError) ?? 'Liste konnte nicht erstellt werden.');
       }
     },
-    [handleUnauthorized, listsInitialized],
+    [listsInitialized],
   );
 
   const handleToggleTag = (tagId: number) => {

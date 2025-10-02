@@ -65,22 +65,12 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
       await fetchProfile();
       return;
     } catch (error) {
+      // The auth interceptor will handle 401 errors and token refresh automatically
+      // If we reach here, it means the user is not authenticated (refresh failed)
       const status = (error as { response?: { status?: number } }).response?.status;
-
-      if (status === 401) {
-        const refreshed = await get().refreshAccessToken();
-        if (refreshed) {
-          try {
-            await fetchProfile();
-            return;
-          } catch (profileError) {
-            const profileStatus = (profileError as { response?: { status?: number } }).response?.status;
-            if (profileStatus && profileStatus !== 401) {
-              console.error('Failed to fetch profile after refresh:', profileError);
-            }
-          }
-        }
-      } else if (status && status !== 401) {
+      
+      if (status && status !== 401) {
+        // Log non-401 errors for debugging
         console.error('Failed to initialise authentication state:', error);
       }
 

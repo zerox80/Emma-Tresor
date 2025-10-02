@@ -5,7 +5,6 @@ import Button from '../components/common/Button';
 import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
 import { fetchAllItems, fetchLists, createList, updateListItems, deleteList } from '../api/inventory';
 import type { Item, ItemList } from '../types/inventory';
-import { useAuth } from '../hooks/useAuth';
 
 interface ListWithItems extends ItemList {
   resolvedItems: Item[];
@@ -25,17 +24,6 @@ const ListsPage: React.FC = () => {
   const [manageError, setManageError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingListId, setDeletingListId] = useState<number | null>(null);
-
-  const { logout } = useAuth();
-
-  const handleUnauthorized = async (axiosError: AxiosError | null, setMessage: (message: string) => void) => {
-    if (axiosError?.response?.status === 401) {
-      await logout();
-      setMessage('Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.');
-      return true;
-    }
-    return false;
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -62,10 +50,6 @@ const ListsPage: React.FC = () => {
         setLists(mappedLists);
       } catch (err) {
         if (!isMounted) {
-          return;
-        }
-        const axiosError = err as AxiosError;
-        if (await handleUnauthorized(axiosError, (message) => setError(message))) {
           return;
         }
         setError('Die Listen konnten nicht synchronisiert werden. Prüfe deine Verbindung und versuche es in Kürze erneut.');
@@ -102,10 +86,6 @@ const ListsPage: React.FC = () => {
       setLists(mappedLists);
       setError(null);
     } catch (err) {
-      const axiosError = err as AxiosError;
-      if (await handleUnauthorized(axiosError, (message) => setError(message))) {
-        return;
-      }
       setError('Aktualisieren fehlgeschlagen. Bitte versuche es gleich erneut.');
     } finally {
       setLoading(false);
@@ -204,10 +184,6 @@ const ListsPage: React.FC = () => {
       setManageError(null);
     } catch (err) {
       const axiosError = err as AxiosError;
-      if (await handleUnauthorized(axiosError, (message) => setManageError(message))) {
-        setManageSaving(false);
-        return;
-      }
       const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
         ? (axiosError.response.data as { detail?: string }).detail
         : null;
@@ -246,10 +222,6 @@ const ListsPage: React.FC = () => {
       }
     } catch (err) {
       const axiosError = err as AxiosError;
-      if (await handleUnauthorized(axiosError, (message) => setDeleteError(message))) {
-        setDeletingListId(null);
-        return;
-      }
       const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
         ? (axiosError.response.data as { detail?: string }).detail
         : null;
