@@ -1,11 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import clsx from 'clsx';
 import type { AxiosError } from 'axios';
 
 import Button from '../components/common/Button';
 import AddItemDialog from '../components/AddItemDialog';
 import ItemDetailView from '../components/ItemDetailView';
 import AssignToListSheet from '../components/AssignToListSheet';
+import StatisticsCards from '../components/items/StatisticsCards';
+import FilterSection from '../components/items/FilterSection';
+import ItemsGrid from '../components/items/ItemsGrid';
+import ItemsTable from '../components/items/ItemsTable';
+import SelectionToolbar from '../components/items/SelectionToolbar';
 import {
   createList,
   createLocation,
@@ -598,175 +602,32 @@ const ItemsPage: React.FC = () => {
         </div>
       )}
 
-      <section className="grid gap-4 lg:grid-cols-4">
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gesamtanzahl</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{loadingItems ? '…' : totalItemsCount}</p>
-          <p className="mt-1 text-xs text-slate-500">Alle Gegenstände, die deinen Filtern entsprechen.</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Summe Stückzahl</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{loadingItems ? '…' : totalQuantity}</p>
-          <p className="mt-1 text-xs text-slate-500">Wie viele Einheiten aktuell erfasst sind.</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Geschätzter Wert</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">
-            {loadingItems ? '…' : new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(totalValue)}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">Basierend auf deinen Angaben zum Kaufpreis.</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Schnellaktionen</p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <Button variant="primary" size="sm" onClick={handleOpenCreateDialog}>
-              Gegenstand hinzufügen
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => void loadItems()} loading={loadingItems}>
-              Aktualisieren
-            </Button>
-          </div>
-        </article>
-      </section>
+      <StatisticsCards
+        totalItemsCount={totalItemsCount}
+        totalQuantity={totalQuantity}
+        totalValue={totalValue}
+        loading={loadingItems}
+        onAddItem={handleOpenCreateDialog}
+        onReload={() => void loadItems()}
+      />
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-lg font-semibold text-slate-900">Inventar filtern</h2>
-            <p className="text-sm text-slate-600">
-              Nutze Suche, Tags und Standorte, um blitzschnell den richtigen Gegenstand zu finden.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <button
-                type="button"
-                className={clsx(
-                  'rounded-md px-3 py-1 transition',
-                  viewMode === 'grid' ? 'bg-white text-brand-600 shadow-sm' : 'hover:text-brand-600',
-                )}
-                onClick={() => setViewMode('grid')}
-              >
-                Karten
-              </button>
-              <button
-                type="button"
-                className={clsx(
-                  'rounded-md px-3 py-1 transition',
-                  viewMode === 'table' ? 'bg-white text-brand-600 shadow-sm' : 'hover:text-brand-600',
-                )}
-                onClick={() => setViewMode('table')}
-              >
-                Tabelle
-              </button>
-            </div>
-            {isFiltered && (
-              <Button type="button" variant="ghost" size="sm" onClick={handleClearFilters}>
-                Filter zurücksetzen
-              </Button>
-            )}
-          </div>
-        </header>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <label htmlFor="items-search" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Suche
-            </label>
-            <div className="mt-1 flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-200/60">
-              <span className="mr-2 text-slate-400">🔍</span>
-              <input
-                id="items-search"
-                type="search"
-                placeholder="Name, Beschreibung, Standort ..."
-                className="w-full border-none bg-transparent text-sm text-slate-900 outline-none"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="lg:col-span-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tags</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {metaLoading && <span className="text-xs text-slate-400">Lade Tags …</span>}
-              {!metaLoading && tags.length === 0 && (
-                <span className="text-xs text-slate-400">Noch keine Tags vorhanden.</span>
-              )}
-              {!metaLoading &&
-                tags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    className={clsx(
-                      'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition',
-                      selectedTagIds.includes(tag.id)
-                        ? 'bg-brand-500 text-white shadow'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                    )}
-                    onClick={() => handleToggleTag(tag.id)}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
-            </div>
-          </div>
-
-          <div className="lg:col-span-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Standorte</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {metaLoading && <span className="text-xs text-slate-400">Lade Standorte …</span>}
-              {!metaLoading && locations.length === 0 && (
-                <span className="text-xs text-slate-400">Noch keine Standorte vorhanden.</span>
-              )}
-              {!metaLoading &&
-                locations.map((location) => (
-                  <button
-                    key={location.id}
-                    type="button"
-                    className={clsx(
-                      'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition',
-                      selectedLocationIds.includes(location.id)
-                        ? 'bg-blue-500 text-white shadow'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                    )}
-                    onClick={() => handleToggleLocation(location.id)}
-                  >
-                    {location.name}
-                  </button>
-                ))}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sortierung</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {[
-              { label: 'Neueste Kaufdaten', value: '-purchase_date' },
-              { label: 'Älteste Kaufdaten', value: 'purchase_date' },
-              { label: 'Name A-Z', value: 'name' },
-              { label: 'Name Z-A', value: '-name' },
-              { label: 'Höchste Menge', value: '-quantity' },
-              { label: 'Höchster Wert', value: '-value' },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={clsx(
-                  'inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold transition',
-                  ordering === option.value
-                    ? 'bg-slate-900 text-white shadow'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                )}
-                onClick={() => setOrdering(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <FilterSection
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        isFiltered={isFiltered}
+        onClearFilters={handleClearFilters}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        tags={tags}
+        locations={locations}
+        metaLoading={metaLoading}
+        selectedTagIds={selectedTagIds}
+        onToggleTag={handleToggleTag}
+        selectedLocationIds={selectedLocationIds}
+        onToggleLocation={handleToggleLocation}
+        ordering={ordering}
+        setOrdering={setOrdering}
+      />
 
       <section className="space-y-4">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -833,154 +694,24 @@ const ItemsPage: React.FC = () => {
         )}
 
         {!loadingItems && items.length > 0 && viewMode === 'grid' && (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => (
-              <article
-                key={item.id}
-                className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <header className="flex items-start justify-between gap-3">
-                  <div>
-                    <h4 className="text-lg font-semibold text-slate-900">{item.name}</h4>
-                    <p className="text-xs text-slate-500">
-                      {item.purchase_date
-                        ? new Date(item.purchase_date).toLocaleDateString('de-DE')
-                        : 'Kaufdatum unbekannt'}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                    {item.quantity}×
-                  </span>
-                </header>
-
-                {item.description && (
-                  <p className="mt-3 line-clamp-3 text-sm text-slate-600">{item.description}</p>
-                )}
-
-                <dl className="mt-4 grid gap-2 text-xs text-slate-500">
-                  <div className="flex items-center justify-between">
-                    <dt>Standort</dt>
-                    <dd className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                      {item.location ? locationMap[item.location] ?? 'Unbekannt' : 'Kein Standort'}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <dt>Wert</dt>
-                    <dd className="font-semibold text-slate-900">{formatCurrency(item.value)}</dd>
-                  </div>
-                </dl>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {item.tags.length > 0 ? (
-                    item.tags.map((tagId) => (
-                      <span
-                        key={tagId}
-                        className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700"
-                      >
-                        {tagMap[tagId] ?? `Tag ${tagId}`}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-xs text-slate-400">Keine Tags</span>
-                  )}
-                </div>
-
-                <div className="mt-4 flex justify-end">
-                  <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenItemDetails(item.id)}>
-                    Details & QR-Code
-                  </Button>
-                </div>
-              </article>
-            ))}
-          </div>
+          <ItemsGrid
+            items={items}
+            locationMap={locationMap}
+            tagMap={tagMap}
+            onOpenDetails={handleOpenItemDetails}
+          />
         )}
 
         {!loadingItems && items.length > 0 && viewMode === 'table' && (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  {selectionMode && (
-                    <th scope="col" className="px-4 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                        checked={areAllSelectedOnPage}
-                        onChange={handleSelectAllCurrentPage}
-                        aria-label="Alle Gegenstände auf dieser Seite auswählen"
-                      />
-                    </th>
-                  )}
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
-                    Name
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
-                    Standort
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-left font-semibold">
-                    Tags
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right font-semibold">
-                    Menge
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right font-semibold">
-                    Wert
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right font-semibold">
-                    Kaufdatum
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right font-semibold">
-                    Aktionen
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
-                {items.map((item) => (
-                  <tr key={item.id} className="transition hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-900">{item.name}</div>
-                      {item.description && (
-                        <p className="mt-1 text-xs text-slate-500 line-clamp-1">{item.description}</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {item.location ? locationMap[item.location] ?? 'Unbekannt' : 'Kein Standort'}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {item.tags.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {item.tags.map((tagId) => (
-                            <span
-                              key={tagId}
-                              className="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700"
-                            >
-                              {tagMap[tagId] ?? `Tag ${tagId}`}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">Keine Tags</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{item.quantity}</td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">
-                      {formatCurrency(item.value)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm">
-                      {item.purchase_date
-                        ? new Date(item.purchase_date).toLocaleDateString('de-DE')
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm">
-                      <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenItemDetails(item.id)}>
-                        Anzeigen
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ItemsTable
+            items={items}
+            locationMap={locationMap}
+            tagMap={tagMap}
+            onOpenDetails={handleOpenItemDetails}
+            selectionMode={selectionMode}
+            areAllSelectedOnPage={areAllSelectedOnPage}
+            onToggleSelectAllCurrentPage={handleSelectAllCurrentPage}
+          />
         )}
 
         {pagination && (pagination.next || pagination.previous) && (
@@ -1012,27 +743,13 @@ const ItemsPage: React.FC = () => {
         )}
       </section>
 
-      {hasSelection && (
-        <div className="fixed bottom-6 left-1/2 z-30 w-full max-w-3xl -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-xl backdrop-blur">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{selectedItemIds.length} Gegenstände ausgewählt</p>
-              <p className="text-xs text-slate-500">Wähle eine Liste oder ändere deine Auswahl.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={handleSelectAllCurrentPage}>
-                {areAllSelectedOnPage ? 'Auswahl dieser Seite entfernen' : 'Diese Seite auswählen'}
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={handleClearSelection}>
-                Auswahl löschen
-              </Button>
-              <Button type="button" variant="secondary" size="sm" onClick={handleOpenAssignSheet}>
-                Zur Liste hinzufügen
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SelectionToolbar
+        selectedCount={selectedItemIds.length}
+        areAllSelectedOnPage={areAllSelectedOnPage}
+        onToggleSelectAllCurrentPage={handleSelectAllCurrentPage}
+        onClearSelection={handleClearSelection}
+        onOpenAssignSheet={handleOpenAssignSheet}
+      />
 
       <AddItemDialog
         open={dialogOpen}
