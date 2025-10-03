@@ -1,199 +1,64 @@
+from django.test import TestCase
+from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
+from inventory.models import Item, Tag, Location
+
+User = get_user_model()
+
 import shutil
 import tempfile
 from io import BytesIO
-from types import SimpleNamespace
+from unittest import mock
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from PIL import Image
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from types import SimpleNamespace
+
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient, APITestCase, APIRequestFactory
 from rest_framework_simplejwt.tokens import RefreshToken
+import time
+from contextlib import contextmanager
 
-from .models import Item, ItemImage, ItemList, Location, Tag
-from .serializers import ItemListSerializer, ItemSerializer, UserRegistrationSerializer
-from .views import ItemImageViewSet
-
-
-User = get_user_model()
+from ..models import Item, ItemImage, ItemList, Location, Tag
+from ..views import ItemImageViewSet
 
 
-class UserRegistrationSerializerTests(TestCase):
-    def test_password_mismatch_raises_error(self):
-        data = {
-            'username': 'newuser',
-            'email': 'newuser@example.com',
-            'password': 'ValidPass123!',
-            'password_confirm': 'DifferentPass123!',
-        }
-        serializer = UserRegistrationSerializer(data=data)
-
-        self.assertFalse(serializer.is_valid())
-        self.assertIn('password_confirm', serializer.errors)
-
-    def test_create_hashes_password_and_returns_user(self):
-        data = {
-            'username': 'secureuser',
-            'email': 'secureuser@example.com',
-            'password': 'ValidPass123!',
-            'password_confirm': 'ValidPass123!',
-        }
-        serializer = UserRegistrationSerializer(data=data)
-
-        self.assertTrue(serializer.is_valid(), serializer.errors)
-        user = serializer.save()
-
-        self.assertIsInstance(user, User)
-        self.assertNotEqual(user.password, data['password'])
-        self.assertTrue(user.check_password(data['password']))
+class TimedAPITestCase(APITestCase):
+    @contextmanager
+    def assertTiming(self, min_seconds):
+        start = time.perf_counter()
+        yield
+        end = time.perf_counter()
+        duration = end - start
+        self.assertTrue(
+            duration >= min_seconds,
+            f"Operation took {duration:.4f}s, which is less than the minimum of {min_seconds}s."
+        )
 
 
-class ItemSerializerTests(TestCase):
+class BaseViewTestCase(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user('alice', 'alice@example.com', 'StrongPass123!')
-        self.other_user = User.objects.create_user('bob', 'bob@example.com', 'StrongPass123!')
-        self.tag_user = Tag.objects.create(name='Electronics', user=self.user)
-        self.tag_user_2 = Tag.objects.create(name='Appliances', user=self.user)
-        self.tag_other = Tag.objects.create(name='Garden', user=self.other_user)
-        self.location_user = Location.objects.create(name='Basement', user=self.user)
-        self.location_other = Location.objects.create(name='Garage', user=self.other_user)
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
 
-    def _build_request(self, user):
-        return SimpleNamespace(user=user, auth=None)
+    def _get_token(self, user):
+        refresh = RefreshToken.for_user(user)
+        return str(refresh.access_token)
 
-    def _get_serializer(self, **kwargs):
-        serializer = ItemSerializer(context={'request': kwargs.pop('request', self._build_request(self.user))}, **kwargs)
-        tag_queryset = Tag.objects.filter(user=self.user)
-        tag_field = serializer.fields['tags']
-        tag_field.queryset = tag_queryset
-        if hasattr(tag_field, 'child_relation'):
-            tag_field.child_relation.queryset = tag_queryset
-        serializer.fields['location'].queryset = Location.objects.filter(user=self.user)
-        return serializer
-
-    def test_querysets_scoped_to_authenticated_user(self):
-        serializer = ItemSerializer(context={'request': self._build_request(self.user)})
-
-        self.assertCountEqual(serializer.fields['tags'].queryset, [self.tag_user, self.tag_user_2])
-        self.assertEqual(list(serializer.fields['location'].queryset), [self.location_user])
-
-    def test_querysets_empty_for_anonymous_user(self):
-        serializer = ItemSerializer(context={'request': self._build_request(AnonymousUser())})
-
-        self.assertEqual(serializer.fields['tags'].queryset.count(), 0)
-        self.assertEqual(serializer.fields['location'].queryset.count(), 0)
-
-    def test_create_assigns_owner_and_tags(self):
-        data = {
-            'name': 'Laptop',
-            'description': 'Work laptop',
-            'quantity': 2,
-            'value': '1200.00',
-            'location': self.location_user.id,
-            'tags': [self.tag_user.id, self.tag_user_2.id],
-        }
-        serializer = self._get_serializer(data=data, request=self._build_request(self.user))
-
-        self.assertTrue(serializer.is_valid(), serializer.errors)
-        item = serializer.save()
-
-        self.assertEqual(item.owner, self.user)
-        self.assertEqual(item.tags.count(), 2)
-        self.assertSetEqual(set(item.tags.all()), {self.tag_user, self.tag_user_2})
-        self.assertEqual(item.location, self.location_user)
-
-    def test_update_replaces_tags_and_fields(self):
-        item = Item.objects.create(name='Camera', owner=self.user, location=self.location_user)
-        item.tags.set([self.tag_user])
-        data = {
-            'name': 'DSLR Camera',
-            'description': 'Camera for photography',
-            'quantity': 3,
-            'value': '800.50',
-            'location': self.location_user.id,
-            'tags': [self.tag_user_2.id],
-        }
-        serializer = self._get_serializer(instance=item, data=data, request=self._build_request(self.user))
-
-        self.assertTrue(serializer.is_valid(), serializer.errors)
-        updated_item = serializer.save()
-
-        updated_item.refresh_from_db()
-        self.assertEqual(updated_item.name, 'DSLR Camera')
-        self.assertEqual(updated_item.description, 'Camera for photography')
-        self.assertEqual(updated_item.quantity, 3)
-        self.assertEqual(str(updated_item.value), '800.50')
-        self.assertSetEqual(set(updated_item.tags.all()), {self.tag_user_2})
-
-
-class ItemListSerializerTests(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user('listowner', 'listowner@example.com', 'StrongPass123!')
-        self.other_user = User.objects.create_user('intruder', 'intruder@example.com', 'StrongPass123!')
-        self.item_one = Item.objects.create(name='Camera', owner=self.user)
-        self.item_two = Item.objects.create(name='Tripod', owner=self.user)
-        self.other_item = Item.objects.create(name='Saw', owner=self.other_user)
-
-    def _build_request(self, user):
-        return SimpleNamespace(user=user, auth=None)
-
-    def _get_serializer(self, **kwargs):
-        context = kwargs.pop('context', {'request': self._build_request(self.user)})
-        serializer = ItemListSerializer(context=context, **kwargs)
-        item_queryset = Item.objects.filter(owner=self.user)
-        items_field = serializer.fields['items']
-        items_field.queryset = item_queryset
-        if hasattr(items_field, 'child_relation'):
-            items_field.child_relation.queryset = item_queryset
-        return serializer
-
-    def test_querysets_scoped_to_authenticated_user(self):
-        serializer = ItemListSerializer(context={'request': self._build_request(self.user)})
-        item_queryset = Item.objects.filter(owner=self.user)
-        serializer.fields['items'].queryset = item_queryset
-        if hasattr(serializer.fields['items'], 'child_relation'):
-            serializer.fields['items'].child_relation.queryset = item_queryset
-
-        self.assertCountEqual(serializer.fields['items'].queryset, [self.item_one, self.item_two])
-
-    def test_querysets_empty_for_anonymous_user(self):
-        serializer = ItemListSerializer(context={'request': self._build_request(AnonymousUser())})
-
-        self.assertEqual(serializer.fields['items'].queryset.count(), 0)
-
-    def test_create_assigns_owner_and_items(self):
-        data = {'name': 'Photography', 'items': [self.item_one.id, self.item_two.id]}
-        serializer = self._get_serializer(data=data)
-
-        self.assertTrue(serializer.is_valid(), serializer.errors)
-        item_list = serializer.save()
-
-        self.assertEqual(item_list.owner, self.user)
-        self.assertSetEqual(set(item_list.items.all()), {self.item_one, self.item_two})
-
-    def test_create_rejects_items_from_other_user(self):
-        data = {'name': 'Invalid', 'items': [self.other_item.id]}
-        serializer = self._get_serializer(data=data)
-
-        self.assertFalse(serializer.is_valid())
-        self.assertIn('items', serializer.errors)
-
-    def test_update_replaces_items_and_name(self):
-        item_list = ItemList.objects.create(name='Gear', owner=self.user)
-        item_list.items.set([self.item_one])
-        data = {'name': 'Studio Gear', 'items': [self.item_two.id]}
-        serializer = self._get_serializer(instance=item_list, data=data)
-
-        self.assertTrue(serializer.is_valid(), serializer.errors)
-        updated_list = serializer.save()
-
-        updated_list.refresh_from_db()
-        self.assertEqual(updated_list.name, 'Studio Gear')
-        self.assertSetEqual(set(updated_list.items.all()), {self.item_two})
+class LandingPageTests(TestCase):
+    def test_landing_page_uses_configured_frontend_login_url(self):
+        custom_url = 'https://app.example.com/login'
+        with mock.patch.object(settings, 'FRONTEND_LOGIN_URL', custom_url):
+            response = self.client.get(reverse('home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(custom_url, response.content.decode('utf-8'))
 
 
 class TagViewSetTests(APITestCase):
@@ -236,48 +101,48 @@ class CustomTokenViewTests(APITestCase):
         self.user = User.objects.create_user('tokenuser', 'tokenuser@example.com', 'StrongPass123!')
 
     def test_token_response_includes_user_payload(self):
-        url = reverse('token_obtain_pair')
-        payload = {'username': 'tokenuser', 'password': 'StrongPass123!'}
+        with mock.patch('rest_framework.views.APIView.get_throttles', return_value=[]):
+            url = reverse('token_obtain_pair')
+            payload = {'username': 'tokenuser', 'password': 'StrongPass123!'}
 
-        response = self.client.post(url, payload, format='json')
+            response = self.client.post(url, payload, format='json')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
-        self.assertIn('user', response.data)
-        self.assertEqual(response.data['user']['username'], 'tokenuser')
-        self.assertEqual(response.data['user']['email'], 'tokenuser@example.com')
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertIn(settings.JWT_ACCESS_COOKIE_NAME, response.cookies)
+            self.assertIn(settings.JWT_REFRESH_COOKIE_NAME, response.cookies)
+            self.assertIn('user', response.data)
+            self.assertEqual(response.data['user']['username'], 'tokenuser')
+            self.assertEqual(response.data['user']['email'], 'tokenuser@example.com')
 
 
 class LogoutViewTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user('logoutuser', 'logout@example.com', 'StrongPass123!')
+        self.other_user = User.objects.create_user('otheruser', 'other@example.com', 'StrongPass123!')
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
-    def test_missing_refresh_token_returns_error(self):
+    def test_logout_with_missing_token_succeeds(self):
         url = reverse('logout')
-
         response = self.client.post(url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['detail'], 'Aktualisierungstoken erforderlich.')
-
-    def test_invalid_refresh_token_returns_error(self):
+    def test_logout_with_invalid_token_succeeds(self):
         url = reverse('logout')
-
         response = self.client.post(url, {'refresh': 'not-a-token'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['detail'], 'Aktualisierungstoken ungültig.')
-
-    def test_valid_refresh_token_blacklists_and_returns_no_content(self):
+    def test_logout_with_valid_token_succeeds(self):
         url = reverse('logout')
         refresh = RefreshToken.for_user(self.user)
-
         response = self.client.post(url, {'refresh': str(refresh)}, format='json')
-
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_logout_with_other_users_token_returns_403(self):
+        url = reverse('logout')
+        refresh = RefreshToken.for_user(self.other_user)
+        response = self.client.post(url, {'refresh': str(refresh)}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class ItemViewSetTests(APITestCase):
@@ -483,3 +348,166 @@ class ItemImageViewSetTests(APITestCase):
 
         with self.assertRaises(PermissionDenied):
             view.perform_create(serializer)
+
+
+class UserScopedViewSetTests(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user('user1', 'user1@example.com', 'password')
+        self.user2 = User.objects.create_user('user2', 'user2@example.com', 'password')
+
+        self.tag1 = Tag.objects.create(name='Tag 1', user=self.user1)
+        self.location1 = Location.objects.create(name='Location 1', user=self.user1)
+
+        self.tag2 = Tag.objects.create(name='Tag 2', user=self.user2)
+        self.location2 = Location.objects.create(name='Location 2', user=self.user2)
+
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user1)
+
+    def test_list_tags_returns_only_own_tags(self):
+        url = reverse('tag-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], self.tag1.name)
+
+    def test_cannot_retrieve_other_user_tag(self):
+        url = reverse('tag-detail', args=[self.tag2.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_update_other_user_tag(self):
+        url = reverse('tag-detail', args=[self.tag2.id])
+        response = self.client.put(url, {'name': 'Updated Tag'})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_delete_other_user_tag(self):
+        url = reverse('tag-detail', args=[self.tag2.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Tag.objects.filter(pk=self.tag2.id).exists())
+
+    def test_list_locations_returns_only_own_locations(self):
+        url = reverse('location-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], self.location1.name)
+
+    def test_cannot_retrieve_other_user_location(self):
+        url = reverse('location-detail', args=[self.location2.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_update_other_user_location(self):
+        url = reverse('location-detail', args=[self.location2.id])
+        response = self.client.put(url, {'name': 'Updated Location'})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_delete_other_user_location(self):
+        url = reverse('location-detail', args=[self.location2.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Location.objects.filter(pk=self.location2.id).exists())
+
+
+class ItemViewSetCustomActionsTests(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user('user1', 'user1@example.com', 'password')
+        self.user2 = User.objects.create_user('user2', 'user2@example.com', 'password')
+
+        self.item1 = Item.objects.create(name='Item 1', owner=self.user1)
+        self.item2 = Item.objects.create(name='Item 2', owner=self.user2)
+
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user1)
+
+    def test_lookup_by_asset_tag_success(self):
+        url = reverse('item-lookup-by-asset-tag', kwargs={'asset_tag': self.item1.asset_tag})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], self.item1.name)
+
+    def test_lookup_by_asset_tag_not_found(self):
+        url = reverse('item-lookup-by-asset-tag', kwargs={'asset_tag': self.item2.asset_tag})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_lookup_by_invalid_asset_tag(self):
+        url = reverse('item-lookup-by-asset-tag', kwargs={'asset_tag': 'invalid-uuid'})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_generate_qr_code_success(self):
+        url = reverse('item-generate-qr-code', kwargs={'pk': self.item1.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'image/png')
+
+    def test_generate_qr_code_for_other_user_item_not_found(self):
+        url = reverse('item-generate-qr-code', kwargs={'pk': self.item2.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_generate_qr_code_download(self):
+        url = reverse('item-generate-qr-code', kwargs={'pk': self.item1.pk})
+        response = self.client.get(url, {'download': 'true'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('attachment', response['Content-Disposition'])
+
+    def test_generate_qr_code_not_available(self):
+        with mock.patch.dict('sys.modules', {'qrcode': None}):
+            url = reverse('item-generate-qr-code', kwargs={'pk': self.item1.pk})
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class AuthSecurityTests(TimedAPITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('auth_user', 'auth@example.com', 'password123')
+
+    def test_login_with_nonexistent_email_is_slowed(self):
+        url = reverse('token_obtain_pair')
+        with self.assertLogs('security', level='WARNING') as cm:
+            with self.assertTiming(min_seconds=0.1):
+                response = self.client.post(url, {'email': 'nobody@example.com', 'password': 'password'})
+                self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertIn('Login attempt with non-existent email', cm.output[0])
+
+    def test_login_with_wrong_password_is_slowed(self):
+        url = reverse('token_obtain_pair')
+        with self.assertTiming(min_seconds=0.15):
+            response = self.client.post(url, {'email': self.user.email, 'password': 'wrong-password'})
+            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_refresh_token_obtains_new_access_token(self):
+        # First, log in to get the refresh token cookie
+        login_url = reverse('token_obtain_pair')
+        self.client.post(login_url, {'email': self.user.email, 'password': 'password123'})
+
+        refresh_url = reverse('token_refresh')
+        response = self.client.post(refresh_url, {})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(settings.JWT_ACCESS_COOKIE_NAME, response.cookies)
+        self.assertTrue(response.data['rotated'])
+
+    def test_remember_me_sets_long_lived_refresh_token(self):
+        login_url = reverse('token_obtain_pair')
+        response = self.client.post(login_url, {'email': self.user.email, 'password': 'password123', 'remember': True})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        refresh_cookie = response.cookies.get(settings.JWT_REFRESH_COOKIE_NAME)
+        self.assertIsNotNone(refresh_cookie)
+        # 7 days in seconds
+        self.assertGreater(refresh_cookie['max-age'], 7 * 24 * 3600 - 10)
+
+    @override_settings(JWT_COOKIE_SECURE=True, JWT_COOKIE_SAMESITE='None')
+    def test_secure_cookies_are_set_correctly(self):
+        login_url = reverse('token_obtain_pair')
+        response = self.client.post(login_url, {'email': self.user.email, 'password': 'password123'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        access_cookie = response.cookies.get(settings.JWT_ACCESS_COOKIE_NAME)
+        self.assertTrue(access_cookie['secure'])
+        self.assertEqual(access_cookie['samesite'], 'None')
+        self.assertTrue(access_cookie['httponly'])
