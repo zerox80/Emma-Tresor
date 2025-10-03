@@ -291,6 +291,9 @@ REST_FRAMEWORK = {
     },
 }
 
+if TESTING:
+    REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
+
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Reduced from 30 to 15 minutes for better security

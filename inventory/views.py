@@ -93,9 +93,30 @@ def _clear_token_cookies(response):
     access_options = _build_cookie_options(settings.JWT_ACCESS_COOKIE_PATH)
     refresh_options = _build_cookie_options(settings.JWT_REFRESH_COOKIE_PATH)
 
-    response.delete_cookie(settings.JWT_ACCESS_COOKIE_NAME, **access_options)
-    response.delete_cookie(settings.JWT_REFRESH_COOKIE_NAME, **refresh_options)
-    response.delete_cookie(settings.JWT_REMEMBER_COOKIE_NAME, **access_options)
+    # The delete_cookie method only accepts path and domain.
+    # We can extract them from the options we've built.
+    access_path = access_options.get('path', '/')
+    access_domain = access_options.get('domain')
+
+    refresh_path = refresh_options.get('path', '/')
+    refresh_domain = refresh_options.get('domain')
+
+
+    response.delete_cookie(
+        settings.JWT_ACCESS_COOKIE_NAME,
+        path=access_path,
+        domain=access_domain,
+    )
+    response.delete_cookie(
+        settings.JWT_REFRESH_COOKIE_NAME,
+        path=refresh_path,
+        domain=refresh_domain,
+    )
+    response.delete_cookie(
+        settings.JWT_REMEMBER_COOKIE_NAME,
+        path=access_path,
+        domain=access_domain,
+    )
 
 
 class LoginRateThrottle(throttling.AnonRateThrottle):
@@ -321,28 +342,22 @@ class LogoutView(APIView):
             or request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
         )
 
-        response = Response(status=status.HTTP_204_NO_CONTENT)
-
         if refresh_token:
             try:
                 token = RefreshToken(refresh_token)
                 token_user_id = token.payload.get('user_id')
-                if token_user_id != request.user.id:
-                    error_response = Response(
+
+                if str(token_user_id) != str(request.user.id):
+                    return Response(
                         {'detail': 'Aktualisierungstoken gehört nicht zu deinem Konto.'},
                         status=status.HTTP_403_FORBIDDEN,
                     )
-                    _clear_token_cookies(error_response)
-                    return error_response
-                try:
-                    token.blacklist()
-                except TokenError:
-                    pass
-            except TokenError:
-                # Invalid token – clear cookies and treat as logged out
-                _clear_token_cookies(response)
-                return response
 
+                token.blacklist()
+            except (TokenError, AttributeError):
+                pass
+
+        response = Response(status=status.HTTP_204_NO_CONTENT)
         _clear_token_cookies(response)
         return response
 
