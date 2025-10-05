@@ -40,6 +40,37 @@ const resolveBaseURL = () => {
   }
 };
 
+/**
+ * Get CSRF token from cookie
+ * Django's default CSRF cookie name is 'csrftoken'
+ */
+export const getCSRFToken = (): string | null => {
+  if (typeof document === 'undefined') return null;
+  
+  const name = 'csrftoken';
+  const cookieValue = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${name}=`))
+    ?.split('=')[1];
+  
+  return cookieValue || null;
+};
+
+/**
+ * Ensure CSRF token is available by fetching it from the backend
+ */
+export const ensureCSRFToken = async (): Promise<void> => {
+  const token = getCSRFToken();
+  if (token) return; // Token already exists
+  
+  try {
+    // Fetch CSRF token from backend
+    await axios.get(`${apiBaseUrl}/csrf/`, { withCredentials: true });
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', error);
+  }
+};
+
 export const apiBaseUrl = resolveBaseURL();
 
 const apiClient = axios.create({
@@ -50,5 +81,22 @@ const apiClient = axios.create({
     Accept: 'application/json',
   },
 });
+
+// Add CSRF token to all requests
+apiClient.interceptors.request.use(
+  (config) => {
+    // Only add CSRF token for state-changing methods
+    if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+      const csrfToken = getCSRFToken();
+      if (csrfToken) {
+        config.headers['X-CSRFToken'] = csrfToken;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 export default apiClient;

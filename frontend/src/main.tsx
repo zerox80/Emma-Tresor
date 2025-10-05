@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
-import apiClient from './api/client';
+import apiClient, { ensureCSRFToken } from './api/client';
 import { setupAuthInterceptor } from './api/authInterceptor';
 import { useAuthStore } from './store/authStore';
 import App from './App';
@@ -14,6 +14,11 @@ setupAuthInterceptor(
   () => useAuthStore.getState().refreshAccessToken(),
   () => useAuthStore.getState().logout(),
 );
+
+// Initialize CSRF token before rendering
+ensureCSRFToken().catch((error) => {
+  console.error('Failed to initialize CSRF token:', error);
+});
 
 const rootElement = document.getElementById('app');
 

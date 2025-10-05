@@ -113,6 +113,20 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 if not SECRET_KEY:
     raise ImproperlyConfigured('DJANGO_SECRET_KEY environment variable is required.')
 
+# Secret Key Rotation Support
+# During rotation, add old keys to SECRET_KEY_FALLBACKS to maintain backward compatibility
+# Example rotation process:
+# 1. Generate new key -> set as DJANGO_SECRET_KEY_NEW
+# 2. Move current key to DJANGO_SECRET_KEY_OLD_1
+# 3. After grace period (e.g., 30 days), remove old keys
+SECRET_KEY_FALLBACKS = [
+    key for key in [
+        os.environ.get('DJANGO_SECRET_KEY_OLD_1', ''),
+        os.environ.get('DJANGO_SECRET_KEY_OLD_2', ''),
+        os.environ.get('DJANGO_SECRET_KEY_OLD_3', ''),
+    ] if key and len(key) >= 50
+]
+
 DEBUG = _env_bool(os.environ.get('DJANGO_DEBUG'), default=False)
 
 # Stricter secret key validation
@@ -358,10 +372,14 @@ SECURE_SSL_REDIRECT = SSL_REDIRECT and not TESTING
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 
-CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # Must be False so JavaScript can read it for X-CSRFToken header
+CSRF_COOKIE_NAME = 'csrftoken'  # Standard Django CSRF cookie name
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header name for CSRF token
 # Only use 'None' for SameSite when both FORCE_SSL is enabled AND CSRF_COOKIE_SECURE is explicitly True
 CSRF_COOKIE_SECURE = FORCE_SSL  # Ensure CSRF cookie is secure when SSL is forced
 CSRF_COOKIE_SAMESITE = 'None' if (FORCE_SSL and CSRF_COOKIE_SECURE) else 'Lax'
+CSRF_USE_SESSIONS = False  # Use cookie-based CSRF tokens
+CSRF_COOKIE_AGE = 31449600  # 1 year (same as Django default)
 
 # Compression settings
 USE_GZIP = True

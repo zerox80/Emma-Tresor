@@ -4,6 +4,7 @@ from .views import (
     CustomTokenObtainPairView,
     CustomTokenRefreshView,
     CurrentUserView,
+    GetCSRFTokenView,
     ItemImageDownloadView,
     ItemImageViewSet,
     ItemListViewSet,
@@ -23,6 +24,7 @@ router.register(r'lists', ItemListViewSet, basename='itemlist')
 router.register(r'users', UserRegistrationViewSet, basename='user-registration')
 
 urlpatterns = [
+    path('csrf/', GetCSRFTokenView.as_view(), name='csrf_token'),
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
     path('auth/me/', CurrentUserView.as_view(), name='current_user'),

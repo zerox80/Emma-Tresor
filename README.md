@@ -75,10 +75,14 @@
 ### 🔒 Sicherheit und Authentifizierung
 - **JWT-basierte Authentifizierung** mit SimpleJWT und Cookie-Support
 - **Rate-Limiting** (5 Login-Versuche/min) und Logout-Blacklisting
+- **✅ CSRF-Protection aktiv** - Schutz vor Cross-Site Request Forgery (seit v2.0)
+- **✅ Secret-Key-Rotation** - Graceful Key-Rotation mit bis zu 3 Fallback-Keys (seit v2.0)
 - **CSRF/CORS-Schutz** mit gehärteter Konfiguration und Custom Middleware
 - **Sichere Token-Verwaltung** (HttpOnly Cookies, SameSite, Secure flags)
 - **CSP-Header** (Content Security Policy) für XSS-Schutz
 - **HSTS** für HTTPS-Erzwingung in Produktion
+
+> 🔐 **Security Update v2.0:** Kritische Sicherheitslücken wurden behoben! Siehe [`docs/SECURITY_UPDATE_CSRF_SECRETKEY.md`](docs/SECURITY_UPDATE_CSRF_SECRETKEY.md) für Details.
 
 ## 🛠️ Technologie-Stack
 
