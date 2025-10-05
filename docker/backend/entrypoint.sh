@@ -7,6 +7,10 @@ set -o pipefail
 mkdir -p /vol/web/static /vol/web/media /vol/web/private_media
 chown -R appuser:appuser /vol/web/static /vol/web/media /vol/web/private_media
 
+# Fix app logs directory permissions (for security.log)
+mkdir -p /app/logs
+chown -R appuser:appuser /app/logs
+
 if [ "${DB_VENDOR:-sqlite}" = "postgres" ]; then
     echo "Waiting for PostgreSQL to become available..."
     python <<'PY'
