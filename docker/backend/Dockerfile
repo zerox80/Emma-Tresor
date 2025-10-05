@@ -33,8 +33,8 @@ RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
 
 ENV DJANGO_SETTINGS_MODULE=EmmaTresor.settings
 
-# Switch to non-root user
-USER appuser
+# Note: We start as root to fix volume permissions in entrypoint, then switch to appuser
+# The entrypoint.sh will handle the user switch
 
 EXPOSE 8000
 

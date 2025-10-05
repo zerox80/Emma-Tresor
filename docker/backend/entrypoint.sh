@@ -3,7 +3,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-mkdir -p /vol/web/static /vol/web/media
+# Fix volume permissions (we start as root to handle mounted volumes)
+mkdir -p /vol/web/static /vol/web/media /vol/web/private_media
+chown -R appuser:appuser /vol/web/static /vol/web/media /vol/web/private_media
 
 if [ "${DB_VENDOR:-sqlite}" = "postgres" ]; then
     echo "Waiting for PostgreSQL to become available..."
@@ -59,4 +61,6 @@ else:
 PY
 fi
 
-exec "$@"
+# Switch to appuser for running the application (we started as root to fix permissions)
+echo "Switching to appuser for application execution..."
+exec su appuser -c "exec $*"
