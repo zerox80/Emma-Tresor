@@ -2,18 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import CreatableSelect from 'react-select/creatable';
-import { components } from 'react-select';
-import type {
-  CSSObjectWithLabel,
-  DropdownIndicatorProps,
-  FormatOptionLabelMeta,
-  MultiValue,
-  PlaceholderProps,
-  StylesConfig,
-} from 'react-select';
 
-import Button from './common/Button';
+import Button from './common/Button.tsx';
+import TagSelector from './TagSelector.tsx';
+import type { TagSelectorOption } from './TagSelector.tsx';
 import {
   createItem,
   updateItem,
@@ -34,190 +26,6 @@ interface AddItemDialogProps {
   item?: Item | null;
   onUpdated?: (item: Item, warning?: string | null) => void;
 }
-
-interface TagOption {
-  label: string;
-  value: number;
-}
-
-const TagDropdownIndicator: React.FC<DropdownIndicatorProps<TagOption, true>> = (props) => (
-  <components.DropdownIndicator {...props}>
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
-        props.selectProps.menuIsOpen ? 'rotate-180 text-slate-700' : ''
-      }`}
-    >
-      <path
-        d="M5.25 7.5L10 12.25L14.75 7.5"
-        stroke="currentColor"
-        strokeWidth={1.6}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  </components.DropdownIndicator>
-);
-
-const TagPlaceholder: React.FC<PlaceholderProps<TagOption, true>> = (props) => (
-  <components.Placeholder {...props}>
-    <span className="flex items-center gap-2 text-sm text-slate-500">
-      <svg
-        viewBox="0 0 20 20"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-4 w-4 text-slate-400"
-      >
-        <path
-          d="M4 10.5L8.5 15L16 6.5L13.25 4L8.5 9.5L6.75 7.75L4 10.5Z"
-          stroke="currentColor"
-          strokeWidth={1.4}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span>Bestähende Tags auswählen oder neue erstellen…</span>
-    </span>
-  </components.Placeholder>
-);
-
-const renderTagOption = (option: TagOption) => (
-  <div className="flex w-full items-center justify-between text-sm">
-    <span className="font-medium text-slate-700">{option.label}</span>
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">Tag</span>
-  </div>
-);
-
-const formatTagOptionLabel = (
-  option: TagOption,
-  meta: FormatOptionLabelMeta<TagOption>,
-) => (meta.context === 'menu' ? renderTagOption(option) : option.label);
-
-const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
-  container: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    width: '100%',
-  }),
-  control: (base: CSSObjectWithLabel, state) => ({
-    ...base,
-    minHeight: 52,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: state.isFocused ? 'rgb(99, 102, 241)' : 'rgba(148, 163, 184, 0.55)',
-    boxShadow: state.isFocused
-      ? '0 0 0 6px rgba(99, 102, 241, 0.18)'
-      : '0 12px 32px rgba(15, 23, 42, 0.08)',
-    backgroundColor: state.isDisabled ? 'rgba(226, 232, 240, 0.35)' : 'rgba(248, 250, 255, 0.95)',
-    paddingLeft: 6,
-    paddingRight: 6,
-    transition: 'all 0.25s ease',
-    ':hover': {
-      borderColor: 'rgb(99, 102, 241)',
-    },
-    cursor: state.isDisabled ? 'not-allowed' : 'text',
-  }),
-  valueContainer: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    gap: 8,
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingLeft: 2,
-    paddingRight: 2,
-  }),
-  placeholder: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    color: '#475569',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-  }),
-  input: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    color: '#0f172a',
-    fontSize: '0.9rem',
-  }),
-  multiValue: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    borderRadius: 9999,
-    backgroundColor: 'rgba(99, 102, 241, 0.16)',
-    paddingInline: 10,
-    paddingBlock: 4,
-    boxShadow: '0 6px 14px rgba(99, 102, 241, 0.18)',
-  }),
-  multiValueLabel: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    color: '#3730a3',
-    fontWeight: 600,
-    fontSize: '0.75rem',
-    paddingRight: 4,
-  }),
-  multiValueRemove: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    color: '#4338ca',
-    borderRadius: 9999,
-    cursor: 'pointer',
-    ':hover': {
-      backgroundColor: 'rgba(67, 56, 202, 0.12)',
-      color: '#312e81',
-    },
-  }),
-  clearIndicator: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    padding: 6,
-    color: '#475569',
-    ':hover': {
-      color: '#0f172a',
-    },
-  }),
-  dropdownIndicator: (base: CSSObjectWithLabel, state) => ({
-    ...base,
-    padding: 6,
-    color: state.isFocused ? '#1e293b' : '#475569',
-    transition: 'transform 0.2s ease, color 0.2s ease',
-    transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'none',
-  }),
-  indicatorSeparator: () => ({ display: 'none' }),
-  menu: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    borderRadius: 16,
-    padding: 6,
-    border: '1px solid rgba(203, 213, 225, 0.7)',
-    boxShadow: '0 30px 60px rgba(15, 23, 42, 0.16)',
-    background: 'linear-gradient(180deg, rgba(248, 250, 255, 0.98) 0%, #ffffff 100%)',
-  }),
-  menuList: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    maxHeight: 240,
-    padding: 0,
-  }),
-  option: (base: CSSObjectWithLabel, state) => ({
-    ...base,
-    borderRadius: 12,
-    fontWeight: state.isSelected ? 600 : 500,
-    backgroundColor: state.isSelected
-      ? 'rgba(99, 102, 241, 0.18)'
-      : state.isFocused
-      ? 'rgba(226, 232, 240, 0.65)'
-      : '#fff',
-    color: '#0f172a',
-    padding: '10px 12px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  }),
-  noOptionsMessage: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    padding: '14px 12px',
-    fontSize: '0.875rem',
-    color: '#94a3b8',
-  }),
-  menuPortal: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
-    ...base,
-    zIndex: 9999,
-  }),
-};
 
 const MAX_FILES = FILE_UPLOAD_CONSTANTS.MAX_FILES;
 const MAX_FILE_SIZE_MB = FILE_UPLOAD_CONSTANTS.MAX_FILE_SIZE_MB;
@@ -307,7 +115,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   const [currentStep, setCurrentStep] = useState<StepIndex>(0);
   const [formError, setFormError] = useState<string | null>(null);
-  const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
+  const [tagOptions, setTagOptions] = useState<TagSelectorOption[]>([]);
   const [sortedLocations, setSortedLocations] = useState<Location[]>([]);
   const [isCreatingTag, setIsCreatingTag] = useState(false);
   const [tagCreationError, setTagCreationError] = useState<string | null>(null);
@@ -325,7 +133,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   useEffect(() => {
     if (open) {
-      const sortedTags = [...tags].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')); 
+      const sortedTags = [...tags].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
       setTagOptions(sortedTags.map((tag) => ({ label: tag.name, value: tag.id })));
       setSortedLocations([...locations].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
     }
@@ -576,28 +384,25 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, []);
 
-  const handleCreateTagOption = useCallback(
-    async (
-      inputValue: string,
-      fieldOnChange: (value: number[]) => void,
-      currentValue: number[] | undefined,
-    ) => {
-      const trimmed = inputValue.trim();
+  const handleCreateTag = useCallback(
+    async (name: string): Promise<TagSelectorOption | null> => {
+      const trimmed = name.trim();
       if (trimmed.length === 0) {
-        return;
+        return null;
       }
 
       try {
         setIsCreatingTag(true);
         setTagCreationError(null);
         const newTag = await onCreateTag(trimmed);
-        const newOption: TagOption = { label: newTag.name, value: newTag.id };
+        const newOption: TagSelectorOption = { label: newTag.name, value: newTag.id };
         setTagOptions((prev) =>
           [...prev, newOption].sort((a, b) => a.label.localeCompare(b.label, 'de-DE')),
         );
-        fieldOnChange([...(currentValue ?? []), newTag.id]);
+        return newOption;
       } catch (error) {
         setTagCreationError('Tag konnte nicht erstellt werden. Bitte versuche es erneut.');
+        return null;
       } finally {
         setIsCreatingTag(false);
       }
@@ -1006,44 +811,17 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800">Tags</label>
                   <Controller
                     control={control}
                     name="tags"
                     render={({ field }) => (
-                      <CreatableSelect
-                        isMulti
-                        isClearable
-                        isDisabled={isSubmitting}
-                        isLoading={isCreatingTag}
-                        placeholder="Bestehende Tags auswählen oder neue erstellen..."
-                        value={tagOptions.filter((option) => field.value?.includes(option.value))}
+                      <TagSelector
                         options={tagOptions}
-                        classNamePrefix="tag-select"
-                        styles={TAG_SELECT_STYLES}
-                        menuPortalTarget={typeof window !== 'undefined' ? document.body : undefined}
-                        menuPlacement="auto"
-                        menuShouldScrollIntoView={false}
-                        components={{
-                          A11yText: () => null,
-                        }}
-                        noOptionsMessage={() => 'Keine passenden Tags gefunden.'}
-                        formatCreateLabel={(inputValue) => `„${inputValue}“ als neuen Tag anlegen`}
-                        createOptionPosition="first"
-                        screenReaderStatus={() => ''}
-                        ariaLiveMessages={{
-                          guidance: () => '',
-                          onChange: () => '',
-                          onCreateOption: () => '',
-                          onFocus: () => '',
-                        }}
-                        onChange={(selected: MultiValue<TagOption>) => {
-                          const values = selected.map((option) => option.value);
-                          field.onChange(values);
-                        }}
-                        onCreateOption={(inputValue) =>
-                          void handleCreateTagOption(inputValue, field.onChange, field.value)
-                        }
+                        selectedIds={field.value ?? []}
+                        onChange={field.onChange}
+                        onCreateTag={handleCreateTag}
+                        disabled={isSubmitting}
+                        isCreating={isCreatingTag}
                       />
                     )}
                   />
