@@ -3,7 +3,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import CreatableSelect from 'react-select/creatable';
-import type { MultiValue, StylesConfig } from 'react-select';
+import { components } from 'react-select';
+import type { DropdownIndicatorProps, MultiValue, StylesConfig } from 'react-select';
 
 import Button from './common/Button';
 import {
@@ -31,16 +32,56 @@ interface TagOption {
   label: string;
   value: number;
 }
+
+const TagDropdownIndicator: React.FC<DropdownIndicatorProps<TagOption, true>> = (props) => (
+  <components.DropdownIndicator {...props}>
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
+        props.selectProps.menuIsOpen ? 'rotate-180 text-slate-700' : ''
+      }`}
+    >
+      <path
+        d="M5.25 7.5L10 12.25L14.75 7.5"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </components.DropdownIndicator>
+);
+
+const renderTagOption = (option: TagOption) => (
+  <div className="flex w-full items-center justify-between text-sm">
+    <span className="font-medium text-slate-700">{option.label}</span>
+    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">Tag</span>
+  </div>
+);
+
 const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
+  container: (base) => ({
+    ...base,
+    width: '100%',
+  }),
   control: (base, state) => ({
     ...base,
-    minHeight: 48,
-    borderRadius: 16,
-    borderColor: state.isFocused ? 'rgb(59 130 246)' : 'rgb(203 213 225)',
-    boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.18)' : 'none',
-    backgroundColor: '#fff',
-    paddingLeft: 8,
-    paddingRight: 8,
+    minHeight: 52,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: state.isFocused ? 'rgb(99, 102, 241)' : 'rgba(148, 163, 184, 0.55)',
+    boxShadow: state.isFocused
+      ? '0 0 0 6px rgba(99, 102, 241, 0.18)'
+      : '0 12px 32px rgba(15, 23, 42, 0.08)',
+    backgroundColor: state.isDisabled ? 'rgba(226, 232, 240, 0.35)' : 'rgba(248, 250, 255, 0.95)',
+    paddingLeft: 6,
+    paddingRight: 6,
+    transition: 'all 0.25s ease',
+    ':hover': {
+      borderColor: 'rgb(99, 102, 241)',
+    },
     cursor: state.isDisabled ? 'not-allowed' : 'text',
   }),
   valueContainer: (base) => ({
@@ -48,38 +89,43 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     gap: 8,
     paddingTop: 6,
     paddingBottom: 6,
+    paddingLeft: 2,
+    paddingRight: 2,
   }),
   placeholder: (base) => ({
     ...base,
-    color: '#94a3b8',
-    fontSize: '0.875rem',
+    color: '#475569',
+    fontSize: '0.9rem',
+    fontWeight: 500,
   }),
   input: (base) => ({
     ...base,
     color: '#0f172a',
-    fontSize: '0.875rem',
+    fontSize: '0.9rem',
   }),
   multiValue: (base) => ({
     ...base,
     borderRadius: 9999,
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    backgroundColor: 'rgba(99, 102, 241, 0.16)',
     paddingInline: 10,
     paddingBlock: 4,
+    boxShadow: '0 6px 14px rgba(99, 102, 241, 0.18)',
   }),
   multiValueLabel: (base) => ({
     ...base,
-    color: '#1e3a8a',
+    color: '#3730a3',
     fontWeight: 600,
     fontSize: '0.75rem',
     paddingRight: 4,
   }),
   multiValueRemove: (base) => ({
     ...base,
-    color: '#1d4ed8',
+    color: '#4338ca',
     borderRadius: 9999,
+    cursor: 'pointer',
     ':hover': {
-      backgroundColor: 'rgba(29, 78, 216, 0.12)',
-      color: '#1e3a8a',
+      backgroundColor: 'rgba(67, 56, 202, 0.12)',
+      color: '#312e81',
     },
   }),
   clearIndicator: (base) => ({
@@ -93,8 +139,8 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
   dropdownIndicator: (base, state) => ({
     ...base,
     padding: 6,
-    color: state.isFocused ? '#0f172a' : '#475569',
-    transition: 'transform 0.2s ease',
+    color: state.isFocused ? '#1e293b' : '#475569',
+    transition: 'transform 0.2s ease, color 0.2s ease',
     transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'none',
   }),
   indicatorSeparator: () => ({ display: 'none' }),
@@ -103,7 +149,8 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     borderRadius: 16,
     padding: 6,
     border: '1px solid rgba(203, 213, 225, 0.7)',
-    boxShadow: '0 24px 55px rgba(15, 23, 42, 0.18)',
+    boxShadow: '0 30px 60px rgba(15, 23, 42, 0.16)',
+    background: 'linear-gradient(180deg, rgba(248, 250, 255, 0.98) 0%, #ffffff 100%)',
   }),
   menuList: (base) => ({
     ...base,
@@ -115,13 +162,16 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     borderRadius: 12,
     fontWeight: state.isSelected ? 600 : 500,
     backgroundColor: state.isSelected
-      ? 'rgba(59, 130, 246, 0.15)'
+      ? 'rgba(99, 102, 241, 0.18)'
       : state.isFocused
-      ? 'rgba(226, 232, 240, 0.7)'
+      ? 'rgba(226, 232, 240, 0.65)'
       : '#fff',
     color: '#0f172a',
     padding: '10px 12px',
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   }),
   noOptionsMessage: (base) => ({
     ...base,
@@ -129,11 +179,16 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     fontSize: '0.875rem',
     color: '#94a3b8',
   }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
 };
 
 const MAX_FILES = FILE_UPLOAD_CONSTANTS.MAX_FILES;
 const MAX_FILE_SIZE_MB = FILE_UPLOAD_CONSTANTS.MAX_FILE_SIZE_MB;
 const ALLOWED_EXTENSIONS = FILE_UPLOAD_CONSTANTS.ALLOWED_EXTENSIONS;
+{{ ... }}
 
 const itemSchema = z.object({
   name: z
