@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import CreatableSelect from 'react-select/creatable';
-import type { MultiValue } from 'react-select';
+import type { MultiValue, StylesConfig } from 'react-select';
 
 import Button from './common/Button';
 import {
@@ -31,6 +31,112 @@ interface TagOption {
   label: string;
   value: number;
 }
+
+const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: '48px',
+    borderRadius: '0.75rem',
+    borderColor: state.isFocused ? 'rgb(56 189 248)' : 'rgb(203 213 225)',
+    boxShadow: state.isFocused ? '0 0 0 4px rgba(56, 189, 248, 0.18)' : 'none',
+    backgroundColor: '#ffffff',
+    paddingInline: '0.25rem',
+    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+    cursor: state.isDisabled ? 'not-allowed' : 'text',
+  }),
+  valueContainer: (base) => ({
+    ...base,
+    gap: '0.5rem',
+    paddingBlock: '0.25rem',
+    paddingInline: '0.25rem',
+    flexWrap: 'wrap',
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: '#64748b',
+    fontSize: '0.875rem',
+  }),
+  input: (base) => ({
+    ...base,
+    color: '#0f172a',
+    fontSize: '0.875rem',
+  }),
+  multiValue: (base) => ({
+    ...base,
+    borderRadius: '9999px',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    paddingInline: '0.5rem',
+    paddingBlock: '0.25rem',
+  }),
+  multiValueLabel: (base) => ({
+    ...base,
+    color: '#1e3a8a',
+    fontWeight: 600,
+    fontSize: '0.75rem',
+    paddingInlineEnd: '0.25rem',
+  }),
+  multiValueRemove: (base) => ({
+    ...base,
+    borderRadius: '9999px',
+    color: '#1d4ed8',
+    ':hover': {
+      backgroundColor: 'rgba(29, 78, 216, 0.12)',
+      color: '#1e3a8a',
+    },
+  }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base, state) => ({
+    ...base,
+    color: state.isFocused ? '#0f172a' : '#475569',
+    paddingInline: '0.5rem',
+    transition: 'transform 0.2s ease, color 0.2s ease',
+  }),
+  clearIndicator: (base) => ({
+    ...base,
+    color: '#475569',
+    paddingInline: '0.5rem',
+    ':hover': {
+      color: '#0f172a',
+    },
+  }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: '0.75rem',
+    padding: '0.5rem',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 24px 55px rgba(15, 23, 42, 0.2)',
+    backgroundColor: '#ffffff',
+    overflow: 'hidden',
+  }),
+  menuList: (base) => ({
+    ...base,
+    maxHeight: 240,
+    padding: 0,
+  }),
+  option: (base, state) => ({
+    ...base,
+    borderRadius: '0.5rem',
+    padding: '0.6rem 0.75rem',
+    fontWeight: state.isSelected ? 600 : 500,
+    backgroundColor: state.isSelected
+      ? 'rgba(59, 130, 246, 0.12)'
+      : state.isFocused
+      ? 'rgba(226, 232, 240, 0.8)'
+      : '#ffffff',
+    color: '#0f172a',
+    cursor: 'pointer',
+  }),
+  noOptionsMessage: (base) => ({
+    ...base,
+    padding: '0.75rem',
+    fontSize: '0.875rem',
+    color: '#94a3b8',
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999,
+  }),
+};
 
 const MAX_FILES = FILE_UPLOAD_CONSTANTS.MAX_FILES;
 const MAX_FILE_SIZE_MB = FILE_UPLOAD_CONSTANTS.MAX_FILE_SIZE_MB;
@@ -827,7 +933,11 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                         placeholder="Bestehende Tags auswählen oder neue erstellen..."
                         value={tagOptions.filter((option) => field.value?.includes(option.value))}
                         options={tagOptions}
-                        classNamePrefix="react-select"
+                        classNamePrefix="tag-select"
+                        styles={TAG_SELECT_STYLES}
+                        menuPortalTarget={typeof window !== 'undefined' ? document.body : undefined}
+                        menuPlacement="auto"
+                        menuShouldScrollIntoView={false}
                         onChange={(selected: MultiValue<TagOption>) => {
                           const values = selected.map((option) => option.value);
                           field.onChange(values);
