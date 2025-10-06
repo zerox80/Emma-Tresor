@@ -188,7 +188,6 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
 const MAX_FILES = FILE_UPLOAD_CONSTANTS.MAX_FILES;
 const MAX_FILE_SIZE_MB = FILE_UPLOAD_CONSTANTS.MAX_FILE_SIZE_MB;
 const ALLOWED_EXTENSIONS = FILE_UPLOAD_CONSTANTS.ALLOWED_EXTENSIONS;
-{{ ... }}
 
 const itemSchema = z.object({
   name: z
