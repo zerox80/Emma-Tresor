@@ -4,7 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import CreatableSelect from 'react-select/creatable';
 import { components } from 'react-select';
-import type { DropdownIndicatorProps, MultiValue, StylesConfig } from 'react-select';
+import type {
+  CSSObjectWithLabel,
+  DropdownIndicatorProps,
+  FormatOptionLabelMeta,
+  MultiValue,
+  PlaceholderProps,
+  StylesConfig,
+} from 'react-select';
 
 import Button from './common/Button';
 import {
@@ -54,6 +61,28 @@ const TagDropdownIndicator: React.FC<DropdownIndicatorProps<TagOption, true>> = 
   </components.DropdownIndicator>
 );
 
+const TagPlaceholder: React.FC<PlaceholderProps<TagOption, true>> = (props) => (
+  <components.Placeholder {...props}>
+    <span className="flex items-center gap-2 text-sm text-slate-500">
+      <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-4 w-4 text-slate-400"
+      >
+        <path
+          d="M4 10.5L8.5 15L16 6.5L13.25 4L8.5 9.5L6.75 7.75L4 10.5Z"
+          stroke="currentColor"
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span>Bestähende Tags auswählen oder neue erstellen…</span>
+    </span>
+  </components.Placeholder>
+);
+
 const renderTagOption = (option: TagOption) => (
   <div className="flex w-full items-center justify-between text-sm">
     <span className="font-medium text-slate-700">{option.label}</span>
@@ -61,12 +90,17 @@ const renderTagOption = (option: TagOption) => (
   </div>
 );
 
+const formatTagOptionLabel = (
+  option: TagOption,
+  meta: FormatOptionLabelMeta<TagOption>,
+) => (meta.context === 'menu' ? renderTagOption(option) : option.label);
+
 const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
-  container: (base) => ({
+  container: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     width: '100%',
   }),
-  control: (base, state) => ({
+  control: (base: CSSObjectWithLabel, state) => ({
     ...base,
     minHeight: 52,
     borderRadius: 20,
@@ -84,7 +118,7 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     },
     cursor: state.isDisabled ? 'not-allowed' : 'text',
   }),
-  valueContainer: (base) => ({
+  valueContainer: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     gap: 8,
     paddingTop: 6,
@@ -92,18 +126,18 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     paddingLeft: 2,
     paddingRight: 2,
   }),
-  placeholder: (base) => ({
+  placeholder: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     color: '#475569',
     fontSize: '0.9rem',
     fontWeight: 500,
   }),
-  input: (base) => ({
+  input: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     color: '#0f172a',
     fontSize: '0.9rem',
   }),
-  multiValue: (base) => ({
+  multiValue: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     borderRadius: 9999,
     backgroundColor: 'rgba(99, 102, 241, 0.16)',
@@ -111,14 +145,14 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     paddingBlock: 4,
     boxShadow: '0 6px 14px rgba(99, 102, 241, 0.18)',
   }),
-  multiValueLabel: (base) => ({
+  multiValueLabel: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     color: '#3730a3',
     fontWeight: 600,
     fontSize: '0.75rem',
     paddingRight: 4,
   }),
-  multiValueRemove: (base) => ({
+  multiValueRemove: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     color: '#4338ca',
     borderRadius: 9999,
@@ -128,7 +162,7 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
       color: '#312e81',
     },
   }),
-  clearIndicator: (base) => ({
+  clearIndicator: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     padding: 6,
     color: '#475569',
@@ -136,7 +170,7 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
       color: '#0f172a',
     },
   }),
-  dropdownIndicator: (base, state) => ({
+  dropdownIndicator: (base: CSSObjectWithLabel, state) => ({
     ...base,
     padding: 6,
     color: state.isFocused ? '#1e293b' : '#475569',
@@ -144,7 +178,7 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'none',
   }),
   indicatorSeparator: () => ({ display: 'none' }),
-  menu: (base) => ({
+  menu: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     borderRadius: 16,
     padding: 6,
@@ -152,12 +186,12 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     boxShadow: '0 30px 60px rgba(15, 23, 42, 0.16)',
     background: 'linear-gradient(180deg, rgba(248, 250, 255, 0.98) 0%, #ffffff 100%)',
   }),
-  menuList: (base) => ({
+  menuList: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     maxHeight: 240,
     padding: 0,
   }),
-  option: (base, state) => ({
+  option: (base: CSSObjectWithLabel, state) => ({
     ...base,
     borderRadius: 12,
     fontWeight: state.isSelected ? 600 : 500,
@@ -173,13 +207,13 @@ const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
     alignItems: 'center',
     justifyContent: 'space-between',
   }),
-  noOptionsMessage: (base) => ({
+  noOptionsMessage: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     padding: '14px 12px',
     fontSize: '0.875rem',
     color: '#94a3b8',
   }),
-  menuPortal: (base) => ({
+  menuPortal: (base: CSSObjectWithLabel): CSSObjectWithLabel => ({
     ...base,
     zIndex: 9999,
   }),
