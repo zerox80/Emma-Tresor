@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import CreatableSelect from 'react-select/creatable';
-import type { MultiValue, StylesConfig } from 'react-select';
 
 import Button from './common/Button';
 import {
@@ -32,110 +30,368 @@ interface TagOption {
   value: number;
 }
 
-const TAG_SELECT_STYLES: StylesConfig<TagOption, true> = {
-  control: (base, state) => ({
-    ...base,
-    minHeight: '48px',
-    borderRadius: '0.75rem',
-    borderColor: state.isFocused ? 'rgb(56 189 248)' : 'rgb(203 213 225)',
-    boxShadow: state.isFocused ? '0 0 0 4px rgba(56, 189, 248, 0.18)' : 'none',
-    backgroundColor: '#ffffff',
-    paddingInline: '0.25rem',
-    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-    cursor: state.isDisabled ? 'not-allowed' : 'text',
-  }),
-  valueContainer: (base) => ({
-    ...base,
-    gap: '0.5rem',
-    paddingBlock: '0.25rem',
-    paddingInline: '0.25rem',
-    flexWrap: 'wrap',
-  }),
-  placeholder: (base) => ({
-    ...base,
-    color: '#64748b',
-    fontSize: '0.875rem',
-  }),
-  input: (base) => ({
-    ...base,
-    color: '#0f172a',
-    fontSize: '0.875rem',
-  }),
-  multiValue: (base) => ({
-    ...base,
-    borderRadius: '9999px',
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    paddingInline: '0.5rem',
-    paddingBlock: '0.25rem',
-  }),
-  multiValueLabel: (base) => ({
-    ...base,
-    color: '#1e3a8a',
-    fontWeight: 600,
-    fontSize: '0.75rem',
-    paddingInlineEnd: '0.25rem',
-  }),
-  multiValueRemove: (base) => ({
-    ...base,
-    borderRadius: '9999px',
-    color: '#1d4ed8',
-    ':hover': {
-      backgroundColor: 'rgba(29, 78, 216, 0.12)',
-      color: '#1e3a8a',
+interface TagMultiSelectProps {
+  value: number[];
+  options: TagOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  loading?: boolean;
+  onChange: (next: number[]) => void;
+  onCreateOption: (label: string) => Promise<TagOption | null>;
+}
+
+const TagMultiSelect: React.FC<TagMultiSelectProps> = ({
+  value,
+  options,
+  placeholder = 'Tags auswählen…',
+  disabled = false,
+  loading = false,
+  onChange,
+  onCreateOption,
+}) => {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const normalisedQuery = query.trim().toLowerCase();
+
+  const availableOptions = useMemo(() => {
+    return options.filter((option) => {
+      if (value.includes(option.value)) {
+        return false;
+      }
+      if (normalisedQuery.length === 0) {
+        return true;
+      }
+      return option.label.toLowerCase().includes(normalisedQuery);
+    });
+  }, [options, value, normalisedQuery]);
+
+  const hasCreatable = useMemo(() => {
+    if (normalisedQuery.length === 0) {
+      return false;
+    }
+    return !options.some((option) => option.label.toLowerCase() === normalisedQuery);
+  }, [options, normalisedQuery]);
+
+  const totalInteractiveItems = availableOptions.length + (hasCreatable ? 1 : 0);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setHighlightedIndex(-1);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (disabled) {
+      setIsOpen(false);
+    }
+  }, [disabled]);
+
+  const focusInput = useCallback(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSelectOption = useCallback(
+    (option: TagOption) => {
+      if (disabled) {
+        return;
+      }
+      if (value.includes(option.value)) {
+        return;
+      }
+      onChange([...value, option.value]);
+      setQuery('');
+      setIsOpen(false);
     },
-  }),
-  indicatorSeparator: () => ({ display: 'none' }),
-  dropdownIndicator: (base, state) => ({
-    ...base,
-    color: state.isFocused ? '#0f172a' : '#475569',
-    paddingInline: '0.5rem',
-    transition: 'transform 0.2s ease, color 0.2s ease',
-  }),
-  clearIndicator: (base) => ({
-    ...base,
-    color: '#475569',
-    paddingInline: '0.5rem',
-    ':hover': {
-      color: '#0f172a',
+    [disabled, onChange, value],
+  );
+
+  const handleRemoveTag = useCallback(
+    (tagId: number) => {
+      if (disabled) {
+        return;
+      }
+      onChange(value.filter((id) => id !== tagId));
     },
-  }),
-  menu: (base) => ({
-    ...base,
-    borderRadius: '0.75rem',
-    padding: '0.5rem',
-    border: '1px solid #e2e8f0',
-    boxShadow: '0 24px 55px rgba(15, 23, 42, 0.2)',
-    backgroundColor: '#ffffff',
-    overflow: 'hidden',
-  }),
-  menuList: (base) => ({
-    ...base,
-    maxHeight: 240,
-    padding: 0,
-  }),
-  option: (base, state) => ({
-    ...base,
-    borderRadius: '0.5rem',
-    padding: '0.6rem 0.75rem',
-    fontWeight: state.isSelected ? 600 : 500,
-    backgroundColor: state.isSelected
-      ? 'rgba(59, 130, 246, 0.12)'
-      : state.isFocused
-      ? 'rgba(226, 232, 240, 0.8)'
-      : '#ffffff',
-    color: '#0f172a',
-    cursor: 'pointer',
-  }),
-  noOptionsMessage: (base) => ({
-    ...base,
-    padding: '0.75rem',
-    fontSize: '0.875rem',
-    color: '#94a3b8',
-  }),
-  menuPortal: (base) => ({
-    ...base,
-    zIndex: 9999,
-  }),
+    [disabled, onChange, value],
+  );
+
+  const handleCreateTag = useCallback(async () => {
+    const trimmed = query.trim();
+    if (trimmed.length === 0 || disabled) {
+      return;
+    }
+
+    try {
+      const created = await onCreateOption(trimmed);
+      if (created) {
+        onChange([...value, created.value]);
+        setQuery('');
+        setIsOpen(false);
+      }
+    } catch {
+      // Parent handles error state
+    }
+  }, [disabled, onChange, onCreateOption, query, value]);
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Backspace' && query.length === 0 && value.length > 0) {
+        event.preventDefault();
+        handleRemoveTag(value[value.length - 1]);
+        return;
+      }
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          setHighlightedIndex(totalInteractiveItems > 0 ? 0 : -1);
+        } else if (totalInteractiveItems > 0) {
+          setHighlightedIndex((prev) => (prev + 1) % totalInteractiveItems);
+        }
+        return;
+      }
+
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          setHighlightedIndex(totalInteractiveItems > 0 ? totalInteractiveItems - 1 : -1);
+        } else if (totalInteractiveItems > 0) {
+          setHighlightedIndex((prev) => (prev - 1 + totalInteractiveItems) % totalInteractiveItems);
+        }
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          return;
+        }
+
+        if (highlightedIndex >= 0) {
+          if (highlightedIndex < availableOptions.length) {
+            handleSelectOption(availableOptions[highlightedIndex]);
+          } else if (hasCreatable) {
+            void handleCreateTag();
+          }
+        } else if (hasCreatable) {
+          void handleCreateTag();
+        }
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setIsOpen(false);
+      }
+    },
+    [
+      availableOptions,
+      handleCreateTag,
+      handleRemoveTag,
+      handleSelectOption,
+      hasCreatable,
+      highlightedIndex,
+      isOpen,
+      query.length,
+      totalInteractiveItems,
+      value,
+    ],
+  );
+
+  return (
+    <div ref={containerRef} className={`relative ${disabled ? 'opacity-60' : ''}`}>
+      <div
+        className="flex min-h-[3rem] flex-wrap items-center gap-2 rounded-2xl border border-slate-300 bg-white px-3 py-2 shadow-sm transition focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-200/60"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        onClick={() => {
+          if (!disabled) {
+            setIsOpen(true);
+            focusInput();
+          }
+        }}
+      >
+        {value.length === 0 && query.length === 0 && (
+          <span className="text-sm text-slate-400">{placeholder}</span>
+        )}
+        {value.map((tagId) => {
+          const option = options.find((candidate) => candidate.value === tagId);
+          if (!option) {
+            return null;
+          }
+          return (
+            <span
+              key={tagId}
+              className="group inline-flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700"
+            >
+              {option.label}
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleRemoveTag(tagId);
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded-full text-brand-500 transition hover:bg-brand-200 hover:text-brand-800"
+                aria-label={`${option.label} entfernen`}
+              >
+                ×
+              </button>
+            </span>
+          );
+        })}
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            if (!isOpen) {
+              setIsOpen(true);
+            }
+          }}
+          onFocus={() => {
+            if (!disabled) {
+              setIsOpen(true);
+            }
+          }}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+          className="flex-1 min-w-[120px] border-none bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none"
+          placeholder={value.length > 0 ? undefined : placeholder}
+          aria-autocomplete="list"
+          aria-controls="tag-selector-listbox"
+        />
+        {value.length > 0 && !disabled && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onChange([]);
+            }}
+            className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Alle Tags entfernen"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (!disabled) {
+              setIsOpen((prev) => !prev);
+              focusInput();
+            }
+          }}
+          className="rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          aria-label={isOpen ? 'Auswahlliste schließen' : 'Auswahlliste öffnen'}
+        >
+          <svg
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 10.106l3.71-2.876a.75.75 0 01.92 1.187l-4.25 3.3a.75.75 0 01-.92 0l-4.25-3.3a.75.75 0 01.02-1.2z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {isOpen && !disabled && (
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+          <ul id="tag-selector-listbox" role="listbox" className="max-h-60 overflow-y-auto py-2">
+            {loading && (
+              <li className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400">
+                <svg className="h-4 w-4 animate-spin text-brand-500" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path
+                    d="M4 12a8 8 0 018-8"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    className="opacity-90"
+                  />
+                </svg>
+                Tag wird erstellt …
+              </li>
+            )}
+
+            {availableOptions.map((option, index) => {
+              const isHighlighted = highlightedIndex === index;
+              return (
+                <li
+                  key={option.value}
+                  role="option"
+                  aria-selected={false}
+                  className={`flex cursor-pointer items-center justify-between px-3 py-2 text-sm transition ${
+                    isHighlighted ? 'bg-brand-50 text-brand-700' : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                  onClick={() => handleSelectOption(option)}
+                >
+                  <span className="font-medium">{option.label}</span>
+                  <span className="text-xs text-slate-400">Tag hinzufügen</span>
+                </li>
+              );
+            })}
+
+            {hasCreatable && (
+              <li
+                role="option"
+                aria-selected={highlightedIndex === availableOptions.length}
+                className={`flex cursor-pointer items-center justify-between px-3 py-2 text-sm transition ${
+                  highlightedIndex === availableOptions.length
+                    ? 'bg-brand-50 text-brand-700'
+                    : 'text-brand-600 hover:bg-brand-50'
+                }`}
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setHighlightedIndex(availableOptions.length)}
+                onClick={() => void handleCreateTag()}
+              >
+                <span className="font-semibold">„{query.trim()}“ als neuen Tag hinzufügen</span>
+                <span className="text-xs uppercase tracking-wide">Erstellen</span>
+              </li>
+            )}
+
+            {!loading && availableOptions.length === 0 && !hasCreatable && (
+              <li className="px-3 py-4 text-center text-sm text-slate-400">
+                Keine Treffer. Bitte Suchbegriff anpassen.
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 };
 
 const MAX_FILES = FILE_UPLOAD_CONSTANTS.MAX_FILES;
@@ -495,23 +751,25 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, []);
 
-  const handleCreateOption = useCallback(
-    async (inputValue: string, fieldOnChange: (value: number[]) => void, currentValue: number[] | undefined) => {
+  const handleCreateTagOption = useCallback(
+    async (inputValue: string): Promise<TagOption | null> => {
       const trimmed = inputValue.trim();
       if (trimmed.length === 0) {
-        return;
+        return null;
       }
 
       try {
         setIsCreatingTag(true);
         setTagCreationError(null);
         const newTag = await onCreateTag(trimmed);
+        const newOption: TagOption = { label: newTag.name, value: newTag.id };
         setTagOptions((prev) =>
-          [...prev, { label: newTag.name, value: newTag.id }].sort((a, b) => a.label.localeCompare(b.label, 'de-DE')),
+          [...prev, newOption].sort((a, b) => a.label.localeCompare(b.label, 'de-DE')),
         );
-        fieldOnChange([...(currentValue ?? []), newTag.id]);
+        return newOption;
       } catch (error) {
         setTagCreationError('Tag konnte nicht erstellt werden. Bitte versuche es erneut.');
+        return null;
       } finally {
         setIsCreatingTag(false);
       }
@@ -925,26 +1183,14 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                     control={control}
                     name="tags"
                     render={({ field }) => (
-                      <CreatableSelect
-                        isMulti
-                        isClearable
-                        isDisabled={isSubmitting}
-                        isLoading={isCreatingTag}
-                        placeholder="Bestehende Tags auswählen oder neue erstellen..."
-                        value={tagOptions.filter((option) => field.value?.includes(option.value))}
+                      <TagMultiSelect
+                        value={field.value ?? []}
                         options={tagOptions}
-                        classNamePrefix="tag-select"
-                        styles={TAG_SELECT_STYLES}
-                        menuPortalTarget={typeof window !== 'undefined' ? document.body : undefined}
-                        menuPlacement="auto"
-                        menuShouldScrollIntoView={false}
-                        onChange={(selected: MultiValue<TagOption>) => {
-                          const values = selected.map((option) => option.value);
-                          field.onChange(values);
-                        }}
-                        onCreateOption={(inputValue) =>
-                          void handleCreateOption(inputValue, field.onChange, field.value)
-                        }
+                        placeholder="Bestehende Tags auswählen oder neue erstellen..."
+                        disabled={isSubmitting}
+                        loading={isCreatingTag}
+                        onChange={(next) => field.onChange(next)}
+                        onCreateOption={handleCreateTagOption}
                       />
                     )}
                   />
