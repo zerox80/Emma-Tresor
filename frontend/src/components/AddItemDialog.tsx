@@ -936,11 +936,15 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                         menuPortalTarget={typeof window !== 'undefined' ? document.body : undefined}
                         menuPlacement="auto"
                         menuShouldScrollIntoView={false}
+                        components={{
+                          A11yText: () => null,
+                        }}
                         noOptionsMessage={() => 'Keine passenden Tags gefunden.'}
                         formatCreateLabel={(inputValue) => `„${inputValue}“ als neuen Tag anlegen`}
                         createOptionPosition="first"
                         screenReaderStatus={() => ''}
                         ariaLiveMessages={{
+                          guidance: () => '',
                           onChange: () => '',
                           onCreateOption: () => '',
                           onFocus: () => '',
