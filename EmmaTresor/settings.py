@@ -157,6 +157,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'axes',
     'csp',
     'corsheaders',
     'rest_framework',
@@ -173,6 +174,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'EmmaTresor.middleware.SecurityEventLoggingMiddleware',
@@ -241,6 +243,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+]
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 
@@ -371,6 +378,13 @@ SECURE_SSL_REDIRECT = SSL_REDIRECT and not TESTING
 # Honour HTTPS information forwarded by the reverse proxy to avoid redirect loops
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
+
+AXES_ENABLED = True
+AXES_ONLY_ADMIN_SITE = True
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=15)
+AXES_RESET_ON_SUCCESS = True
+AXES_USE_USER_AGENT = True
 
 CSRF_COOKIE_HTTPONLY = False  # Must be False so JavaScript can read it for X-CSRFToken header
 CSRF_COOKIE_NAME = 'csrftoken'  # Standard Django CSRF cookie name
