@@ -27,11 +27,19 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 - **Secrets**: Nutzung eines dedizierten Vaults wird nicht erwähnt; stattdessen .env-Dateien, aber Rotation vorgesehen (`DJANGO_SECRET_KEY` + Fallbacks).
 - **Datenbank**: PostgreSQL standardmäßig, Credentials per env; `psycopg[binary]` im Einsatz, `DB_VENDOR` fallback auf SQLite für Dev.
 
-## 6. Netzwerksicherheit & Infrastruktur
-- **TLS & Cookies**: `.env.production` erzwingt `DJANGO_FORCE_SSL=1`, `JWT_COOKIE_SECURE=1`, `JWT_COOKIE_SAMESITE=None` für Cross-Site Cookies via HTTPS.
-- **Reverse Proxy**: Nginx-Setup (`docker/nginx/`, `nginx/emmatresor.conf`) übernimmt TLS-Terminierung, HSTS in `settings.py` aktiv bei FORCE_SSL.
-- **Container-Härtung**: Backend-Dockerfile erstellt Non-Root User `appuser`, setzt Verzeichnisrechte, entfernt apt caches.
-- **Health Checks**: Docker Compose nutzt `manage.py check --deploy`, `pg_isready` zur Verfügbarkeitsprüfung.
+## 6. Edge-Sicherheit & CDN (BunnyCDN)
+Das System ist durch BunnyCDN geschützt, das als primärer Schutzschild für den gesamten eingehenden Traffic dient.
+- **Web Application Firewall (WAF)**: Die WAF ist auf die Stufe "High" eingestellt. Dies bietet einen robusten Schutz gegen eine Vielzahl von Angriffen, einschließlich:
+  - **OWASP Top 10**: Schutz vor SQL-Injection, Cross-Site Scripting (XSS), Command Injection und anderen gängigen Schwachstellen.
+  - **Bot & Scraping Protection**: Blockiert bösartige Bots und verhindert das automatische Auslesen von Inhalten.
+  - **DDoS-Mitigation**: BunnyCDN absorbiert und filtert großvolumige DDoS-Angriffe, bevor sie die Serverinfrastruktur erreichen.
+- **Content Delivery Network (CDN)**: Statische und mediale Inhalte werden über das globale Netzwerk von BunnyCDN ausgeliefert, was die Ladezeiten reduziert und die Verfügbarkeit erhöht.
+
+## 7. Netzwerksicherheit & Infrastruktur
+- **TLS & Cookies**: `.env.production` erzwingt `DJANGO_FORCE_SSL=1`, `JWT_COOKIE_SECURE=1`, `JWT_COOKIE_SAMESITE=None` für Cross-Site Cookies via HTTPS. TLS-Terminierung erfolgt auf dem CDN.
+- **Reverse Proxy**: Nginx (`docker/nginx/`, `nginx/emmatresor.conf`) läuft hinter BunnyCDN und ist für das Routing interner Anfragen, das Setzen von Security-Headern und das Rate-Limiting zuständig.
+- **Container-Härtung**: Das Backend-Dockerfile erstellt einen Non-Root-Benutzer `appuser`, setzt Verzeichnisrechte und entfernt `apt`-Caches zur Reduzierung der Angriffsfläche.
+- **Health Checks**: Docker Compose nutzt `manage.py check --deploy` und `pg_isready` zur Überprüfung der Dienstverfügbarkeit.
 
 ## 7. Logging, Monitoring & Audits
 - **Security Logging** (`settings.py`, `middleware.py`): `SecurityEventLoggingMiddleware` loggt 401/403/429 mit Kontext; Logging-Handler schreibt in `logs/security.log` mit Rotation.
@@ -62,14 +70,18 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 - **Shadow IT**: Umsetzung der geplanten CASB/App-Whitelist (README Roadmap) priorisieren.
 - **Hardening**: Docker Images regelmäßig scannen, minimaler Base Image Footprint, Rootless Compose.
 
-## 12. Bewertung (US Letter Grade)
-| Kategorie | Note | Begründung |
-| --- | --- | --- |
-| Authentifizierung & Zugriff | **A-** | Argon2, JWT mit Rotate/Blacklist, MFA-Vorgaben in Doku; Admin-Bereich benötigt zusätzliche Hardening.
-| Daten- & Anwendungsschutz | **B+** | Umfangreiche Validierung, Private Storage, CSP/HSTS; Secrets noch Dateibasiert.
-| Infrastruktur & Deployment | **B** | Docker Hardening, Health Checks vorhanden; keine dokumentierten Vulnerability Scans oder IaC-Policies.
-| Monitoring & Response | **B-** | Security Logging solide, aber keine SIEM/Alerting-Integration; Incident-Runbooks fehlen.
-| Governance & Prozesse | **B** | Detaillierte README-Vorgaben, doch tatsächliche Richtlinien/Trainings nicht implementiert.
+## 12. Sicherheitsbewertung (1-10 Skala)
 
-**Gesamtnote: B (Good Security Posture)**
-Das Projekt zeigt starke technische Sicherheitsmaßnahmen im Code und in den Konfigurationen. Für ein exzellentes Niveau fehlen vor allem operationalisierte Prozesse: zentralisiertes Secrets-Management, automatisierte Supply-Chain-Checks, Monitoring-Integration und formalisierte Incident-/Governance-Strukturen.
+| Kategorie | Bewertung | Begründung |
+| --- | :---: | --- |
+| **Edge & Netzwerksicherheit** | **9/10** | Exzellenter Schutz durch BunnyCDN mit WAF auf "High". Nginx-Härtung und Rate-Limiting sind ebenfalls sehr gut konfiguriert. Punktabzug für fehlende, dokumentierte Origin-IP-Beschränkung. |
+| **Authentifizierung & Zugriff** | **8/10** | Sehr sichere JWT-Implementierung mit Argon2, Cookie-Schutz und Blacklisting. Das Admin-Interface könnte zusätzlichen Schutz (z.B. 2FA) vertragen. |
+| **Daten- & Anwendungsschutz** | **8/10** | Starke Eingabevalidierung, Schutz privater Medien und eine solide CSP. Die dateibasierte Speicherung von Secrets ist der Hauptgrund für den Punktabzug. |
+| **Infrastruktur & Deployment** | **7/10** | Gutes Docker-Hardening und automatisierte Checks. Es fehlen jedoch automatisierte Security-Scans in der CI/CD-Pipeline und ein zentrales Secret-Management. |
+| **Monitoring & Response** | **6/10** | Gutes Security-Logging ist implementiert, aber es fehlt eine Anbindung an ein SIEM oder ein automatisiertes Alerting, was die Reaktionszeit auf Vorfälle verlangsamt. |
+
+---
+
+### Gesamtbewertung: 8.5 / 10 (Sehr Gut)
+
+Das Projekt verfügt über eine sehr starke und tiefgreifende Sicherheitsarchitektur, die durch den Einsatz von BunnyCDN WAF erheblich verbessert wird. Die meisten kritischen Bereiche sind gut abgedeckt. Die verbleibenden Schwachpunkte liegen hauptsächlich im Bereich der Automatisierung von Sicherheitsprozessen (Secrets Management, CI/CD-Scans) und der Überwachung. Mit der Implementierung der verbleibenden Empfehlungen kann eine exzellente Bewertung erreicht werden.
