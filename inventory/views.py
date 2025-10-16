@@ -435,7 +435,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     serializer_class = ItemSerializer
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ItemFilter
-    search_fields = ['name', 'description', 'location__name', 'tags__name']
+    search_fields = ['name', 'description', 'location__name', 'tags__name', 'wodis_inventory_number']
     ordering_fields = ['name', 'quantity', 'value', 'purchase_date']
     ordering = ['-purchase_date', 'name']
     pagination_class = ItemPagination

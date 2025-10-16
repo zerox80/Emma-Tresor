@@ -308,6 +308,13 @@ class ItemSerializer(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.id')
     description = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=10000)
     asset_tag = serializers.UUIDField(read_only=True)
+    wodis_inventory_number = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        max_length=120,
+        trim_whitespace=True,
+    )
     images = ItemImageSerializer(many=True, read_only=True)
 
     class Meta:
@@ -322,6 +329,7 @@ class ItemSerializer(serializers.ModelSerializer):
             'asset_tag',
             'owner',
             'location',
+            'wodis_inventory_number',
             'tags',
             'images',
             'created_at',
@@ -417,6 +425,13 @@ class ItemSerializer(serializers.ModelSerializer):
             data['purchase_date'] = None
         if 'value' in data and (data['value'] is None or data['value'] == ''):
             data['value'] = None
+        if 'wodis_inventory_number' in data:
+            raw_value = data['wodis_inventory_number']
+            if raw_value in {None, ''}:
+                data['wodis_inventory_number'] = None
+            else:
+                cleaned = str(raw_value).strip()
+                data['wodis_inventory_number'] = cleaned or None
         return data
 
     def create(self, validated_data):
@@ -441,6 +456,7 @@ class ItemSerializer(serializers.ModelSerializer):
             'purchase_date',
             'value',
             'location',
+            'wodis_inventory_number',
         }
         for field in list(normalised.keys()):
             if field not in allowed_fields:

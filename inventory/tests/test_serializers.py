@@ -79,6 +79,7 @@ class ItemSerializerTests(TestCase):
             'quantity': 2,
             'value': '1200.00',
             'location': self.location_user.id,
+            'wodis_inventory_number': 'W-12345',
             'tags': [self.tag_user.id, self.tag_user_2.id],
         }
         serializer = self._get_serializer(data=data, request=self._build_request(self.user))
@@ -90,6 +91,7 @@ class ItemSerializerTests(TestCase):
         self.assertEqual(item.tags.count(), 2)
         self.assertSetEqual(set(item.tags.all()), {self.tag_user, self.tag_user_2})
         self.assertEqual(item.location, self.location_user)
+        self.assertEqual(item.wodis_inventory_number, 'W-12345')
 
     def test_update_replaces_tags_and_fields(self):
         item = Item.objects.create(name='Camera', owner=self.user, location=self.location_user)
@@ -100,6 +102,7 @@ class ItemSerializerTests(TestCase):
             'quantity': 3,
             'value': '800.50',
             'location': self.location_user.id,
+            'wodis_inventory_number': 'W-987',
             'tags': [self.tag_user_2.id],
         }
         serializer = self._get_serializer(instance=item, data=data, request=self._build_request(self.user))
@@ -113,6 +116,26 @@ class ItemSerializerTests(TestCase):
         self.assertEqual(updated_item.quantity, 3)
         self.assertEqual(str(updated_item.value), '800.50')
         self.assertSetEqual(set(updated_item.tags.all()), {self.tag_user_2})
+        self.assertEqual(updated_item.wodis_inventory_number, 'W-987')
+
+    def test_blank_wodis_inventory_number_becomes_none(self):
+        item = Item.objects.create(name='Tablet', owner=self.user, location=self.location_user, wodis_inventory_number='TMP-1')
+        data = {
+            'name': 'Tablet',
+            'description': '',
+            'quantity': 1,
+            'value': '',
+            'location': self.location_user.id,
+            'wodis_inventory_number': '',
+            'tags': [],
+        }
+        serializer = self._get_serializer(instance=item, data=data, request=self._build_request(self.user))
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        updated_item = serializer.save()
+
+        updated_item.refresh_from_db()
+        self.assertIsNone(updated_item.wodis_inventory_number)
 
 
 class ItemListSerializerTests(TestCase):

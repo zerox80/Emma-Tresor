@@ -35,6 +35,7 @@ export interface Item {
   asset_tag: string;
   owner: number;
   location: number | null;
+  wodis_inventory_number: string | null;
   tags: number[];
   images: ItemImage[];
   created_at: string;
@@ -48,6 +49,7 @@ export interface ItemPayload {
   purchase_date: string | null;
   value: string | null;
   location: number | null;
+  wodis_inventory_number: string | null;
   tags: number[];
 }
 

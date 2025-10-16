@@ -51,7 +51,7 @@ const FilterSection: React.FC<Props> = ({
         <div className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold text-slate-900">Inventar filtern</h2>
           <p className="text-sm text-slate-600">
-            Nutze Suche, Tags und Standorte, um blitzschnell den richtigen Gegenstand zu finden.
+            Nutze Suche, Tags und Standorte – auch nach der Wodis Inventarnummer – um blitzschnell den richtigen Gegenstand zu finden.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -95,7 +95,7 @@ const FilterSection: React.FC<Props> = ({
             <input
               id="items-search"
               type="search"
-              placeholder="Name, Beschreibung, Standort ..."
+              placeholder="Name, Wodis-Nr., Beschreibung oder Standort …"
               className="w-full border-none bg-transparent text-sm text-slate-900 outline-none"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}

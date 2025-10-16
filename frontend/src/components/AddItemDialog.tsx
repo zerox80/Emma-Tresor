@@ -41,6 +41,10 @@ const itemSchema = z.object({
     .string()
     .max(2000, 'Die Beschreibung ist zu lang (maximal 2000 Zeichen).')
     .optional(),
+  wodis_inventory_number: z
+    .string()
+    .max(120, 'Wodis Inventarnummer darf maximal 120 Zeichen enthalten.')
+    .optional(),
   quantity: z
     .number({ invalid_type_error: 'Menge muss eine Zahl sein.' })
     .finite('Menge muss eine Zahl sein.')
@@ -74,6 +78,7 @@ type StepIndex = 0 | 1 | 2;
 const DEFAULT_VALUES: ItemFormSchema = {
   name: '',
   description: '',
+  wodis_inventory_number: '',
   quantity: 1,
   purchase_date: '',
   value: '',
@@ -82,7 +87,7 @@ const DEFAULT_VALUES: ItemFormSchema = {
 };
 
 const stepFieldMap: (keyof ItemFormSchema)[][] = [
-  ['name', 'quantity', 'purchase_date', 'value'],
+  ['name', 'wodis_inventory_number', 'quantity', 'purchase_date', 'value'],
   ['location', 'tags'],
   [],
 ];
@@ -145,6 +150,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         ? {
             name: sourceItem?.name ?? '',
             description: sourceItem.description ?? '',
+            wodis_inventory_number: sourceItem.wodis_inventory_number ?? '',
             quantity: sourceItem.quantity ?? 1,
             purchase_date: sourceItem.purchase_date ?? '',
             value: sourceItem.value ?? '',
@@ -372,6 +378,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     const trimmedDescription = values.description?.trim() ?? '';
     const trimmedValue = values.value?.trim() ?? '';
     const trimmedPurchaseDate = values.purchase_date?.trim() ?? '';
+    const trimmedWodis = values.wodis_inventory_number?.trim() ?? '';
 
     return {
       name: trimmedName,
@@ -380,6 +387,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       purchase_date: trimmedPurchaseDate.length > 0 ? trimmedPurchaseDate : null,
       value: trimmedValue.length > 0 ? trimmedValue : null,
       location: values.location ?? null,
+      wodis_inventory_number: trimmedWodis.length > 0 ? trimmedWodis : null,
       tags: values.tags ?? [],
     };
   }, []);
@@ -712,6 +720,31 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                   {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
                 </div>
 
+                <div className="space-y-2">
+                  <label
+                    htmlFor="add-item-wodis-inventory-number"
+                    className="text-sm font-medium text-slate-800"
+                  >
+                    Wodis Inventarnummer
+                  </label>
+                  <input
+                    id="add-item-wodis-inventory-number"
+                    type="text"
+                    inputMode="text"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                    placeholder="z. B. W-12345 oder Projektkennung"
+                    {...register('wodis_inventory_number')}
+                  />
+                  <div className="flex flex-col gap-1 text-xs">
+                    {errors.wodis_inventory_number && (
+                      <p className="text-red-500">{errors.wodis_inventory_number.message}</p>
+                    )}
+                    <p className="text-slate-500">
+                      Optional – erleichtert die Suche nach Gegenständen in umfangreichen Beständen.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label htmlFor="add-item-quantity" className="text-sm font-medium text-slate-800">
@@ -856,7 +889,15 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                   <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="flex flex-col gap-1">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Name</p>
-                      <p className="text-sm font-semibold text-slate-900">{watchedValues.name || '—'}</p>
+                      <p className="text-sm font-semibold text-slate-900">{watchedValues.name || '-'}</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Wodis Inventarnummer</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {watchedValues.wodis_inventory_number?.trim()
+                          ? watchedValues.wodis_inventory_number
+                          : '-'}
+                      </p>
                     </div>
                     <div className="flex flex-col gap-1">
                       <p className="text-xs uppercase tracking-wide text-slate-500">Menge</p>

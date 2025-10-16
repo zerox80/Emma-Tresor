@@ -50,6 +50,11 @@ const ItemsTable: React.FC<Props> = ({ items, locationMap, tagMap, onOpenDetails
             <tr key={item.id} className="transition hover:bg-slate-50">
               <td className="px-4 py-3">
                 <div className="font-semibold text-slate-900">{item.name}</div>
+                {item.wodis_inventory_number && (
+                  <p className="mt-1 text-xs font-semibold text-indigo-600">
+                    WODIS • {item.wodis_inventory_number}
+                  </p>
+                )}
                 {item.description && (
                   <p className="mt-1 text-xs text-slate-500 line-clamp-1">{item.description}</p>
                 )}

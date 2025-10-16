@@ -11,6 +11,10 @@ import type { Item, ItemPayload, Location, Tag } from '../types/inventory';
 const itemSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich'),
   description: z.string().nullable().optional(),
+  wodis_inventory_number: z
+    .string()
+    .max(120, 'Wodis Inventarnummer darf maximal 120 Zeichen enthalten.')
+    .optional(),
   quantity: z
     .number()
     .int('Menge muss eine ganze Zahl sein')
@@ -45,6 +49,7 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
     defaultValues: {
       name: item.name,
       description: item.description || '',
+       wodis_inventory_number: item.wodis_inventory_number || '',
       quantity: item.quantity,
       purchase_date: item.purchase_date || '',
       value: item.value || '',
@@ -60,6 +65,7 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
     const purchaseDate = values.purchase_date?.trim();
     const rawValue = values.value;
     const value = rawValue === null || rawValue === undefined || rawValue === '' ? null : String(rawValue);
+    const wodis = values.wodis_inventory_number?.trim() ?? '';
 
     return {
       name: values.name.trim(),
@@ -68,6 +74,7 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
       purchase_date: purchaseDate && purchaseDate.length > 0 ? purchaseDate : null,
       value,
       location: typeof values.location === 'number' && !Number.isNaN(values.location) ? values.location : null,
+      wodis_inventory_number: wodis.length > 0 ? wodis : null,
       tags: values.tags ?? [],
     };
   };
@@ -128,6 +135,27 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
               {...register('description')}
             />
             {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
+          </div>
+
+          <div className="space-y-3">
+            <label htmlFor="wodis_inventory_number" className="text-sm font-medium text-slate-800">
+              Wodis Inventarnummer
+            </label>
+            <input
+              id="wodis_inventory_number"
+              type="text"
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+              placeholder="Optional – z. B. W-12345"
+              {...register('wodis_inventory_number')}
+            />
+            <div className="flex flex-col gap-1 text-xs">
+              {errors.wodis_inventory_number && (
+                <p className="text-red-500">{errors.wodis_inventory_number.message}</p>
+              )}
+              <p className="text-slate-500">
+                Wird in der Suche angezeigt. Leer lassen, falls nicht vorhanden.
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

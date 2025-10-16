@@ -28,13 +28,14 @@ class ItemAdmin(admin.ModelAdmin):
         'name',
         'owner',
         'location',
+        'wodis_inventory_number',
         'quantity',
         'purchase_date',
         'value',
         'created_at',
         'updated_at',
     )
-    search_fields = ('name', 'description', 'owner__email', 'tags__name')
+    search_fields = ('name', 'description', 'wodis_inventory_number', 'owner__email', 'tags__name')
     list_filter = ('owner', 'location', 'tags')
     inlines = [ItemImageInline]
     filter_horizontal = ('tags',)

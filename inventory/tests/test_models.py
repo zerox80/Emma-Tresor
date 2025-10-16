@@ -39,6 +39,11 @@ class ItemModelTests(BaseModelTestCase):
         with self.assertRaises(ValidationError):
             item.clean()
 
+    def test_wodis_inventory_number_strips_whitespace(self):
+        item = Item(name='Test Item', owner=self.user, wodis_inventory_number='  W- 123  ')
+        item.full_clean()
+        self.assertEqual(item.wodis_inventory_number, 'W- 123')
+
 
 class ItemImageModelTests(BaseModelTestCase):
     def setUp(self):

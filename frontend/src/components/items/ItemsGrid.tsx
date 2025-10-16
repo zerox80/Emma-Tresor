@@ -30,6 +30,11 @@ const ItemsGrid: React.FC<Props> = ({ items, locationMap, tagMap, onOpenDetails 
               <p className="text-xs text-slate-500">
                 {item.purchase_date ? new Date(item.purchase_date).toLocaleDateString('de-DE') : 'Kaufdatum unbekannt'}
               </p>
+              {item.wodis_inventory_number && (
+                <div className="mt-2 inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                  WODIS • {item.wodis_inventory_number}
+                </div>
+              )}
             </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
               {item.quantity}×

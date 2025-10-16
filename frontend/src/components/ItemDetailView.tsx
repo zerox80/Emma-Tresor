@@ -978,6 +978,12 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                           <dt className="text-sm font-medium text-slate-500">Name</dt>
                           <dd className="mt-1 text-sm text-slate-900">{item.name}</dd>
                         </div>
+                        {item.wodis_inventory_number && (
+                          <div>
+                            <dt className="text-sm font-medium text-slate-500">Wodis Inventarnummer</dt>
+                            <dd className="mt-1 text-sm font-mono text-slate-900">{item.wodis_inventory_number}</dd>
+                          </div>
+                        )}
                         {item.description && (
                           <div>
                             <dt className="text-sm font-medium text-slate-500">Beschreibung</dt>

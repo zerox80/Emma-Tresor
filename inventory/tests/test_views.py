@@ -172,6 +172,7 @@ class ItemViewSetTests(APITestCase):
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['name'], 'Printer')
         self.assertEqual(response.data['results'][0]['owner'], self.user.id)
+        self.assertIsNone(response.data['results'][0]['wodis_inventory_number'])
 
     def test_create_item_assigns_owner(self):
         url = reverse('item-list')
@@ -180,6 +181,7 @@ class ItemViewSetTests(APITestCase):
             'name': 'Scanner',
             'quantity': 1,
             'location': self.location.id,
+            'wodis_inventory_number': 'W-2024-001',
         }
 
         response = self.client.post(url, payload, format='json')
@@ -187,6 +189,7 @@ class ItemViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], 'Scanner')
         self.assertEqual(response.data['owner'], self.user.id)
+        self.assertEqual(response.data['wodis_inventory_number'], 'W-2024-001')
         self.assertTrue(Item.objects.filter(name='Scanner', owner=self.user).exists())
 
 

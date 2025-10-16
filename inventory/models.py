@@ -81,12 +81,22 @@ class Item(TimeStampedModel):
         blank=True,
         related_name='items',
     )
+    wodis_inventory_number = models.CharField(
+        max_length=120,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text='Optionale Inventarnummer aus Wodis',
+    )
     tags = models.ManyToManyField('Tag', related_name='items', blank=True)
 
     class Meta:
         ordering = ['name']
         verbose_name = 'Gegenstand'
         verbose_name_plural = 'Gegenstände'
+        indexes = [
+            models.Index(fields=['wodis_inventory_number']),
+        ]
 
     def clean(self):
         super().clean()
@@ -105,6 +115,10 @@ class Item(TimeStampedModel):
                 raise ValidationError({'value': 'Der Wert darf nicht negativ sein.'})
             if self.value > 999999999.99:
                 raise ValidationError({'value': 'Der Wert ist zu hoch. Maximal 999.999.999,99 € erlaubt.'})
+
+        if self.wodis_inventory_number is not None:
+            cleaned = str(self.wodis_inventory_number).strip()
+            self.wodis_inventory_number = cleaned or None
 
     def save(self, *args, **kwargs):
         max_attempts = kwargs.pop('max_uuid_attempts', 5)
