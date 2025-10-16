@@ -726,6 +726,12 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     {loading ? 'Lade Details...' : item?.name || 'Gegenstand Details'}
                   </h3>
                   <p className="text-sm text-slate-600">Vollständige Ansicht des Inventargegenstands</p>
+                  {!loading && item?.wodis_inventory_number && (
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                      <span>Wodis Inventarnummer</span>
+                      <span className="font-mono text-indigo-800">{item.wodis_inventory_number}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center sm:gap-3">
                   {showNavigation && (
@@ -837,6 +843,13 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                             Scanne den Code, um diesen Gegenstand sofort zu öffnen. Teile den Link mit deinem Team oder drucke den Code für dein Inventar aus.
                           </p>
                         </div>
+                        {!loading && item.wodis_inventory_number && (
+                          <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-800">
+                            <p className="font-semibold text-indigo-900">Wodis Inventarnummer</p>
+                            <p className="mt-1 font-mono text-xs sm:text-sm">{item.wodis_inventory_number}</p>
+                            <p className="mt-1 text-xs text-indigo-700">Nutze diese Nummer für die Suche oder zum Abgleich mit Wodis.</p>
+                          </div>
+                        )}
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Button
                             type="button"
