@@ -592,18 +592,29 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         return;
       }
 
-      const atTop = scrollContainer.scrollTop <= threshold;
-      const atBottom =
-        scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight <= threshold;
+      const isScrollingDown = event.deltaY > 0;
+      const isScrollingUp = event.deltaY < 0;
+      const maxScrollTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
+      const projectedScrollTop = Math.max(
+        0,
+        Math.min(scrollContainer.scrollTop + event.deltaY, maxScrollTop),
+      );
+      const contentScrollable = maxScrollTop > 0;
 
-      if (event.deltaY > 0 && atBottom && canNavigateNext && onNavigateNext) {
+      const distanceToTop = projectedScrollTop;
+      const distanceToBottom = maxScrollTop - projectedScrollTop;
+
+      const willReachTop = contentScrollable ? distanceToTop <= threshold : isScrollingUp;
+      const willReachBottom = contentScrollable ? distanceToBottom <= threshold : isScrollingDown;
+
+      if (isScrollingDown && willReachBottom && canNavigateNext && onNavigateNext) {
         navigationLockRef.current = true;
         event.preventDefault();
         onNavigateNext();
         return;
       }
 
-      if (event.deltaY < 0 && atTop && canNavigatePrevious && onNavigatePrevious) {
+      if (isScrollingUp && willReachTop && canNavigatePrevious && onNavigatePrevious) {
         navigationLockRef.current = true;
         event.preventDefault();
         onNavigatePrevious();
