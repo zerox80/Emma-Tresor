@@ -518,6 +518,17 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
       return;
     }
 
+    // Skip swipe navigation on touch devices to avoid accidental page changes when scrolling.
+    const isTouchLikeDevice =
+      (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0) ||
+      (typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(pointer: coarse)').matches
+        : false);
+
+    if (isTouchLikeDevice) {
+      return;
+    }
+
     const positionalThreshold = 16;
     const swipeThreshold = 80;
 
