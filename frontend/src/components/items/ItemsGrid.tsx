@@ -3,12 +3,22 @@ import Button from '../common/Button';
 import type { Item } from '../../types/inventory';
 
 type Props = {
+  /** The list of items to display. */
   items: Item[];
+  /** A map of location IDs to location names. */
   locationMap: Record<number, string>;
+  /** A map of tag IDs to tag names. */
   tagMap: Record<number, string>;
+  /** Callback to open the details view for an item. */
   onOpenDetails: (itemId: number) => void;
 };
 
+/**
+ * Formats a currency value.
+ *
+ * @param {string | null | undefined} value The value to format.
+ * @returns {string} The formatted currency value.
+ */
 const formatCurrency = (value: string | null | undefined) => {
   if (!value) return '—';
   const numeric = Number.parseFloat(value);
@@ -16,6 +26,12 @@ const formatCurrency = (value: string | null | undefined) => {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
 };
 
+/**
+ * A component that displays a grid of items.
+ *
+ * @param {Props} props The props for the component.
+ * @returns {JSX.Element} The rendered grid of items.
+ */
 const ItemsGrid: React.FC<Props> = ({ items, locationMap, tagMap, onOpenDetails }) => {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

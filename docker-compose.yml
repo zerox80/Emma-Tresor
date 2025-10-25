@@ -1,4 +1,7 @@
+# Docker Compose configuration for EmmaTresor
+# Defines the services, networks, and volumes for the application.
 services:
+  # PostgreSQL database service
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -16,6 +19,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # Django backend service
   backend:
     build:
       context: .
@@ -49,6 +53,7 @@ services:
     expose:
       - "8000"
 
+  # Nginx reverse proxy and frontend service
   nginx:
     build:
       context: .
@@ -63,6 +68,7 @@ services:
       - backend_static:/var/www/emmatresor/static
       - backend_media:/var/www/emmatresor/media
 
+# Volumes for persistent data
 volumes:
   postgres_data:
   backend_static:

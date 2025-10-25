@@ -12,6 +12,11 @@ type RouteParams = {
 
 const PAGE_SIZE = 20;
 
+/**
+ * The page for viewing an item after scanning a QR code.
+ *
+ * @returns {JSX.Element} The rendered scan item page.
+ */
 const ScanItemPage: React.FC = () => {
   const { assetTag } = useParams<RouteParams>();
   const navigate = useNavigate();

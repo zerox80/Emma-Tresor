@@ -39,7 +39,7 @@ interface AuthState {
    * Refreshes the access token.
    * @returns A promise that resolves to true on success, false on failure.
    */
-  refreshAccessToken: () => Promise<void>;
+  refreshAccessToken: () => Promise<boolean>;
   /**
    * Initialises the authentication state, checking for an existing session.
    * @returns A promise that resolves when initialisation is complete.
@@ -109,7 +109,7 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
       // The auth interceptor will handle 401 errors and token refresh automatically
       // If we reach here, it means the user is not authenticated (refresh failed)
       const status = (error as { response?: { status?: number } }).response?.status;
-      
+
       if (status && status !== 401) {
         // Log non-401 errors for debugging
         console.error('Failed to initialise authentication state:', error);

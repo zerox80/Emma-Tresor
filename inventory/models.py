@@ -14,6 +14,10 @@ except ImportError as exc:
 
 
 class TimeStampedModel(models.Model):
+    """
+    An abstract base class model that provides self-updating
+    `created_at` and `updated_at` fields.
+    """
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -22,6 +26,13 @@ class TimeStampedModel(models.Model):
 
 
 class Tag(TimeStampedModel):
+    """
+    Represents a tag that can be associated with an item.
+
+    Attributes:
+        name (str): The name of the tag.
+        user (User): The user who created the tag.
+    """
     name = models.CharField(max_length=100)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -36,10 +47,18 @@ class Tag(TimeStampedModel):
         verbose_name_plural = 'Schlagwörter'
 
     def __str__(self) -> str:
+        """Returns the string representation of the tag."""
         return self.name
 
 
 class Location(TimeStampedModel):
+    """
+    Represents a location where an item can be stored.
+
+    Attributes:
+        name (str): The name of the location.
+        user (User): The user who created the location.
+    """
     name = models.CharField(max_length=100)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -54,12 +73,29 @@ class Location(TimeStampedModel):
         verbose_name_plural = 'Standorte'
 
     def __str__(self) -> str:
+        """Returns the string representation of the location."""
         return self.name
 
 
 MAX_PURCHASE_AGE_YEARS = 50
 
+
 class Item(TimeStampedModel):
+    """
+    Represents an item in the inventory.
+
+    Attributes:
+        name (str): The name of the item.
+        description (str): A description of the item.
+        quantity (int): The quantity of the item.
+        purchase_date (date): The date the item was purchased.
+        value (Decimal): The value of the item.
+        asset_tag (UUID): A unique identifier for the item.
+        owner (User): The user who owns the item.
+        location (Location): The location where the item is stored.
+        wodis_inventory_number (str): An optional inventory number from an external system.
+        tags (ManyToManyField): The tags associated with the item.
+    """
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     quantity = models.PositiveIntegerField(
@@ -99,6 +135,13 @@ class Item(TimeStampedModel):
         ]
 
     def clean(self):
+        """
+        Validates the item's data.
+
+        Raises:
+            ValidationError: If the purchase date is in the future or too old,
+                or if the value is negative or too high.
+        """
         super().clean()
         # Validate purchase date
         if self.purchase_date:
@@ -121,6 +164,13 @@ class Item(TimeStampedModel):
             self.wodis_inventory_number = cleaned or None
 
     def save(self, *args, **kwargs):
+        """
+        Saves the item, ensuring a unique asset tag is generated.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         max_attempts = kwargs.pop('max_uuid_attempts', 5)
         attempt = 0
         while True:
@@ -137,10 +187,18 @@ class Item(TimeStampedModel):
                 self.asset_tag = uuid.uuid4()
 
     def __str__(self) -> str:
+        """Returns the string representation of the item."""
         return self.name
 
 
 class ItemImage(TimeStampedModel):
+    """
+    Represents an image associated with an item.
+
+    Attributes:
+        item (Item): The item the image is associated with.
+        image (FileField): The image file.
+    """
     item = models.ForeignKey('Item', on_delete=models.CASCADE, related_name='images')
     image = models.FileField(upload_to='item_attachments/', storage=private_item_storage)
 
@@ -149,9 +207,17 @@ class ItemImage(TimeStampedModel):
         verbose_name_plural = 'Gegenstandsbilder'
 
     def __str__(self) -> str:
+        """Returns a string representation of the item image."""
         return f"Bild für {self.item.name}"
 
     def clean(self):
+        """
+        Validates the uploaded image file.
+
+        Raises:
+            ValidationError: If the file is too large, has an invalid extension,
+                or is not a valid image or PDF file.
+        """
         super().clean()
         if self.image:
             # Check file size (8MB max)
@@ -208,11 +274,28 @@ class ItemImage(TimeStampedModel):
                 file_obj.seek(pos)
 
     def save(self, *args, **kwargs):
+        """
+        Saves the item image after validation.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         self.full_clean()  # Ensure validation runs
         super().save(*args, **kwargs)
 
 
 class ItemChangeLog(TimeStampedModel):
+    """
+    Represents a log of changes made to an item.
+
+    Attributes:
+        item (Item): The item that was changed.
+        item_name (str): The name of the item at the time of the change.
+        user (User): The user who made the change.
+        action (str): The action that was performed (create, update, or delete).
+        changes (JSONField): A JSON object describing the changes made.
+    """
     ACTION_CREATE = 'create'
     ACTION_UPDATE = 'update'
     ACTION_DELETE = 'delete'
@@ -246,17 +329,39 @@ class ItemChangeLog(TimeStampedModel):
         ]
 
     def clean(self):
+        """
+        Validates the change log's data.
+
+        Raises:
+            ValidationError: If the action is not a valid choice.
+        """
         super().clean()
         valid_actions = [choice[0] for choice in self.ACTION_CHOICES]
         if self.action not in valid_actions:
             raise ValidationError(f'Ungültige Aktion: {self.action}. Erlaubt sind: {", ".join(valid_actions)}')
 
     def save(self, *args, **kwargs):
+        """
+        Saves the change log after validation.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         self.full_clean()
         super().save(*args, **kwargs)
 
 
 class ItemList(TimeStampedModel):
+    """
+
+    Represents a list of items.
+
+    Attributes:
+        name (str): The name of the list.
+        owner (User): The user who owns the list.
+        items (ManyToManyField): The items in the list.
+    """
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -272,4 +377,5 @@ class ItemList(TimeStampedModel):
         verbose_name_plural = 'Inventarlisten'
 
     def __str__(self) -> str:
+        """Returns the string representation of the item list."""
         return self.name

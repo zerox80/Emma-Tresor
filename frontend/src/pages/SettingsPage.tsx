@@ -52,6 +52,11 @@ const extractApiError = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
+/**
+ * The settings page, allowing users to manage their tags and locations.
+ *
+ * @returns {JSX.Element} The rendered settings page.
+ */
 const SettingsPage: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);

@@ -6,28 +6,44 @@ import type { Tag, Location } from '../../types/inventory';
 type ViewMode = 'grid' | 'table';
 
 type Props = {
+  /** The current view mode ('grid' or 'table'). */
   viewMode: ViewMode;
+  /** Callback to set the view mode. */
   setViewMode: (mode: ViewMode) => void;
+  /** Whether any filters are currently active. */
   isFiltered: boolean;
+  /** Callback to clear all filters. */
   onClearFilters: () => void;
-
+  /** The current search term. */
   searchTerm: string;
+  /** Callback to update the search term. */
   onSearchChange: (value: string) => void;
-
+  /** The list of available tags. */
   tags: Tag[];
+  /** The list of available locations. */
   locations: Location[];
+  /** Whether the tags and locations are currently loading. */
   metaLoading: boolean;
-
+  /** The list of selected tag IDs. */
   selectedTagIds: number[];
+  /** Callback to toggle a tag's selection status. */
   onToggleTag: (tagId: number) => void;
-
+  /** The list of selected location IDs. */
   selectedLocationIds: number[];
+  /** Callback to toggle a location's selection status. */
   onToggleLocation: (locationId: number) => void;
-
+  /** The current ordering string. */
   ordering: string;
+  /** Callback to set the ordering. */
   setOrdering: (ordering: string) => void;
 };
 
+/**
+ * A component that provides UI for filtering and sorting a list of items.
+ *
+ * @param {Props} props The props for the component.
+ * @returns {JSX.Element} The rendered filter section.
+ */
 const FilterSection: React.FC<Props> = ({
   viewMode,
   setViewMode,

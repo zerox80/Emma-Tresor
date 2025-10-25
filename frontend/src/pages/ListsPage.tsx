@@ -10,6 +10,11 @@ interface ListWithItems extends ItemList {
   resolvedItems: Item[];
 }
 
+/**
+ * The page for viewing and managing item lists.
+ *
+ * @returns {JSX.Element} The rendered lists page.
+ */
 const ListsPage: React.FC = () => {
   const [lists, setLists] = useState<ListWithItems[]>([]);
   const [allItems, setAllItems] = useState<Item[]>([]);

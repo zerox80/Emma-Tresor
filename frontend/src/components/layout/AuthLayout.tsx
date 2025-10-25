@@ -2,10 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 interface AuthLayoutProps {
+  /** The title to display in the authentication form. */
   title: string;
+  /** The content of the authentication form. */
   children: React.ReactNode;
 }
 
+/**
+ * A layout for authentication pages, such as login and registration.
+ *
+ * @param {AuthLayoutProps} props The props for the component.
+ * @returns {JSX.Element} The rendered authentication layout.
+ */
 const AuthLayout: React.FC<AuthLayoutProps> = ({ title, children }) => (
   <div className="relative min-h-screen overflow-hidden bg-slate-50 px-4 py-12 text-slate-900">
     <div className="pointer-events-none absolute inset-x-0 top-[-20rem] flex justify-center blur-3xl">

@@ -13,6 +13,11 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
 
+/**
+ * The root component of the application, which sets up the routing.
+ *
+ * @returns {JSX.Element} The rendered application.
+ */
 const App: React.FC = () => (
   <Routes>
     <Route
