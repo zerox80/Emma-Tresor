@@ -1,5 +1,10 @@
 import React from 'react';
 
+/**
+ * A full-screen loading indicator.
+ *
+ * @returns {JSX.Element} The rendered loading screen element.
+ */
 const LoadingScreen: React.FC = () => (
   <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-700">
     <div className="flex flex-col items-center gap-4">

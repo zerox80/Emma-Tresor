@@ -713,4 +713,3 @@ Dieses Projekt steht unter der **GNU General Public License Version 3.0** (GPL-v
     <a href="#-emmatresor---modern-inventory-management">⬆️ Zurück nach oben</a>
   </p>
 </div>
-

@@ -10,6 +10,11 @@ interface DashboardStats {
   locations: Location[];
 }
 
+/**
+ * The main dashboard page, displaying a summary of the user's inventory.
+ *
+ * @returns {JSX.Element} The rendered dashboard page.
+ */
 const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);

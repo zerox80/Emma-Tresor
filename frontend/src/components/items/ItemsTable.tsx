@@ -3,15 +3,28 @@ import Button from '../common/Button';
 import type { Item } from '../../types/inventory';
 
 type Props = {
+  /** The list of items to display. */
   items: Item[];
+  /** A map of location IDs to location names. */
   locationMap: Record<number, string>;
+  /** A map of tag IDs to tag names. */
   tagMap: Record<number, string>;
+  /** Callback to open the details view for an item. */
   onOpenDetails: (itemId: number) => void;
+  /** Whether the table is in selection mode. */
   selectionMode: boolean;
+  /** Whether all items on the current page are selected. */
   areAllSelectedOnPage: boolean;
+  /** Callback to toggle the selection of all items on the current page. */
   onToggleSelectAllCurrentPage: () => void;
 };
 
+/**
+ * Formats a currency value.
+ *
+ * @param {string | null | undefined} value The value to format.
+ * @returns {string} The formatted currency value.
+ */
 const formatCurrency = (value: string | null | undefined) => {
   if (!value) return '—';
   const numeric = Number.parseFloat(value);
@@ -19,7 +32,21 @@ const formatCurrency = (value: string | null | undefined) => {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
 };
 
-const ItemsTable: React.FC<Props> = ({ items, locationMap, tagMap, onOpenDetails, selectionMode, areAllSelectedOnPage, onToggleSelectAllCurrentPage }) => {
+/**
+ * A component that displays a table of items.
+ *
+ * @param {Props} props The props for the component.
+ * @returns {JSX.Element} The rendered table of items.
+ */
+const ItemsTable: React.FC<Props> = ({
+  items,
+  locationMap,
+  tagMap,
+  onOpenDetails,
+  selectionMode,
+  areAllSelectedOnPage,
+  onToggleSelectAllCurrentPage,
+}) => {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
       <table className="min-w-full divide-y divide-slate-200 text-sm">

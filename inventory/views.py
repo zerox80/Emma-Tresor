@@ -38,6 +38,15 @@ User = get_user_model()
 
 
 def _coerce_bool(value):
+    """
+    Coerces a value to a boolean.
+
+    Args:
+        value: The value to coerce.
+
+    Returns:
+        bool: The coerced boolean value.
+    """
     if isinstance(value, bool):
         return value
     if isinstance(value, str):
@@ -46,6 +55,15 @@ def _coerce_bool(value):
 
 
 def _build_cookie_options(path: str):
+    """
+    Builds a dictionary of options for setting a cookie.
+
+    Args:
+        path (str): The path for the cookie.
+
+    Returns:
+        dict: A dictionary of cookie options.
+    """
     options = {
         'httponly': settings.JWT_COOKIE_HTTPONLY,
         'secure': settings.JWT_COOKIE_SECURE,
@@ -58,6 +76,15 @@ def _build_cookie_options(path: str):
 
 
 def _set_token_cookies(response, *, access_token: str, refresh_token: str | None, remember: bool):
+    """
+    Sets the access and refresh token cookies on the response.
+
+    Args:
+        response (HttpResponse): The response object.
+        access_token (str): The access token.
+        refresh_token (str | None): The refresh token.
+        remember (bool): Whether to remember the user.
+    """
     access_max_age = int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds())
     refresh_max_age = int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()) if remember else None
 
@@ -90,6 +117,12 @@ def _set_token_cookies(response, *, access_token: str, refresh_token: str | None
 
 
 def _clear_token_cookies(response):
+    """
+    Clears the token cookies from the response.
+
+    Args:
+        response (HttpResponse): The response object.
+    """
     access_options = _build_cookie_options(settings.JWT_ACCESS_COOKIE_PATH)
     refresh_options = _build_cookie_options(settings.JWT_REFRESH_COOKIE_PATH)
 
@@ -120,34 +153,58 @@ def _clear_token_cookies(response):
 
 
 class LoginRateThrottle(throttling.AnonRateThrottle):
+    """
+    Throttles login attempts for anonymous users.
+    """
     scope = 'login'
 
 
 class RegisterRateThrottle(throttling.AnonRateThrottle):
+    """
+    Throttles registration attempts for anonymous users.
+    """
     scope = 'register'
 
 
 class LogoutRateThrottle(throttling.AnonRateThrottle):
+    """
+    Throttles logout attempts for anonymous users.
+    """
     scope = 'logout'
 
 
 class ItemCreateRateThrottle(throttling.UserRateThrottle):
+    """
+    Throttles item creation attempts for authenticated users.
+    """
     scope = 'item_create'
 
 
 class ItemUpdateRateThrottle(throttling.UserRateThrottle):
+    """
+    Throttles item update attempts for authenticated users.
+    """
     scope = 'item_update'
 
 
 class ItemDeleteRateThrottle(throttling.UserRateThrottle):
+    """
+    Throttles item deletion attempts for authenticated users.
+    """
     scope = 'item_delete'
 
 
 class QRGenerateRateThrottle(throttling.UserRateThrottle):
+    """
+    Throttles QR code generation attempts for authenticated users.
+    """
     scope = 'qr_generate'
 
 
 class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    """
+    A viewset for user registration.
+    """
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = UserRegistrationSerializer
@@ -155,6 +212,17 @@ class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     http_method_names = ['post']
 
     def create(self, request, *args, **kwargs):
+        """
+        Creates a new user.
+
+        Args:
+            request (Request): The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response object.
+        """
         if not settings.ALLOW_USER_REGISTRATION:
             return Response(
                 {'detail': 'Registrierungen sind derzeit deaktiviert.'},
@@ -164,6 +232,9 @@ class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    A custom token obtain pair serializer that allows logging in with either username or email.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['email'] = serializers.EmailField(required=False, allow_blank=False)
@@ -171,12 +242,30 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     @classmethod
     def get_token(cls, user):
+        """
+        Gets a token for the given user.
+
+        Args:
+            user (User): The user to get a token for.
+
+        Returns:
+            Token: The token for the user.
+        """
         token = super().get_token(user)
         token['username'] = user.username
         token['email'] = user.email
         return token
 
     def validate(self, attrs):
+        """
+        Validates the given attributes.
+
+        Args:
+            attrs (dict): The attributes to validate.
+
+        Returns:
+            dict: The validated data.
+        """
         import logging
         import time
         import secrets
@@ -238,10 +327,24 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    A custom token obtain pair view that sets the token cookies.
+    """
     serializer_class = CustomTokenObtainPairSerializer
     throttle_classes = [LoginRateThrottle]
 
     def post(self, request, *args, **kwargs):
+        """
+        Handles POST requests.
+
+        Args:
+            request (Request): The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response object.
+        """
         remember_preference = (
             request.data.get('remember')
             or request.data.get('remember_me')
@@ -276,7 +379,21 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class CustomTokenRefreshView(TokenRefreshView):
+    """
+    A custom token refresh view that sets the token cookies.
+    """
     def post(self, request, *args, **kwargs):
+        """
+        Handles POST requests.
+
+        Args:
+            request (Request): The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response object.
+        """
         refresh_cookie = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
         remember_cookie = request.COOKIES.get(settings.JWT_REMEMBER_COOKIE_NAME)
 
@@ -315,9 +432,23 @@ class CustomTokenRefreshView(TokenRefreshView):
 
 
 class CurrentUserView(APIView):
+    """
+    A view to get the current user.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests.
+
+        Args:
+            request (Request): The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response object.
+        """
         user = request.user
         return Response(
             {
@@ -337,14 +468,39 @@ class GetCSRFTokenView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, *args, **kwargs):
+        """
+        Handles GET requests.
+
+        Args:
+            request (Request): The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response object.
+        """
         return Response({'detail': 'CSRF cookie set'}, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
+    """
+    A view to log out the user.
+    """
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [LogoutRateThrottle]
 
     def post(self, request, *args, **kwargs):
+        """
+        Handles POST requests.
+
+        Args:
+            request (Request): The request object.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response object.
+        """
         refresh_token = (
             request.data.get('refresh')
             or request.data.get('refresh_token')
@@ -372,10 +528,19 @@ class LogoutView(APIView):
 
 
 class UserScopedModelViewSet(viewsets.ModelViewSet):
+    """
+    A base viewset for models that are scoped to the current user.
+    """
     owner_field = 'user'
     pagination_class = None
 
     def get_queryset(self):
+        """
+        Gets the queryset for the viewset.
+
+        Returns:
+            QuerySet: The queryset for the viewset.
+        """
         queryset = super().get_queryset()
         user = self.request.user
         if not user.is_authenticated:
@@ -385,9 +550,21 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
         return queryset.filter(**filter_kwargs)
 
     def perform_create(self, serializer):
+        """
+        Performs creation of a new object.
+
+        Args:
+            serializer (Serializer): The serializer for the object.
+        """
         serializer.save(user=self.request.user)
 
     def perform_update(self, serializer):
+        """
+        Performs update of an existing object.
+
+        Args:
+            serializer (Serializer): The serializer for the object.
+        """
         instance = serializer.instance
         if instance is None:
             serializer.save(user=self.request.user)
@@ -402,21 +579,33 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(UserScopedModelViewSet):
+    """
+    A viewset for tags.
+    """
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
 
 class LocationViewSet(UserScopedModelViewSet):
+    """
+    A viewset for locations.
+    """
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
 
 
 
 class NumberInFilter(django_filters.BaseInFilter, django_filters.NumberFilter):
+    """
+    A filter for numbers in a list.
+    """
     pass
 
 
 class ItemFilter(django_filters.FilterSet):
+    """
+    A filter for items.
+    """
     tags = NumberInFilter(field_name='tags__id')
     location = NumberInFilter(field_name='location__id')
 
@@ -426,12 +615,18 @@ class ItemFilter(django_filters.FilterSet):
 
 
 class ItemPagination(PageNumberPagination):
+    """
+    Pagination for items.
+    """
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 100
 
 
 class ItemViewSet(viewsets.ModelViewSet):
+    """
+    A viewset for items.
+    """
     serializer_class = ItemSerializer
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ItemFilter
@@ -441,6 +636,12 @@ class ItemViewSet(viewsets.ModelViewSet):
     pagination_class = ItemPagination
 
     def get_queryset(self):
+        """
+        Gets the queryset for the viewset.
+
+        Returns:
+            QuerySet: The queryset for the viewset.
+        """
         user = self.request.user
         if not user.is_authenticated:
             return Item.objects.none()
@@ -452,6 +653,12 @@ class ItemViewSet(viewsets.ModelViewSet):
         )
 
     def get_throttles(self):
+        """
+        Gets the throttles for the viewset.
+
+        Returns:
+            list: A list of throttles.
+        """
         throttles = []
         if self.action == 'create':
             throttles.append(ItemCreateRateThrottle())
@@ -466,9 +673,21 @@ class ItemViewSet(viewsets.ModelViewSet):
         return throttles
 
     def perform_create(self, serializer):
+        """
+        Performs creation of a new object.
+
+        Args:
+            serializer (Serializer): The serializer for the object.
+        """
         serializer.save(owner=self.request.user)
 
     def perform_update(self, serializer):
+        """
+        Performs update of an existing object.
+
+        Args:
+            serializer (Serializer): The serializer for the object.
+        """
         # Validate ownership before update
         instance = self.get_object()
         if instance.owner != self.request.user:
@@ -477,6 +696,16 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='lookup_by_tag/(?P<asset_tag>[^/]+)')
     def lookup_by_asset_tag(self, request, asset_tag=None):
+        """
+        Looks up an item by its asset tag.
+
+        Args:
+            request (Request): The request object.
+            asset_tag (str, optional): The asset tag to look up. Defaults to None.
+
+        Returns:
+            Response: A response object.
+        """
         user = request.user
         if not user.is_authenticated:
             return Response({'detail': 'Authentifizierung erforderlich.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -500,6 +729,16 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='generate_qr_code')
     def generate_qr_code(self, request, pk=None):
+        """
+        Generates a QR code for an item.
+
+        Args:
+            request (Request): The request object.
+            pk (int, optional): The primary key of the item. Defaults to None.
+
+        Returns:
+            HttpResponse: An HTTP response containing the QR code image.
+        """
         try:
             import qrcode
         except ImportError:
@@ -531,22 +770,43 @@ class ItemViewSet(viewsets.ModelViewSet):
 
 
 class ItemImageViewSet(viewsets.ModelViewSet):
+    """
+    A viewset for item images.
+    """
     serializer_class = ItemImageSerializer
     pagination_class = None
 
     def get_queryset(self):
+        """
+        Gets the queryset for the viewset.
+
+        Returns:
+            QuerySet: The queryset for the viewset.
+        """
         user = self.request.user
         if not user.is_authenticated:
             return ItemImage.objects.none()
         return ItemImage.objects.filter(item__owner=user).select_related('item', 'item__owner')
 
     def perform_create(self, serializer):
+        """
+        Performs creation of a new object.
+
+        Args:
+            serializer (Serializer): The serializer for the object.
+        """
         item = serializer.validated_data['item']
         if item.owner != self.request.user:
             raise PermissionDenied('Bilder können nur für eigene Gegenstände hinzugefügt werden.')
         serializer.save()
 
     def perform_update(self, serializer):
+        """
+        Performs update of an existing object.
+
+        Args:
+            serializer (Serializer): The serializer for the object.
+        """
         item = serializer.validated_data.get('item', serializer.instance.item)
         if item.owner != self.request.user:
             raise PermissionDenied('Bilder können nur für eigene Gegenstände bearbeitet werden.')
@@ -554,9 +814,24 @@ class ItemImageViewSet(viewsets.ModelViewSet):
 
 
 class ItemImageDownloadView(APIView):
+    """
+    A view to download an item image.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, pk: int, *args, **kwargs):
+        """
+        Handles GET requests.
+
+        Args:
+            request (Request): The request object.
+            pk (int): The primary key of the item image.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            FileResponse: A file response containing the image.
+        """
         attachment = get_object_or_404(
             ItemImage.objects.select_related('item__owner'),
             pk=pk,
@@ -600,19 +875,40 @@ class ItemImageDownloadView(APIView):
 
 
 class ItemListViewSet(viewsets.ModelViewSet):
+    """
+    A viewset for item lists.
+    """
     serializer_class = ItemListSerializer
     pagination_class = None
 
     def get_queryset(self):
+        """
+        Gets the queryset for the viewset.
+
+        Returns:
+            QuerySet: The queryset for the viewset.
+        """
         user = self.request.user
         if not user.is_authenticated:
             return ItemList.objects.none()
         return ItemList.objects.filter(owner=user).prefetch_related('items', 'owner')
 
     def perform_create(self, serializer):
+        """
+        Performs creation of a new object.
+
+        Args:
+            serializer (Serializer): The serializer for the object.
+        """
         serializer.save(owner=self.request.user)
 
     def perform_update(self, serializer):
+        """
+        Performs update of an existing object.
+
+        Args:
+            serializer (Serializer): The serializer for the object.
+        """
         instance = serializer.instance
         if instance.owner != self.request.user:
             raise PermissionDenied('Diese Inventarliste gehört nicht zu deinem Konto.')

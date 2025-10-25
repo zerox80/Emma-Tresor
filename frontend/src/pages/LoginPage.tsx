@@ -16,6 +16,11 @@ const loginSchema = z.object({
 
 type LoginSchema = z.infer<typeof loginSchema>;
 
+/**
+ * The login page, allowing users to sign in to their account.
+ *
+ * @returns {JSX.Element} The rendered login page.
+ */
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();

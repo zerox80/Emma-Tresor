@@ -57,6 +57,11 @@ const extractDetailMessage = (error: AxiosError): string | null => {
 const sortItemLists = (entries: ItemList[]): ItemList[] =>
   [...entries].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
 
+/**
+ * The main page for viewing and managing inventory items.
+ *
+ * @returns {JSX.Element} The rendered items page.
+ */
 const ItemsPage: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(null);

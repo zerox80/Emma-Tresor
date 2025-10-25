@@ -14,6 +14,9 @@ User = get_user_model()
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration.
+    """
     email = serializers.EmailField(
         required=True,
         validators=[UniqueValidator(
@@ -31,6 +34,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def validate(self, attrs):
+        """
+        Validates the serializer data.
+
+        Args:
+            attrs (dict): The data to validate.
+
+        Returns:
+            dict: The validated data.
+        """
         password = attrs.get('password')
         password_confirm = attrs.pop('password_confirm', None)
         if password != password_confirm:
@@ -47,6 +59,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        """
+        Creates a new user.
+
+        Args:
+            validated_data (dict): The validated data.
+
+        Returns:
+            User: The created user.
+        """
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
@@ -61,12 +82,24 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
+    """
+    Serializer for tags.
+    """
     class Meta:
         model = Tag
         fields = ['id', 'name', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def validate_name(self, value):
+        """
+        Validates the name of the tag.
+
+        Args:
+            value (str): The name of the tag.
+
+        Returns:
+            str: The validated name.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         normalised = value.strip()
@@ -83,6 +116,15 @@ class TagSerializer(serializers.ModelSerializer):
         return normalised
 
     def create(self, validated_data):
+        """
+        Creates a new tag.
+
+        Args:
+            validated_data (dict): The validated data.
+
+        Returns:
+            Tag: The created tag.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -91,6 +133,16 @@ class TagSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
+        """
+        Updates an existing tag.
+
+        Args:
+            instance (Tag): The tag to update.
+            validated_data (dict): The validated data.
+
+        Returns:
+            Tag: The updated tag.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or instance.user_id != user.id:
@@ -101,12 +153,24 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class LocationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for locations.
+    """
     class Meta:
         model = Location
         fields = ['id', 'name', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def validate_name(self, value):
+        """
+        Validates the name of the location.
+
+        Args:
+            value (str): The name of the location.
+
+        Returns:
+            str: The validated name.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         normalised = value.strip()
@@ -123,6 +187,15 @@ class LocationSerializer(serializers.ModelSerializer):
         return normalised
 
     def create(self, validated_data):
+        """
+        Creates a new location.
+
+        Args:
+            validated_data (dict): The validated data.
+
+        Returns:
+            Location: The created location.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -133,6 +206,16 @@ class LocationSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
+        """
+        Updates an existing location.
+
+        Args:
+            instance (Location): The location to update.
+            validated_data (dict): The validated data.
+
+        Returns:
+            Location: The updated location.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or instance.user_id != user.id:
@@ -143,6 +226,9 @@ class LocationSerializer(serializers.ModelSerializer):
 
 
 class ItemImageSerializer(serializers.ModelSerializer):
+    """
+    Serializer for item images.
+    """
     download_url = serializers.SerializerMethodField()
     preview_url = serializers.SerializerMethodField()
     filename = serializers.SerializerMethodField()
@@ -186,7 +272,15 @@ class ItemImageSerializer(serializers.ModelSerializer):
             self.fields['item'].queryset = Item.objects.none()
     
     def validate_image(self, value):
-        """Validate uploaded attachment file"""
+        """
+        Validate uploaded attachment file
+
+        Args:
+            value (File): The uploaded file.
+
+        Returns:
+            File: The validated file.
+        """
         # Check file size (8MB max)
         max_size = 8 * 1024 * 1024  # 8MB in bytes
         if value.size > max_size:
@@ -256,6 +350,15 @@ class ItemImageSerializer(serializers.ModelSerializer):
         return value
 
     def validate_item(self, value: Item) -> Item:
+        """
+        Validates the item.
+
+        Args:
+            value (Item): The item.
+
+        Returns:
+            Item: The validated item.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -265,23 +368,69 @@ class ItemImageSerializer(serializers.ModelSerializer):
         return value
 
     def _build_download_url(self, obj: ItemImage, *, disposition: str | None = None) -> str:
+        """
+        Builds the download URL for the item image.
+
+        Args:
+            obj (ItemImage): The item image object.
+            disposition (str, optional): The disposition of the file. Defaults to None.
+
+        Returns:
+            str: The download URL.
+        """
         url = reverse('itemimage-download', args=[obj.pk])
         if disposition:
             return f"{url}?disposition={disposition}"
         return url
 
     def get_download_url(self, obj: ItemImage) -> str:
+        """
+        Gets the download URL for the item image.
+
+        Args:
+            obj (ItemImage): The item image object.
+
+        Returns:
+            str: The download URL.
+        """
         return self._build_download_url(obj, disposition='attachment')
 
     def get_preview_url(self, obj: ItemImage) -> str:
+        """
+        Gets the preview URL for the item image.
+
+        Args:
+            obj (ItemImage): The item image object.
+
+        Returns:
+            str: The preview URL.
+        """
         return self._build_download_url(obj, disposition='inline')
 
     def get_filename(self, obj: ItemImage) -> str:
+        """
+        Gets the filename of the item image.
+
+        Args:
+            obj (ItemImage): The item image object.
+
+        Returns:
+            str: The filename.
+        """
         if not obj.image or not obj.image.name:
             return ''
         return os.path.basename(obj.image.name)
 
     def get_content_type(self, obj: ItemImage) -> str:
+        """
+        Gets the content type of the item image.
+
+        Args:
+            obj (ItemImage): The item image object.
+
+        Returns:
+            str: The content type.
+        """
         if not obj.image or not obj.image.name:
             return 'application/octet-stream'
         try:
@@ -295,6 +444,15 @@ class ItemImageSerializer(serializers.ModelSerializer):
         return guessed or 'application/octet-stream'
 
     def get_size(self, obj: ItemImage) -> int:
+        """
+        Gets the size of the item image.
+
+        Args:
+            obj (ItemImage): The item image object.
+
+        Returns:
+            int: The size of the image in bytes.
+        """
         if not obj.image or not obj.image.name:
             return 0
         try:
@@ -304,6 +462,9 @@ class ItemImageSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
+    """
+    Serializer for items.
+    """
     tags = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
     description = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=10000)
@@ -362,6 +523,12 @@ class ItemSerializer(serializers.ModelSerializer):
             location_field.queryset = empty_locations
 
     def _require_user(self) -> User:
+        """
+        Gets the user from the request context.
+
+        Returns:
+            User: The user.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -369,6 +536,15 @@ class ItemSerializer(serializers.ModelSerializer):
         return user
 
     def validate(self, attrs):
+        """
+        Validates the serializer data.
+
+        Args:
+            attrs (dict): The data to validate.
+
+        Returns:
+            dict: The validated data.
+        """
         user = self._require_user()
 
         location = attrs.get('location')
@@ -383,6 +559,15 @@ class ItemSerializer(serializers.ModelSerializer):
         return attrs
 
     def validate_purchase_date(self, value):
+        """
+        Validates the purchase date.
+
+        Args:
+            value (date): The purchase date.
+
+        Returns:
+            date: The validated purchase date.
+        """
         if value is None:
             return value
 
@@ -400,6 +585,15 @@ class ItemSerializer(serializers.ModelSerializer):
         return value
 
     def validate_value(self, value):
+        """
+        Validates the value.
+
+        Args:
+            value (Decimal): The value.
+
+        Returns:
+            Decimal: The validated value.
+        """
         if value is None:
             return value
         if value < 0:
@@ -418,6 +612,15 @@ class ItemSerializer(serializers.ModelSerializer):
         return value
 
     def _normalise_payload(self, data: dict) -> dict:
+        """
+        Normalises the payload data.
+
+        Args:
+            data (dict): The payload data.
+
+        Returns:
+            dict: The normalised payload data.
+        """
         # Convert empty strings to None for nullable fields
         if 'description' in data and (data['description'] is None or data['description'] == ''):
             data['description'] = None
@@ -435,6 +638,15 @@ class ItemSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        """
+        Creates a new item.
+
+        Args:
+            validated_data (dict): The validated data.
+
+        Returns:
+            Item: The created item.
+        """
         user = self._require_user()
         tags = validated_data.pop('tags', [])
         validated_data.pop('owner', None)
@@ -445,6 +657,16 @@ class ItemSerializer(serializers.ModelSerializer):
         return item
 
     def update(self, instance, validated_data):
+        """
+        Updates an existing item.
+
+        Args:
+            instance (Item): The item to update.
+            validated_data (dict): The validated data.
+
+        Returns:
+            Item: The updated item.
+        """
         user = self._require_user()
         tags = validated_data.pop('tags', None)
         normalised = self._normalise_payload(validated_data)
@@ -472,6 +694,9 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class ItemListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for item lists.
+    """
     items = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Item.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
 
@@ -481,6 +706,15 @@ class ItemListSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
 
     def validate_name(self, value):
+        """
+        Validates the name of the item list.
+
+        Args:
+            value (str): The name of the item list.
+
+        Returns:
+            str: The validated name.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         normalised = value.strip()
@@ -497,6 +731,12 @@ class ItemListSerializer(serializers.ModelSerializer):
         return normalised
 
     def _require_user(self):
+        """
+        Gets the user from the request context.
+
+        Returns:
+            User: The user.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -519,6 +759,15 @@ class ItemListSerializer(serializers.ModelSerializer):
                 items_field.child_relation.queryset = empty_items
 
     def create(self, validated_data):
+        """
+        Creates a new item list.
+
+        Args:
+            validated_data (dict): The validated data.
+
+        Returns:
+            ItemList: The created item list.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         user = self._require_user()
@@ -533,6 +782,16 @@ class ItemListSerializer(serializers.ModelSerializer):
         return item_list
 
     def update(self, instance, validated_data):
+        """
+        Updates an existing item list.
+
+        Args:
+            instance (ItemList): The item list to update.
+            validated_data (dict): The validated data.
+
+        Returns:
+            ItemList: The updated item list.
+        """
         items = validated_data.pop('items', None)
         if 'name' in validated_data:
             validated_data['name'] = validated_data['name'].strip()
@@ -546,6 +805,15 @@ class ItemListSerializer(serializers.ModelSerializer):
         return instance
 
     def validate_items(self, value):
+        """
+        Validates the items in the item list.
+
+        Args:
+            value (list): The list of items.
+
+        Returns:
+            list: The validated list of items.
+        """
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if user:

@@ -6,6 +6,11 @@ let failedQueue: Array<{
   reject: (reason?: unknown) => void;
 }> = [];
 
+/**
+ * Processes the queue of failed requests.
+ *
+ * @param {Error | null} error - The error to reject the promises with. If null, the promises are resolved.
+ */
 const processQueue = (error: Error | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -18,6 +23,13 @@ const processQueue = (error: Error | null = null) => {
   failedQueue = [];
 };
 
+/**
+ * Sets up an Axios interceptor to handle token refreshing.
+ *
+ * @param {AxiosInstance} axiosInstance - The Axios instance to attach the interceptor to.
+ * @param {() => Promise<boolean>} refreshTokenFn - A function that refreshes the token and returns a boolean indicating success.
+ * @param {() => Promise<void>} logoutFn - A function that logs the user out.
+ */
 export const setupAuthInterceptor = (
   axiosInstance: AxiosInstance,
   refreshTokenFn: () => Promise<boolean>,

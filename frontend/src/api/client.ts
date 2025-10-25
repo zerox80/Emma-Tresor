@@ -1,5 +1,12 @@
 import axios from 'axios';
 
+/**
+ * Derives a fallback API base URL based on the environment.
+ * In development, it defaults to 'http://127.0.0.1:8000/api'.
+ * In production, it uses the current window location's origin.
+ *
+ * @returns {string} The derived fallback API base URL.
+ */
 const deriveFallbackApi = (): string => {
   if (import.meta.env.DEV) {
     return 'http://127.0.0.1:8000/api';
@@ -12,6 +19,14 @@ const deriveFallbackApi = (): string => {
   return 'http://127.0.0.1:8000/api';
 };
 
+/**
+ * Resolves the API base URL.
+ * It first checks for the VITE_API_BASE_URL environment variable.
+ * If not found, it uses the fallback URL derived from the environment.
+ * It also handles protocol switching from http to https in production if needed.
+ *
+ * @returns {string} The resolved API base URL.
+ */
 const resolveBaseURL = () => {
   const configured = (import.meta.env.VITE_API_BASE_URL ?? '').trim();
   const fallback = deriveFallbackApi();
@@ -41,8 +56,9 @@ const resolveBaseURL = () => {
 };
 
 /**
- * Get CSRF token from cookie
- * Django's default CSRF cookie name is 'csrftoken'
+ * Gets the CSRF token from the 'csrftoken' cookie.
+ *
+ * @returns {string | null} The CSRF token, or null if not found.
  */
 export const getCSRFToken = (): string | null => {
   if (typeof document === 'undefined') return null;
@@ -57,7 +73,9 @@ export const getCSRFToken = (): string | null => {
 };
 
 /**
- * Ensure CSRF token is available by fetching it from the backend
+ * Ensures a CSRF token is available by fetching it from the backend if it doesn't exist.
+ *
+ * @returns {Promise<void>} A promise that resolves when the CSRF token is fetched.
  */
 export const ensureCSRFToken = async (): Promise<void> => {
   const token = getCSRFToken();
@@ -71,8 +89,16 @@ export const ensureCSRFToken = async (): Promise<void> => {
   }
 };
 
+/**
+ * The base URL for the API.
+ * @type {string}
+ */
 export const apiBaseUrl = resolveBaseURL();
 
+/**
+ * The Axios API client instance.
+ * @type {axios.AxiosInstance}
+ */
 const apiClient = axios.create({
   baseURL: apiBaseUrl,
   withCredentials: true,

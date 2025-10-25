@@ -9,6 +9,11 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-brand-100 text-brand-700' : 'text-slate-600 hover:text-brand-600 hover:bg-brand-50',
   ].join(' ');
 
+/**
+ * The main layout for the application, including the header, navigation, and content area.
+ *
+ * @returns {JSX.Element} The rendered application layout.
+ */
 const AppLayout: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuth();

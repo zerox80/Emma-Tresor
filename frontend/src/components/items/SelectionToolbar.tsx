@@ -2,13 +2,24 @@ import React from 'react';
 import Button from '../common/Button';
 
 type Props = {
+  /** The number of selected items. */
   selectedCount: number;
+  /** Whether all items on the current page are selected. */
   areAllSelectedOnPage: boolean;
+  /** Callback to toggle the selection of all items on the current page. */
   onToggleSelectAllCurrentPage: () => void;
+  /** Callback to clear the selection. */
   onClearSelection: () => void;
+  /** Callback to open the assign to list sheet. */
   onOpenAssignSheet: () => void;
 };
 
+/**
+ * A toolbar that appears when items are selected, providing actions for the selection.
+ *
+ * @param {Props} props The props for the component.
+ * @returns {JSX.Element | null} The rendered toolbar, or null if no items are selected.
+ */
 const SelectionToolbar: React.FC<Props> = ({
   selectedCount,
   areAllSelectedOnPage,

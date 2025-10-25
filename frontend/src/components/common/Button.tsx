@@ -6,8 +6,11 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** The visual style of the button. */
   variant?: ButtonVariant;
+  /** The size of the button. */
   size?: ButtonSize;
+  /** If true, the button will be in a loading state. */
   loading?: boolean;
 }
 
@@ -28,6 +31,12 @@ const sizeStyles: Record<ButtonSize, string> = {
   lg: 'px-6 py-3 text-base',
 };
 
+/**
+ * A customizable button component with different variants, sizes, and a loading state.
+ *
+ * @param {ButtonProps} props The props for the button component.
+ * @returns {JSX.Element} The rendered button element.
+ */
 const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',

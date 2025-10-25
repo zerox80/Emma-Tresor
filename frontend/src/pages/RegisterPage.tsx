@@ -31,6 +31,11 @@ const registerSchema = z
 
 type RegisterSchema = z.infer<typeof registerSchema>;
 
+/**
+ * The registration page, allowing new users to create an account.
+ *
+ * @returns {JSX.Element} The rendered registration page.
+ */
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const registerUser = useAuthStore((state) => state.register);
