@@ -23,8 +23,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from django_filters import rest_framework as django_filters
 
-from .models import Item, ItemImage, ItemList, Location, Tag
+from .models import Item, ItemImage, ItemChangeLog, ItemList, Location, Tag
 from .serializers import (
+    ItemChangeLogSerializer,
     ItemImageSerializer,
     ItemListSerializer,
     ItemSerializer,
@@ -767,6 +768,27 @@ class ItemViewSet(viewsets.ModelViewSet):
             response = HttpResponse(buffer.getvalue(), content_type='image/png')
         response['Content-Disposition'] = f'{disposition}; filename="item-{item.id}-qr.png"'
         return response
+
+    @action(detail=True, methods=['get'], url_path='changelog')
+    def changelog(self, request, pk=None):
+        """
+        Retrieves the change history for an item.
+
+        Args:
+            request (Request): The request object.
+            pk (int, optional): The primary key of the item. Defaults to None.
+
+        Returns:
+            Response: A response object containing the change history.
+        """
+        item = self.get_object()
+        if item.owner != request.user:
+            raise PermissionDenied('Dieser Gegenstand gehört nicht zu deinem Konto.')
+
+        # Get all change logs for this item, ordered by newest first
+        logs = ItemChangeLog.objects.filter(item=item).select_related('user').order_by('-created_at')
+        serializer = ItemChangeLogSerializer(logs, many=True)
+        return Response(serializer.data)
 
 
 class ItemImageViewSet(viewsets.ModelViewSet):

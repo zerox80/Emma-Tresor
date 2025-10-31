@@ -67,3 +67,15 @@ export interface PaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
+
+export interface ItemChangeLog {
+  id: number;
+  item: number | null;
+  item_name: string;
+  user: number | null;
+  user_username: string | null;
+  action: 'create' | 'update' | 'delete';
+  action_display: string;
+  changes: Record<string, any>;
+  created_at: string;
+}

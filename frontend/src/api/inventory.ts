@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Item, ItemImage, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory';
+import type { Item, ItemChangeLog, ItemImage, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory';
 
 export interface FetchItemsOptions {
   query?: string;
@@ -250,5 +250,16 @@ export const uploadItemImage = async (itemId: number, file: File): Promise<ItemI
 
   const { data } = await apiClient.post<ItemImage>('/item-images/', formData);
 
+  return data;
+};
+
+/**
+ * Fetches the change history for an item.
+ *
+ * @param {number} itemId - The ID of the item to fetch the change history for.
+ * @returns {Promise<ItemChangeLog[]>} A promise that resolves to the change history.
+ */
+export const fetchItemChangelog = async (itemId: number): Promise<ItemChangeLog[]> => {
+  const { data } = await apiClient.get<ItemChangeLog[]>(`/items/${itemId}/changelog/`);
   return data;
 };

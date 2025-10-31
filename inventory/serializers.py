@@ -7,7 +7,7 @@ from rest_framework.reverse import reverse
 import mimetypes
 import os
 
-from .models import Item, ItemImage, ItemList, Location, Tag, MAX_PURCHASE_AGE_YEARS
+from .models import Item, ItemImage, ItemChangeLog, ItemList, Location, Tag, MAX_PURCHASE_AGE_YEARS
 
 
 User = get_user_model()
@@ -821,3 +821,36 @@ class ItemListSerializer(serializers.ModelSerializer):
             if invalid_items:
                 raise serializers.ValidationError('Listen können nur eigene Gegenstände enthalten.')
         return value
+
+
+class ItemChangeLogSerializer(serializers.ModelSerializer):
+    """
+    Serializer for item change logs.
+    """
+    user_username = serializers.CharField(source='user.username', read_only=True, default=None)
+    action_display = serializers.CharField(source='get_action_display', read_only=True)
+    
+    class Meta:
+        model = ItemChangeLog
+        fields = [
+            'id',
+            'item',
+            'item_name',
+            'user',
+            'user_username',
+            'action',
+            'action_display',
+            'changes',
+            'created_at',
+        ]
+        read_only_fields = [
+            'id',
+            'item',
+            'item_name',
+            'user',
+            'user_username',
+            'action',
+            'action_display',
+            'changes',
+            'created_at',
+        ]

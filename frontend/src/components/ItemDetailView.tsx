@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import Button from './common/Button';
-import { fetchItemQrCode } from '../api/inventory';
-import type { Item } from '../types/inventory';
+import ItemChangeHistory from './ItemChangeHistory';
+import { fetchItemQrCode, fetchItemChangelog } from '../api/inventory';
+import type { Item, ItemChangeLog } from '../types/inventory';
 import { apiBaseUrl } from '../api/client';
 
 interface DetailPositionInfo {
@@ -67,6 +68,9 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const qrPreviewRef = useRef<QrPreview | null>(null);
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | number | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [changelog, setChangelog] = useState<ItemChangeLog[]>([]);
+  const [changelogLoading, setChangelogLoading] = useState(false);
+  const [changelogError, setChangelogError] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
@@ -281,6 +285,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       }
       setCopySuccess(false);
       setAttachmentError(null);
+      setChangelog([]);
+      setChangelogError(null);
     }
   }, [item]);
 
@@ -310,6 +316,42 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     },
     [releaseQrPreview],
   );
+
+  useEffect(() => {
+    let active = true;
+
+    if (!item) {
+      setChangelog([]);
+      setChangelogLoading(false);
+      setChangelogError(null);
+      return;
+    }
+
+    const loadChangelog = async () => {
+      setChangelogLoading(true);
+      setChangelogError(null);
+      try {
+        const logs = await fetchItemChangelog(item.id);
+        if (active) {
+          setChangelog(logs);
+        }
+      } catch (err) {
+        if (active) {
+          setChangelogError('Änderungshistorie konnte nicht geladen werden.');
+        }
+      } finally {
+        if (active) {
+          setChangelogLoading(false);
+        }
+      }
+    };
+
+    void loadChangelog();
+
+    return () => {
+      active = false;
+    };
+  }, [item]);
 
   useEffect(() => {
     let active = true;
@@ -924,20 +966,10 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Audit Log Section (Placeholder) */}
+                  {/* Change History Section */}
                   <div className="rounded-xl border border-slate-200 bg-white p-6">
                     <h4 className="mb-4 text-lg font-semibold text-slate-900">Änderungshistorie</h4>
-                    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200">
-                        <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium text-slate-900">Dieses Feature wird bald verfügbar sein</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Hier werden zukünftig alle Änderungen an diesem Gegenstand protokolliert.
-                      </p>
-                    </div>
+                    <ItemChangeHistory changelog={changelog} loading={changelogLoading} error={changelogError} />
                   </div>
                 </div>
               )}
