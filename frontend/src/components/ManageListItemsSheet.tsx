@@ -216,7 +216,7 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
           </button>
         </header>
 
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="space-y-5 border-b border-slate-200 px-8 py-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="w-full lg:max-w-lg">
@@ -297,7 +297,7 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
             )}
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-hidden">
             <div className="h-full overflow-y-auto px-8 py-6">
               {items.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
