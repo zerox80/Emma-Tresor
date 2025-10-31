@@ -297,8 +297,7 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
             )}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <div className="h-full overflow-y-auto px-8 py-6">
+          <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
               {items.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
                   Noch keine Gegenstände erfasst. Lege zunächst Einträge im Inventar an.
@@ -359,7 +358,6 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
                   })}
                 </ul>
               )}
-            </div>
           </div>
         </div>
 
