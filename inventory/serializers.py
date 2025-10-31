@@ -829,7 +829,41 @@ class ItemChangeLogSerializer(serializers.ModelSerializer):
     """
     user_username = serializers.CharField(source='user.username', read_only=True, default=None)
     action_display = serializers.CharField(source='get_action_display', read_only=True)
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._location_cache: dict[int, str] = {}
+
+    def _resolve_location_name(self, value):
+        if value in (None, ''):
+            return None
+        try:
+            location_id = int(value)
+        except (TypeError, ValueError):
+            return value
+
+        if location_id in self._location_cache:
+            return self._location_cache[location_id]
+
+        location = Location.objects.filter(pk=location_id).only('name').first()
+        if location is None:
+            name = f"#{location_id}"
+        else:
+            name = location.name
+
+        self._location_cache[location_id] = name
+        return name
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        changes = data.get('changes')
+        if isinstance(changes, dict):
+            location_change = changes.get('location_id')
+            if isinstance(location_change, dict):
+                for key in ('old', 'new'):
+                    location_change[key] = self._resolve_location_name(location_change.get(key))
+        return data
+
     class Meta:
         model = ItemChangeLog
         fields = [
