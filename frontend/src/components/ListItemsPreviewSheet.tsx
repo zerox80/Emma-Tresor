@@ -43,7 +43,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/20 px-0 py-0 sm:bg-transparent sm:items-center sm:px-6 sm:py-10">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/20 px-0 py-0 sm:items-center sm:px-4 sm:py-8 md:px-6 md:py-12">
       <div
         className="absolute inset-0 bg-slate-900/50"
         aria-hidden="true"
@@ -52,7 +52,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
       <section
         role="dialog"
         aria-modal="true"
-        className="relative flex min-h-screen w-full flex-col overflow-hidden rounded-none bg-white shadow-none ring-0 sm:min-h-0 sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-3xl sm:shadow-2xl sm:ring-1 sm:ring-slate-900/10"
+        className="relative flex min-h-screen w-full flex-col overflow-hidden rounded-none bg-white shadow-none ring-0 sm:min-h-0 sm:h-auto sm:max-h-[92vh] sm:w-[min(100vw-2rem,32rem)] sm:rounded-3xl sm:shadow-2xl sm:ring-1 sm:ring-slate-900/10 md:w-[min(100vw-3rem,40rem)] lg:w-[min(100vw-4rem,48rem)]"
       >
         <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:gap-4 sm:px-8 sm:py-6">
           <div className="space-y-1">
@@ -80,7 +80,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
           )}
 
           {items.length > 0 && (
-            <ul className="space-y-4">
+            <ul className="space-y-4 sm:py-0">
               {items.map((item) => (
                 <li
                   key={item.id}
@@ -122,7 +122,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
           )}
         </div>
 
-        <footer className="border-t border-slate-200 bg-white px-4 py-5 sm:px-8 sm:py-6">
+        <footer className="border-t border-slate-200 bg-white px-4 py-5 lg:px-8 lg:py-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {exportError && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
