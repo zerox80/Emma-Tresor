@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable
 import logging
+from threading import Lock
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models.signals import post_delete, post_save, pre_save
+from django.db.models.signals import post_delete, post_save, pre_delete, pre_save
 from django.dispatch import receiver
 from django.db.migrations.executor import MigrationExecutor
 from django.db import connection
@@ -15,6 +16,9 @@ from .models import Item, ItemChangeLog
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+_users_pending_deletion: set[int] = set()
+_users_pending_deletion_lock = Lock()
 
 
 def _is_migrating() -> bool:
@@ -96,6 +100,11 @@ def _capture_changes(previous: Item, current: Item) -> list[ItemSnapshot]:
 def _resolve_actor(instance: Item) -> User | None:
     owner = getattr(instance, 'owner', None)
     if owner is not None:
+        owner_id = getattr(owner, 'pk', None)
+        if owner_id is not None:
+            with _users_pending_deletion_lock:
+                if owner_id in _users_pending_deletion:
+                    return None
         return owner
     return None
 
@@ -168,3 +177,17 @@ def _log_item_deletion(sender, instance: Item, **kwargs):
         item_name=getattr(instance, 'name', ''),
         changes={'deleted': True},
     )
+
+
+@receiver(pre_delete, sender=User)
+def _mark_user_for_deletion(sender, instance: User, **kwargs):
+    if instance.pk is not None:
+        with _users_pending_deletion_lock:
+            _users_pending_deletion.add(instance.pk)
+
+
+@receiver(post_delete, sender=User)
+def _unmark_user_for_deletion(sender, instance: User, **kwargs):
+    if instance.pk is not None:
+        with _users_pending_deletion_lock:
+            _users_pending_deletion.discard(instance.pk)
