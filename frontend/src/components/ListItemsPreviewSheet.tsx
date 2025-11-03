@@ -11,7 +11,6 @@ interface ListItemsPreviewSheetProps {
   getLocationName: (locationId: number | null) => string;
   onNavigateToList?: () => void;
   onOpenItemDetails: (itemId: number) => void;
-  onOpenItemQr: (itemId: number) => void;
 }
 
 const formatDate = (date: string | null): string => {
@@ -34,7 +33,6 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   getLocationName,
   onNavigateToList,
   onOpenItemDetails,
-  onOpenItemQr,
 }) => {
   if (!open) {
     return null;
@@ -96,10 +94,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button type="button" variant="secondary" size="sm" onClick={() => onOpenItemDetails(item.id)}>
-                      Details öffnen
-                    </Button>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => onOpenItemQr(item.id)}>
-                      QR-Code anzeigen
+                      Details &amp; QR-Code anzeigen
                     </Button>
                   </div>
                 </li>

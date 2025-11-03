@@ -4,7 +4,7 @@ import type { AxiosError } from 'axios';
 import Button from '../components/common/Button';
 import ListItemsPreviewSheet from '../components/ListItemsPreviewSheet';
 import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
-import { fetchAllItems, fetchLists, fetchLocations, fetchTags, updateListItems, fetchItem } from '../api/inventory';
+import { fetchAllItems, fetchLists, fetchLocations, fetchTags, updateListItems } from '../api/inventory';
 import type { Item, ItemList, Location, Tag } from '../types/inventory';
 
 interface DashboardStats {
@@ -155,18 +155,9 @@ const DashboardPage: React.FC = () => {
     window.location.assign(`/lists#list-${previewTarget.id}`);
   }, [previewTarget]);
 
-  const handlePreviewItemDetails = useCallback(async (itemId: number) => {
-    try {
-      await fetchItem(itemId);
-    } catch (error) {
-      // Ignoriere Fehler, da ItemsPage beim Öffnen selbst lädt
-    }
+  const handlePreviewItemDetails = useCallback((itemId: number) => {
     const params = new URLSearchParams({ focusItemId: String(itemId) });
     window.location.assign(`/items?${params.toString()}`);
-  }, []);
-
-  const handlePreviewItemQr = useCallback((itemId: number) => {
-    window.location.assign(`/scan/${itemId}`);
   }, []);
 
   const handleSaveManage = useCallback(async (itemIds: number[]) => {
@@ -374,7 +365,6 @@ const DashboardPage: React.FC = () => {
         getLocationName={(locationId: number | null) => (locationId ? locationLookup.get(locationId) ?? 'Ort unbekannt' : 'Ort unbekannt')}
         onNavigateToList={previewTarget ? handleNavigateToList : undefined}
         onOpenItemDetails={handlePreviewItemDetails}
-        onOpenItemQr={handlePreviewItemQr}
       />
     </div>
   );
