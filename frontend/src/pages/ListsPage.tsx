@@ -271,33 +271,105 @@ const ListsPage: React.FC = () => {
     }
   };
 
-      </div>
-      <div className="flex items-center gap-3">
-        <Button type="button" variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
-          Neue Liste erstellen
-        </Button>
-        <Button type="button" variant="secondary" size="sm" loading={loading} onClick={handleRefresh}>
-          Aktualisieren
-        </Button>
-      </div>
-    </div>
-
-    {error && (
-      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
-    )}
-    {deleteError && (
-      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{deleteError}</div>
-    )}
-    {exportError && (
-      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-        <div className="flex items-start justify-between gap-3">
-          <span>{exportError}</span>
-          <Button variant="ghost" size="sm" onClick={() => setExportError(null)}>
-            Schließen
+  return (
+    <div className="space-y-6 text-slate-700">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-slate-900">Benutzerdefinierte Listen</h2>
+          <p className="text-sm text-slate-600">
+            Struktur für jedes Vorhaben: Plane Umzüge, Projekte oder Reparaturen mit wenigen Klicks. Drag & Drop folgt bald.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button type="button" variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
+            Neue Liste erstellen
+          </Button>
+          <Button type="button" variant="secondary" size="sm" loading={loading} onClick={handleRefresh}>
+            Aktualisieren
           </Button>
         </div>
       </div>
-    )}
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
+      )}
+      {deleteError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{deleteError}</div>
+      )}
+      {exportError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="flex items-start justify-between gap-3">
+            <span>{exportError}</span>
+            <Button variant="ghost" size="sm" onClick={() => setExportError(null)}>
+              Schließen
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {loading && lists.length === 0 && (
+          <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-500 shadow-sm">Lade Listen …</div>
+        )}
+
+        {!loading && lists.length === 0 && (
+          <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-500 shadow-sm">
+            Noch keine Listen erstellt. Starte mit deiner ersten Sammlung und gruppiere Gegenstände nach Räumen oder Projekten.
+          </div>
+        )}
+
+        {lists.map((list) => (
+          <article key={list.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <header className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900">{list.name}</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500">{list.items.length} Items</span>
+                <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenManageItems(list.id)}>
+                  Items bearbeiten
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  loading={exportingListId === list.id}
+                  onClick={() => void handleExportList(list.id, list.name)}
+                >
+                  Exportieren
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteList(list.id)}
+                  className="rounded-full p-2 text-red-500 transition hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label={`Liste ${list.name} löschen`}
+                  disabled={deletingListId === list.id}
+                >
+                  {deletingListId === list.id ? (
+                    <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-transparent" />
+                  ) : (
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0h8l-.447-2.236A2 2 0 0014.618 3H9.382a2 2 0 00-1.965 1.764L7 7" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </header>
+            <ul className="mt-4 space-y-2 text-sm text-slate-700">
+              {list.resolvedItems.slice(0, 6).map((item) => (
+                <li key={item.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                  <span className="font-medium text-slate-900">{item.name}</span>
+                  <span className="text-xs text-slate-500">{item.quantity}×</span>
+                </li>
+              ))}
+              {list.resolvedItems.length === 0 && (
+                <li className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                  Noch keine Items zugeordnet – füge später beliebige Gegenstände hinzu.
+                </li>
+              )}
+            </ul>
+          </article>
+        ))}
+      </div>
+
       {/* Create List Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
