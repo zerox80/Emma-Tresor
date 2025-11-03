@@ -4,7 +4,7 @@ import type { AxiosError } from 'axios';
 import Button from '../components/common/Button';
 import ListItemsPreviewSheet from '../components/ListItemsPreviewSheet';
 import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
-import { fetchAllItems, fetchLists, fetchLocations, fetchTags, updateListItems } from '../api/inventory';
+import { exportListItems, fetchAllItems, fetchLists, fetchLocations, fetchTags, updateListItems } from '../api/inventory';
 import type { Item, ItemList, Location, Tag } from '../types/inventory';
 
 interface DashboardStats {
@@ -31,6 +31,8 @@ const DashboardPage: React.FC = () => {
   const [previewTarget, setPreviewTarget] = useState<ListWithDetail | null>(null);
   const [manageSaving, setManageSaving] = useState(false);
   const [manageError, setManageError] = useState<string | null>(null);
+  const [previewExporting, setPreviewExporting] = useState(false);
+  const [previewExportError, setPreviewExportError] = useState<string | null>(null);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -142,10 +144,14 @@ const DashboardPage: React.FC = () => {
   const handleOpenPreview = useCallback((listId: number) => {
     const target = listsWithDetail.find((list: ListWithDetail) => list.id === listId) ?? null;
     setPreviewTarget(target);
+    setPreviewExportError(null);
+    setPreviewExporting(false);
   }, [listsWithDetail]);
 
   const handleClosePreview = useCallback(() => {
     setPreviewTarget(null);
+    setPreviewExportError(null);
+    setPreviewExporting(false);
   }, []);
 
   const handleNavigateToList = useCallback(() => {
@@ -165,6 +171,41 @@ const DashboardPage: React.FC = () => {
     window.location.assign(`/scan/${encodeURIComponent(assetTag)}`);
   }, []);
 
+  const handleExportPreviewList = useCallback(async () => {
+    if (!previewTarget) {
+      return;
+    }
+    setPreviewExportError(null);
+    setPreviewExporting(true);
+    try {
+      const blob = await exportListItems(previewTarget.id);
+      const url = URL.createObjectURL(blob);
+      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
+      const safeName = previewTarget.name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      const fallbackName = `liste-${previewTarget.id}`;
+      const filename = `inventarliste-${safeName || fallbackName}-${timestamp}.csv`;
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      const detail = axiosError.response?.data && typeof axiosError.response.data === 'object'
+        ? (axiosError.response.data as { detail?: string }).detail
+        : null;
+      setPreviewExportError(detail ?? 'Export der Liste fehlgeschlagen. Bitte versuche es erneut.');
+    } finally {
+      setPreviewExporting(false);
+    }
+  }, [previewTarget]);
   const handleSaveManage = useCallback(async (itemIds: number[]) => {
     if (!manageTarget) {
       return;
@@ -367,8 +408,16 @@ const DashboardPage: React.FC = () => {
         onClose={handleClosePreview}
         listName={previewTarget?.name ?? ''}
         items={previewTarget?.resolvedItems ?? []}
-        getLocationName={(locationId: number | null) => (locationId ? locationLookup.get(locationId) ?? 'Ort unbekannt' : 'Ort unbekannt')}
+        getLocationName={(locationId: number | null) => {
+          if (locationId === null) {
+            return 'Ort unbekannt';
+          }
+          return locationLookup.get(locationId) ?? 'Ort unbekannt';
+        }}
         onOpenItemDetails={handlePreviewItemDetails}
+        onExportList={handleExportPreviewList}
+        exporting={previewExporting}
+        exportError={previewExportError}
       />
     </div>
   );

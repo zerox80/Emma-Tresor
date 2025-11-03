@@ -10,6 +10,9 @@ interface ListItemsPreviewSheetProps {
   items: Item[];
   getLocationName: (locationId: number | null) => string;
   onOpenItemDetails: (item: Item) => void;
+  onExportList: () => void;
+  exporting: boolean;
+  exportError: string | null;
 }
 
 const formatDate = (date: string | null): string => {
@@ -31,6 +34,9 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   items,
   getLocationName,
   onOpenItemDetails,
+  onExportList,
+  exporting,
+  exportError,
 }) => {
   if (!open) {
     return null;
@@ -102,10 +108,20 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
         </div>
 
         <footer className="border-t border-slate-200 bg-white px-8 py-6">
-          <div className="flex justify-end">
-            <Button type="button" variant="primary" size="sm" onClick={onClose}>
-              Schließen
-            </Button>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {exportError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
+                {exportError}
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="secondary" size="sm" loading={exporting} onClick={onExportList}>
+                CSV exportieren
+              </Button>
+              <Button type="button" variant="primary" size="sm" onClick={onClose}>
+                Schließen
+              </Button>
+            </div>
           </div>
         </footer>
       </section>
