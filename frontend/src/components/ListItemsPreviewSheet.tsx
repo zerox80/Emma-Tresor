@@ -43,18 +43,19 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/20 px-0 py-0 sm:items-center sm:px-4 sm:py-8 md:px-6 md:py-12">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-5 sm:py-8 lg:px-8 lg:py-12">
       <div
-        className="absolute inset-0 bg-slate-900/50"
+        className="absolute inset-0 bg-slate-900/45"
         aria-hidden="true"
         onClick={onClose}
       />
       <section
         role="dialog"
         aria-modal="true"
-        className="relative flex min-h-screen w-full flex-col overflow-hidden rounded-none bg-white shadow-none ring-0 sm:min-h-0 sm:h-auto sm:max-h-[92vh] sm:w-[min(100vw-2rem,32rem)] sm:rounded-3xl sm:shadow-2xl sm:ring-1 sm:ring-slate-900/10 md:w-[min(100vw-3rem,40rem)] lg:w-[min(100vw-4rem,48rem)]"
+        className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-[0_36px_70px_-30px_rgba(15,23,42,0.4)] ring-1 ring-slate-900/10 lg:max-w-3xl"
+        style={{ maxHeight: 'min(92vh, 760px)' }}
       >
-        <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:gap-4 sm:px-8 sm:py-6">
+        <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/95 px-5 py-5 backdrop-blur sm:gap-4 sm:px-8 sm:py-6">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Liste ansehen</p>
             <h2 className="text-2xl font-semibold text-slate-900">{listName}</h2>
@@ -72,7 +73,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-8">
           {items.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
               Noch keine Gegenstände in dieser Liste. Verwende „Items bearbeiten“, um neue Einträge hinzuzufügen.
@@ -80,7 +81,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
           )}
 
           {items.length > 0 && (
-            <ul className="space-y-4 sm:py-0">
+            <ul className="space-y-4">
               {items.map((item) => (
                 <li
                   key={item.id}
@@ -122,7 +123,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
           )}
         </div>
 
-        <footer className="border-t border-slate-200 bg-white px-4 py-5 lg:px-8 lg:py-6">
+        <footer className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-5 py-5 backdrop-blur sm:px-8 sm:py-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {exportError && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
