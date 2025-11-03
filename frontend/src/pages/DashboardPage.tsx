@@ -155,9 +155,14 @@ const DashboardPage: React.FC = () => {
     window.location.assign(`/lists#list-${previewTarget.id}`);
   }, [previewTarget]);
 
-  const handlePreviewItemDetails = useCallback((itemId: number) => {
-    const params = new URLSearchParams({ focusItemId: String(itemId) });
-    window.location.assign(`/items?${params.toString()}`);
+  const handlePreviewItemDetails = useCallback((item: Item) => {
+    const assetTag = item.asset_tag.trim();
+    if (assetTag.length === 0) {
+      const params = new URLSearchParams({ focusItemId: String(item.id) });
+      window.location.assign(`/items?${params.toString()}`);
+      return;
+    }
+    window.location.assign(`/scan/${encodeURIComponent(assetTag)}`);
   }, []);
 
   const handleSaveManage = useCallback(async (itemIds: number[]) => {
@@ -363,7 +368,6 @@ const DashboardPage: React.FC = () => {
         listName={previewTarget?.name ?? ''}
         items={previewTarget?.resolvedItems ?? []}
         getLocationName={(locationId: number | null) => (locationId ? locationLookup.get(locationId) ?? 'Ort unbekannt' : 'Ort unbekannt')}
-        onNavigateToList={previewTarget ? handleNavigateToList : undefined}
         onOpenItemDetails={handlePreviewItemDetails}
       />
     </div>
