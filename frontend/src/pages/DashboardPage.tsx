@@ -148,6 +148,13 @@ const DashboardPage: React.FC = () => {
     setPreviewTarget(null);
   }, []);
 
+  const handleNavigateToList = useCallback(() => {
+    if (!previewTarget) {
+      return;
+    }
+    window.location.assign(`/lists#list-${previewTarget.id}`);
+  }, [previewTarget]);
+
   const handleSaveManage = useCallback(async (itemIds: number[]) => {
     if (!manageTarget) {
       return;
@@ -351,6 +358,7 @@ const DashboardPage: React.FC = () => {
         listName={previewTarget?.name ?? ''}
         items={previewTarget?.resolvedItems ?? []}
         getLocationName={(locationId: number | null) => (locationId ? locationLookup.get(locationId) ?? 'Ort unbekannt' : 'Ort unbekannt')}
+        onNavigateToList={previewTarget ? handleNavigateToList : undefined}
       />
     </div>
   );

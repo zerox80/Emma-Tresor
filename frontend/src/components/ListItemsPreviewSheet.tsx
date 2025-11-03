@@ -9,6 +9,7 @@ interface ListItemsPreviewSheetProps {
   listName: string;
   items: Item[];
   getLocationName: (locationId: number | null) => string;
+  onNavigateToList?: () => void;
 }
 
 const formatDate = (date: string | null): string => {
@@ -29,6 +30,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   listName,
   items,
   getLocationName,
+  onNavigateToList,
 }) => {
   if (!open) {
     return null;
@@ -95,10 +97,18 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
         </div>
 
         <footer className="border-t border-slate-200 bg-white px-8 py-6">
-          <div className="flex justify-end">
-            <Button type="button" variant="primary" size="sm" onClick={onClose}>
-              Schließen
-            </Button>
+          <div className="flex flex-col gap-3 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+            <span>Mehr Aktionen findest du auf der Detailseite der Liste.</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {onNavigateToList && (
+                <Button type="button" variant="secondary" size="sm" onClick={onNavigateToList}>
+                  Details & QR-Code öffnen
+                </Button>
+              )}
+              <Button type="button" variant="primary" size="sm" onClick={onClose}>
+                Schließen
+              </Button>
+            </div>
           </div>
         </footer>
       </section>
