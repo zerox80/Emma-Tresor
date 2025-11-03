@@ -1,3 +1,4 @@
+﻿import csv
 import io
 import mimetypes
 import os
@@ -22,6 +23,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from django_filters import rest_framework as django_filters
+from django.utils import timezone
+from django.utils.text import slugify
 
 from .models import Item, ItemImage, ItemChangeLog, ItemList, Location, Tag
 from .serializers import (
@@ -151,6 +154,76 @@ def _clear_token_cookies(response):
         path=access_path,
         domain=access_domain,
     )
+
+
+ITEM_EXPORT_HEADERS = [
+    'ID',
+    'Name',
+    'Beschreibung',
+    'Anzahl',
+    'Standort',
+    'Tags',
+    'Listen',
+    'Inventarnummer',
+    'Kaufdatum',
+    'Wert (EUR)',
+    'Asset-Tag',
+    'Erstellt am',
+    'Aktualisiert am',
+]
+
+
+def _format_decimal(value):
+    if value is None:
+        return ''
+    return format(value, '.2f')
+
+
+def _format_date(value):
+    if value is None:
+        return ''
+    return value.isoformat()
+
+
+def _format_datetime(value):
+    if value is None:
+        return ''
+    if timezone.is_naive(value):
+        value = timezone.make_aware(value, timezone.get_default_timezone())
+    localized = timezone.localtime(value)
+    return localized.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _prepare_items_csv_response(filename_prefix):
+    timestamp = timezone.localtime().strftime('%Y%m%d-%H%M%S')
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename=\"{filename_prefix}-{timestamp}.csv\"'
+    response.write('\ufeff')  # Add BOM for better Excel compatibility
+    writer = csv.writer(response, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(ITEM_EXPORT_HEADERS)
+    return response, writer
+
+
+def _write_items_to_csv(writer, items):
+    for item in items:
+        tags = ', '.join(sorted(tag.name for tag in item.tags.all()))
+        lists = ', '.join(sorted(item_list.name for item_list in item.lists.all()))
+        location = item.location.name if item.location else ''
+        writer.writerow([
+            item.id,
+            item.name,
+            item.description or '',
+            item.quantity,
+            location,
+            tags,
+            lists,
+            item.wodis_inventory_number or '',
+            _format_date(item.purchase_date),
+            _format_decimal(item.value),
+            str(item.asset_tag),
+            _format_datetime(item.created_at),
+            _format_datetime(item.updated_at),
+        ])
 
 
 class LoginRateThrottle(throttling.AnonRateThrottle):
@@ -578,7 +651,6 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
         # Don't override owner in update
         serializer.save()
 
-
 class TagViewSet(UserScopedModelViewSet):
     """
     A viewset for tags.
@@ -672,6 +744,27 @@ class ItemViewSet(viewsets.ModelViewSet):
         else:
             throttles = super().get_throttles()
         return throttles
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export_items(self, request):
+        """
+        Exports the filtered inventory as a CSV file.
+
+        Args:
+            request (Request): The request object.
+
+        Returns:
+            HttpResponse: A streamed CSV response containing the items.
+        """
+        user = request.user
+        if not user.is_authenticated:
+            return Response({'detail': 'Authentifizierung erforderlich.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        response, writer = _prepare_items_csv_response('emmatresor-inventar')
+        _write_items_to_csv(writer, queryset)
+        return response
 
     def perform_create(self, serializer):
         """
@@ -895,7 +988,6 @@ class ItemImageDownloadView(APIView):
 
         return response
 
-
 class ItemListViewSet(viewsets.ModelViewSet):
     """
     A viewset for item lists.
@@ -935,3 +1027,32 @@ class ItemListViewSet(viewsets.ModelViewSet):
         if instance.owner != self.request.user:
             raise PermissionDenied('Diese Inventarliste gehört nicht zu deinem Konto.')
         serializer.save()
+
+    @action(detail=True, methods=['get'], url_path='export')
+    def export_items(self, request, pk=None):
+        """
+        Exports all items that belong to the selected list as a CSV file.
+
+        Args:
+            request (Request): The request object.
+            pk (int, optional): The primary key of the list.
+
+        Returns:
+            HttpResponse: A streamed CSV response containing the list items.
+        """
+        item_list = self.get_object()
+        if item_list.owner != request.user:
+            raise PermissionDenied('Diese Inventarliste gehört nicht zu deinem Konto.')
+
+        items = (
+            item_list.items.select_related('location', 'owner')
+            .prefetch_related('tags', 'lists')
+            .order_by('name', 'id')
+        )
+
+        list_slug = slugify(item_list.name) or 'liste'
+        filename_prefix = f'emmatresor-liste-{item_list.id}-{list_slug}'
+        response, writer = _prepare_items_csv_response(filename_prefix)
+        _write_items_to_csv(writer, items)
+        return response
+

@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import type { AxiosError } from 'axios';
 
 import Button from '../components/common/Button';
 import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
-import { fetchAllItems, fetchLists, createList, updateListItems, deleteList } from '../api/inventory';
+import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory';
 import type { Item, ItemList } from '../types/inventory';
 
 interface ListWithItems extends ItemList {
@@ -29,6 +29,8 @@ const ListsPage: React.FC = () => {
   const [manageError, setManageError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingListId, setDeletingListId] = useState<number | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportingListId, setExportingListId] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,7 +59,7 @@ const ListsPage: React.FC = () => {
         if (!isMounted) {
           return;
         }
-        setError('Die Listen konnten nicht synchronisiert werden. Prüfe deine Verbindung und versuche es in Kürze erneut.');
+        setError('Die Listen konnten nicht synchronisiert werden. Pr├╝fe deine Verbindung und versuche es in K├╝rze erneut.');
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -192,7 +194,7 @@ const ListsPage: React.FC = () => {
       const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
         ? (axiosError.response.data as { detail?: string }).detail
         : null;
-      setManageError(fallback ?? 'Änderungen konnten nicht gespeichert werden.');
+      setManageError(fallback ?? '├änderungen konnten nicht gespeichert werden.');
     } finally {
       setManageSaving(false);
     }
@@ -210,7 +212,7 @@ const ListsPage: React.FC = () => {
 
     let confirmed = true;
     if (typeof window !== 'undefined') {
-      confirmed = window.confirm(`Liste "${target.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
+      confirmed = window.confirm(`Liste "${target.name}" wirklich l├Âschen? Diese Aktion kann nicht r├╝ckg├ñngig gemacht werden.`);
     }
     if (!confirmed) {
       return;
@@ -230,9 +232,42 @@ const ListsPage: React.FC = () => {
       const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
         ? (axiosError.response.data as { detail?: string }).detail
         : null;
-      setDeleteError(fallback ?? 'Liste konnte nicht gelöscht werden. Bitte versuche es erneut.');
+      setDeleteError(fallback ?? 'Liste konnte nicht gel├Âscht werden. Bitte versuche es erneut.');
     } finally {
       setDeletingListId(null);
+    }
+  };
+
+  const handleExportList = async (listId: number, listName: string) => {
+    setExportError(null);
+    setExportingListId(listId);
+    try {
+      const blob = await exportListItems(listId);
+      const url = URL.createObjectURL(blob);
+      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
+      const safeName = listName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      const fallbackName = `liste-${listId}`;
+      const filename = `inventarliste-${safeName || fallbackName}-${timestamp}.csv`;
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
+        ? (axiosError.response.data as { detail?: string }).detail
+        : null;
+      setExportError(fallback ?? 'Export der Liste fehlgeschlagen. Bitte versuche es erneut.');
+    } finally {
+      setExportingListId(null);
     }
   };
 
@@ -242,7 +277,7 @@ const ListsPage: React.FC = () => {
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">Benutzerdefinierte Listen</h2>
           <p className="text-sm text-slate-600">
-            Struktur für jedes Vorhaben: Plane Umzüge, Projekte oder Reparaturen mit wenigen Klicks. Drag & Drop folgt bald.
+            Struktur f├╝r jedes Vorhaben: Plane Umz├╝ge, Projekte oder Reparaturen mit wenigen Klicks. Drag & Drop folgt bald.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -261,15 +296,25 @@ const ListsPage: React.FC = () => {
       {deleteError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{deleteError}</div>
       )}
+      {exportError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="flex items-start justify-between gap-3">
+            <span>{exportError}</span>
+            <Button variant="ghost" size="sm" onClick={() => setExportError(null)}>
+              Schließen
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {loading && lists.length === 0 && (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-500 shadow-sm">Lade Listen …</div>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-500 shadow-sm">Lade Listen ÔÇª</div>
         )}
 
         {!loading && lists.length === 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-500 shadow-sm">
-            Noch keine Listen erstellt. Starte mit deiner ersten Sammlung und gruppiere Gegenstände nach Räumen oder Projekten.
+            Noch keine Listen erstellt. Starte mit deiner ersten Sammlung und gruppiere Gegenst├ñnde nach R├ñumen oder Projekten.
           </div>
         )}
 
@@ -282,11 +327,20 @@ const ListsPage: React.FC = () => {
                 <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenManageItems(list.id)}>
                   Items bearbeiten
                 </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  loading={exportingListId === list.id}
+                  onClick={() => void handleExportList(list.id, list.name)}
+                >
+                  Exportieren
+                </Button>
                 <button
                   type="button"
                   onClick={() => handleDeleteList(list.id)}
                   className="rounded-full p-2 text-red-500 transition hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label={`Liste ${list.name} löschen`}
+                  aria-label={`Liste ${list.name} l├Âschen`}
                   disabled={deletingListId === list.id}
                 >
                   {deletingListId === list.id ? (
@@ -303,12 +357,12 @@ const ListsPage: React.FC = () => {
               {list.resolvedItems.slice(0, 6).map((item) => (
                 <li key={item.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
                   <span className="font-medium text-slate-900">{item.name}</span>
-                  <span className="text-xs text-slate-500">{item.quantity}×</span>
+                  <span className="text-xs text-slate-500">{item.quantity}├ù</span>
                 </li>
               ))}
               {list.resolvedItems.length === 0 && (
                 <li className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                  Noch keine Items zugeordnet – füge später beliebige Gegenstände hinzu.
+                  Noch keine Items zugeordnet ÔÇô f├╝ge sp├ñter beliebige Gegenst├ñnde hinzu.
                 </li>
               )}
             </ul>
@@ -331,7 +385,7 @@ const ListsPage: React.FC = () => {
                 Neue Liste erstellen
               </h3>
               <p className="text-sm text-slate-600">
-                Erstelle eine neue Liste um deine Gegenstände zu organisieren.
+                Erstelle eine neue Liste um deine Gegenst├ñnde zu organisieren.
               </p>
             </div>
 
@@ -351,7 +405,7 @@ const ListsPage: React.FC = () => {
                   type="text"
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
-                  placeholder="z.B. Umzug Küche, Werkzeuge, ..."
+                  placeholder="z.B. Umzug K├╝che, Werkzeuge, ..."
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   disabled={isCreating}
                   onKeyDown={(e) => {
