@@ -33,6 +33,8 @@ const DashboardPage: React.FC = () => {
   const [manageError, setManageError] = useState<string | null>(null);
   const [previewExporting, setPreviewExporting] = useState(false);
   const [previewExportError, setPreviewExportError] = useState<string | null>(null);
+  const [listExportingId, setListExportingId] = useState<number | null>(null);
+  const [listExportError, setListExportError] = useState<string | null>(null);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -146,6 +148,7 @@ const DashboardPage: React.FC = () => {
     setPreviewTarget(target);
     setPreviewExportError(null);
     setPreviewExporting(false);
+    setListExportError(null);
   }, [listsWithDetail]);
 
   const handleClosePreview = useCallback(() => {
@@ -171,6 +174,35 @@ const DashboardPage: React.FC = () => {
     window.location.assign(`/scan/${encodeURIComponent(assetTag)}`);
   }, []);
 
+  const createListExportFilename = useCallback((listId: number, listName: string) => {
+    const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
+    const safeName = listName
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    const fallbackName = `liste-${listId}`;
+    return `inventarliste-${safeName || fallbackName}-${timestamp}.csv`;
+  }, []);
+
+  const triggerCsvDownload = useCallback((blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const exportListToCsv = useCallback(async (listId: number, listName: string) => {
+    const blob = await exportListItems(listId);
+    const filename = createListExportFilename(listId, listName);
+    triggerCsvDownload(blob, filename);
+  }, [createListExportFilename, triggerCsvDownload]);
+
   const handleExportPreviewList = useCallback(async () => {
     if (!previewTarget) {
       return;
@@ -178,24 +210,7 @@ const DashboardPage: React.FC = () => {
     setPreviewExportError(null);
     setPreviewExporting(true);
     try {
-      const blob = await exportListItems(previewTarget.id);
-      const url = URL.createObjectURL(blob);
-      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
-      const safeName = previewTarget.name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/gi, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      const fallbackName = `liste-${previewTarget.id}`;
-      const filename = `inventarliste-${safeName || fallbackName}-${timestamp}.csv`;
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+      await exportListToCsv(previewTarget.id, previewTarget.name);
     } catch (err) {
       const axiosError = err as AxiosError;
       const detail = axiosError.response?.data && typeof axiosError.response.data === 'object'
@@ -205,7 +220,24 @@ const DashboardPage: React.FC = () => {
     } finally {
       setPreviewExporting(false);
     }
-  }, [previewTarget]);
+  }, [previewTarget, exportListToCsv]);
+
+  const handleExportOverviewList = useCallback(async (list: ListWithDetail) => {
+    setListExportError(null);
+    setListExportingId(list.id);
+    try {
+      await exportListToCsv(list.id, list.name);
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      const detail = axiosError.response?.data && typeof axiosError.response.data === 'object'
+        ? (axiosError.response.data as { detail?: string }).detail
+        : null;
+      setListExportError(detail ?? 'Export der Liste fehlgeschlagen. Bitte versuche es erneut.');
+    } finally {
+      setListExportingId(null);
+    }
+  }, [exportListToCsv]);
+
   const handleSaveManage = useCallback(async (itemIds: number[]) => {
     if (!manageTarget) {
       return;
@@ -305,6 +337,17 @@ const DashboardPage: React.FC = () => {
             <span className="text-xs text-slate-500">Direkt hier bearbeiten</span>
           </div>
 
+          {listExportError && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-600">
+              <div className="flex items-start justify-between gap-3">
+                <span>{listExportError}</span>
+                <Button variant="ghost" size="sm" onClick={() => setListExportError(null)}>
+                  Schließen
+                </Button>
+              </div>
+            </div>
+          )}
+
           {loading && <p className="mt-4 text-sm text-slate-400">Lade Listen …</p>}
 
           {!loading && listsWithDetail.length === 0 && (
@@ -339,6 +382,15 @@ const DashboardPage: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-2">
                             <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenPreview(list.id)}>
                               Liste ansehen
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              loading={listExportingId === list.id}
+                              onClick={() => void handleExportOverviewList(list)}
+                            >
+                              CSV exportieren
                             </Button>
                             <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenManage(list.id)}>
                               Items verwalten
