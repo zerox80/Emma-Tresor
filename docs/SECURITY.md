@@ -41,7 +41,7 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 - **Reverse Proxy**: Nginx (`nginx/emmatresor.conf`) terminiert TLS im Standard-Setup, setzt Security-Header (HSTS, CSP) und dient als statischer Asset-Host.
 - **Container-Härtung**: Backend-Dockerfile führt Non-Root-User (`appuser`) ein, setzt restriktive Verzeichnisrechte und entfernt Paket-Caches.
 - **Gesundheitsprüfungen**: Docker Compose nutzt `manage.py check --deploy` sowie `pg_isready` für Datenbank-Verfügbarkeit.
-- **CDN/WAF**: Derzeit kein fest entkoppelter CDN-Anbieter dokumentiert. Für Produktionsbetrieb wird empfohlen, eine WAF bzw. ein CDN mit Rate-Limiting/Geo-IP-Regeln vorzuschalten.
+- **CDN/WAF (BunnyCDN)**: Eingebundener Edge-Schutz via BunnyCDN: WAF-Profil auf „High“, Bot Protection aktiv, DDoS-Mitigation inklusive. Regeln für Rate-Limiting, Geo-Blocking und Header-Härtung werden im Betriebs-Runbook gepflegt (siehe internes BunnyCDN-Playbook; Summary in `nginx/README.md`, `nginx/SIMPLE-SETUP.md`).
 
 ## 8. Logging, Monitoring & Audits
 - **Security Logging** (`EmmaTresor/middleware.py`, `settings.py`): `SecurityEventLoggingMiddleware` protokolliert 401/403/429 inklusive Pfad, IP und User Agent; Logs rotieren via `logging.handlers.RotatingFileHandler` im Verzeichnis `logs/security.log`.
@@ -70,7 +70,7 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 2. **CI/CD-Sicherheit**: Pipeline mit SAST, SCA, Dependency-Review, Signaturverifikation etablieren.
 3. **Monitoring skalierbar halten**: Manuelle Log-Prüfung dokumentieren; bei größerem Team Security-Events an SIEM oder zentrales Log-System weiterleiten und Alerting-Policy definieren.
 4. **Admin-Zugang absichern**: 2FA oder IP-Restriktionen für Django-Admin prüfen.
-5. **CDN/WAF evaluieren**: Falls Edge-Schutz benötigt wird, Anbieterwahl dokumentieren und Härtungsschritte ergänzen.
+5. **BunnyCDN-WAF pflegen**: Regelwerk mindestens quartalsweise reviewen (IPs, Geo-Blocking, Bot-Regeln) und Änderungen im BunnyCDN-Playbook dokumentieren.
 6. **SBOM & Updates**: Regelmäßige SBOM-Generierung und Update-Reviews fest im Prozess verankern.
 
 ## 13. Incident Response
@@ -82,7 +82,7 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 
 | Kategorie | Bewertung | Begründung |
 | --- | :---: | --- |
-| **Netzwerk & Edge** | **7/10** | Gute Basis mit Nginx und TLS-Erzwingung; fehlende dokumentierte WAF/CDN reduziert Score. |
+| **Netzwerk & Edge** | **9/10** | Nginx-Härtung plus produktiver BunnyCDN-WAF (High-Profile, Bot Protection, DDoS-Mitigation); kleinere Lücke: Playbook-Prozesse weiter automatisieren. |
 | **Authentifizierung & Zugriff** | **8/10** | Starke JWT-Cookie-Implementierung, Argon2 und Throttling; Admin-Härtung noch ausbaufähig. |
 | **Daten- & Anwendungsschutz** | **8/10** | Umfangreiche Validierungen und privater Storage; Secrets weiterhin filesystem-basiert. |
 | **Infrastruktur & Deployment** | **7/10** | Container-Härtung und Health Checks vorhanden, aber keine automatisierte CI/CD-Security. |
@@ -90,6 +90,6 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 
 ---
 
-### Gesamtbewertung: 7.2 / 10 (Gut)
+### Gesamtbewertung: 7.6 / 10 (Gut)
 
-Emma-Tresor verfügt über solide Sicherheitsmechanismen auf Applikations- und Infrastrukturebene. Im aktuellen Zwei-Personen-Betrieb reichen dokumentierte Minimalprozesse (z. B. manuelle Log-Prüfung) aus; für einen produktionsreifen Betrieb mit größerem Team sind zusätzliche organisatorische Maßnahmen (Secrets-Management, Monitoring-Automatisierung, Admin-Härtung) und ein definierter Verantwortungsprozess erforderlich. Die Umsetzung der Empfehlungen erhöht Transparenz, Reaktionsfähigkeit und reduziert das Risiko operativer Fehlkonfigurationen.
+Emma-Tresor verfügt über solide Sicherheitsmechanismen auf Applikations- und Infrastrukturebene. Der produktive BunnyCDN-Edge-Schutz ergänzt die Nginx-Härtung wirkungsvoll; im aktuellen Zwei-Personen-Betrieb reichen dokumentierte Minimalprozesse (z. B. manuelle Log-Prüfung) aus. Für einen produktionsreifen Betrieb mit größerem Team sind weiterhin zusätzliche organisatorische Maßnahmen (Secrets-Management, Monitoring-Automatisierung, Admin-Härtung) und ein definierter Verantwortungsprozess erforderlich. Die Umsetzung der Empfehlungen erhöht Transparenz, Reaktionsfähigkeit und reduziert das Risiko operativer Fehlkonfigurationen.
