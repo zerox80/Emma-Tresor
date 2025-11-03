@@ -113,21 +113,6 @@ const ItemsPage: React.FC = () => {
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const focusItemIdParam = params.get('focusItemId');
-    if (!focusItemIdParam) {
-      return;
-    }
-    const focusItemId = Number.parseInt(focusItemIdParam, 10);
-    if (!Number.isNaN(focusItemId)) {
-      handleOpenItemDetails(focusItemId);
-    }
-    params.delete('focusItemId');
-    const nextSearch = params.toString();
-    navigate({ pathname: location.pathname, search: nextSearch.length > 0 ? `?${nextSearch}` : '' }, { replace: true });
-  }, [handleOpenItemDetails, location.pathname, location.search, navigate]);
-
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(
     () => Object.fromEntries(locations.map((location) => [location.id, location.name])),
@@ -427,6 +412,21 @@ const ItemsPage: React.FC = () => {
     },
     [items, loadItemDetails],
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const focusItemIdParam = params.get('focusItemId');
+    if (!focusItemIdParam) {
+      return;
+    }
+    const focusItemId = Number.parseInt(focusItemIdParam, 10);
+    if (!Number.isNaN(focusItemId)) {
+      handleOpenItemDetails(focusItemId);
+    }
+    params.delete('focusItemId');
+    const nextSearch = params.toString();
+    navigate({ pathname: location.pathname, search: nextSearch.length > 0 ? `?${nextSearch}` : '' }, { replace: true });
+  }, [handleOpenItemDetails, location.pathname, location.search, navigate]);
 
   const handleCloseItemDetails = useCallback(() => {
     setDetailItemId(null);
