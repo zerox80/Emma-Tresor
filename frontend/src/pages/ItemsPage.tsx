@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 
 import Button from '../components/common/Button';
@@ -63,6 +64,8 @@ const sortItemLists = (entries: ItemList[]): ItemList[] =>
  * @returns {JSX.Element} The rendered items page.
  */
 const ItemsPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [items, setItems] = useState<Item[]>([]);
   const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
@@ -109,6 +112,21 @@ const ItemsPage: React.FC = () => {
   const [assignSheetOpen, setAssignSheetOpen] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const focusItemIdParam = params.get('focusItemId');
+    if (!focusItemIdParam) {
+      return;
+    }
+    const focusItemId = Number.parseInt(focusItemIdParam, 10);
+    if (!Number.isNaN(focusItemId)) {
+      handleOpenItemDetails(focusItemId);
+    }
+    params.delete('focusItemId');
+    const nextSearch = params.toString();
+    navigate({ pathname: location.pathname, search: nextSearch.length > 0 ? `?${nextSearch}` : '' }, { replace: true });
+  }, [handleOpenItemDetails, location.pathname, location.search, navigate]);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(

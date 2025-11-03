@@ -9,8 +9,7 @@ interface ListItemsPreviewSheetProps {
   listName: string;
   items: Item[];
   getLocationName: (locationId: number | null) => string;
-  onNavigateToList?: () => void;
-  onOpenItemDetails: (itemId: number) => void;
+  onOpenItemDetails: (item: Item) => void;
 }
 
 const formatDate = (date: string | null): string => {
@@ -31,7 +30,6 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   listName,
   items,
   getLocationName,
-  onNavigateToList,
   onOpenItemDetails,
 }) => {
   if (!open) {
@@ -93,7 +91,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" variant="secondary" size="sm" onClick={() => onOpenItemDetails(item.id)}>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => onOpenItemDetails(item)}>
                       Details &amp; QR-Code anzeigen
                     </Button>
                   </div>
@@ -104,18 +102,10 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
         </div>
 
         <footer className="border-t border-slate-200 bg-white px-8 py-6">
-          <div className="flex flex-col gap-3 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
-            <span>Mehr Aktionen findest du auf der Detailseite der Liste.</span>
-            <div className="flex flex-wrap items-center gap-2">
-              {onNavigateToList && (
-                <Button type="button" variant="secondary" size="sm" onClick={onNavigateToList}>
-                  Details & QR-Code öffnen
-                </Button>
-              )}
-              <Button type="button" variant="primary" size="sm" onClick={onClose}>
-                Schließen
-              </Button>
-            </div>
+          <div className="flex justify-end">
+            <Button type="button" variant="primary" size="sm" onClick={onClose}>
+              Schließen
+            </Button>
           </div>
         </footer>
       </section>
