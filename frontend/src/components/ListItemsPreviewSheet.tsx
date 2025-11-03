@@ -10,6 +10,8 @@ interface ListItemsPreviewSheetProps {
   items: Item[];
   getLocationName: (locationId: number | null) => string;
   onNavigateToList?: () => void;
+  onOpenItemDetails: (itemId: number) => void;
+  onOpenItemQr: (itemId: number) => void;
 }
 
 const formatDate = (date: string | null): string => {
@@ -31,6 +33,8 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   items,
   getLocationName,
   onNavigateToList,
+  onOpenItemDetails,
+  onOpenItemQr,
 }) => {
   if (!open) {
     return null;
@@ -76,7 +80,7 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
           {items.length > 0 && (
             <ul className="space-y-4">
               {items.map((item) => (
-                <li key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <li key={item.id} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div className="space-y-2">
                       <h3 className="text-base font-semibold text-slate-900">{item.name}</h3>
@@ -89,6 +93,14 @@ const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
                       <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">{formatDate(item.purchase_date)}</span>
                       <span className="rounded-full bg-slate-100 px-3 py-1 font-medium">{getLocationName(item.location ?? null)}</span>
                     </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => onOpenItemDetails(item.id)}>
+                      Details öffnen
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => onOpenItemQr(item.id)}>
+                      QR-Code anzeigen
+                    </Button>
                   </div>
                 </li>
               ))}
