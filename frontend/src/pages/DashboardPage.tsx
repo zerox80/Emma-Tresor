@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AxiosError } from 'axios';
 
 import Button from '../components/common/Button';
+import ListItemsPreviewSheet from '../components/ListItemsPreviewSheet';
 import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
 import { fetchAllItems, fetchLists, fetchLocations, fetchTags, updateListItems } from '../api/inventory';
 import type { Item, ItemList, Location, Tag } from '../types/inventory';
@@ -27,6 +28,7 @@ const DashboardPage: React.FC = () => {
   const [expandedLists, setExpandedLists] = useState<Set<number>>(new Set<number>());
   const [listsWithDetail, setListsWithDetail] = useState<ListWithDetail[]>([]);
   const [manageTarget, setManageTarget] = useState<ListWithDetail | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<ListWithDetail | null>(null);
   const [manageSaving, setManageSaving] = useState(false);
   const [manageError, setManageError] = useState<string | null>(null);
 
@@ -124,7 +126,7 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   const handleOpenManage = useCallback((listId: number) => {
-    const target = listsWithDetail.find((list) => list.id === listId) ?? null;
+    const target = listsWithDetail.find((list: ListWithDetail) => list.id === listId) ?? null;
     setManageTarget(target);
     setManageError(null);
   }, [listsWithDetail]);
@@ -136,6 +138,15 @@ const DashboardPage: React.FC = () => {
     setManageTarget(null);
     setManageError(null);
   }, [manageSaving]);
+
+  const handleOpenPreview = useCallback((listId: number) => {
+    const target = listsWithDetail.find((list: ListWithDetail) => list.id === listId) ?? null;
+    setPreviewTarget(target);
+  }, [listsWithDetail]);
+
+  const handleClosePreview = useCallback(() => {
+    setPreviewTarget(null);
+  }, []);
 
   const handleSaveManage = useCallback(async (itemIds: number[]) => {
     if (!manageTarget) {
@@ -265,11 +276,16 @@ const DashboardPage: React.FC = () => {
 
                     {isExpanded && (
                       <div className="space-y-4 px-4 py-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <p className="text-xs uppercase tracking-wide text-brand-500">Listen-Items</p>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenManage(list.id)}>
-                            Items verwalten
-                          </Button>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenPreview(list.id)}>
+                              Liste ansehen
+                            </Button>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => handleOpenManage(list.id)}>
+                              Items verwalten
+                            </Button>
+                          </div>
                         </div>
 
                         {!hasItems && (
@@ -327,6 +343,14 @@ const DashboardPage: React.FC = () => {
         saving={manageSaving}
         error={manageError}
         onSave={handleSaveManage}
+      />
+
+      <ListItemsPreviewSheet
+        open={Boolean(previewTarget)}
+        onClose={handleClosePreview}
+        listName={previewTarget?.name ?? ''}
+        items={previewTarget?.resolvedItems ?? []}
+        getLocationName={(locationId: number | null) => (locationId ? locationLookup.get(locationId) ?? 'Ort unbekannt' : 'Ort unbekannt')}
       />
     </div>
   );
