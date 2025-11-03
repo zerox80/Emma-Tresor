@@ -46,7 +46,7 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 ## 8. Logging, Monitoring & Audits
 - **Security Logging** (`EmmaTresor/middleware.py`, `settings.py`): `SecurityEventLoggingMiddleware` protokolliert 401/403/429 inklusive Pfad, IP und User Agent; Logs rotieren via `logging.handlers.RotatingFileHandler` im Verzeichnis `logs/security.log`.
 - **Audit-Trails**: `ItemChangeLog` führt JSON-Diffs zu CRUD-Operationen; Datenbank-Indices erleichtern Nachverfolgung.
-- **Monitoring-Lücken**: Keine native SIEM-Anbindung, keine zentralisierte Log-Aggregation. Empfehlung: Forwarding an SIEM/Syslog und Alerting definieren.
+- **Monitoring-Ansatz**: Kein SIEM oder zentrale Log-Aggregation im Einsatz; bei derzeitigem Zwei-Personen-Betrieb genügt eine manuelle Log-Prüfung (z. B. wöchentlich). Für Skalierung sollten SIEM/Syslog-Forwarding und Alerting vorbereitet werden.
 
 ## 9. Build-, Release- & Lieferkettensicherheit
 - **Dependencies** (`requirements.txt`, `frontend/package.json`): Gepinnte Versionen mit konservativen Operatoren. Regelmäßiges Update-Review erforderlich.
@@ -61,14 +61,14 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 ## 11. Offene Risiken & Beobachtungen
 - **Secret Handling**: `.env`-Dateien im Dateisystem setzen strenge Zugriffskontrollen voraus; zentrale Secret-Verwaltung fehlt.
 - **Admin-Härtung**: Django-Admin erfordert zusätzliche Maßnahmen (2FA/SSO) außerhalb des Codebestands.
-- **Monitoring**: Fehlende SIEM/Alerting-Anbindung verlängert Reaktionszeiten bei Incidents.
+- **Monitoring**: Fehlende SIEM/Alerting-Anbindung; aufgrund des kleinen Nutzerkreises vertretbar, sollte bei Wachstum priorisiert werden.
 - **Shadow IT**: README erkennt fehlendes Inventarisierungs-/CASB-Tool; Umsetzung offen.
 - **Backups**: Backup-Skripte speichern Dumps im Projektverzeichnis; Rechte-Management und Rotation müssen organisatorisch sichergestellt werden.
 
 ## 12. Empfehlungen
 1. **Secrets zentralisieren** (Vault/SSM/KMS) und Rotation automatisieren.
 2. **CI/CD-Sicherheit**: Pipeline mit SAST, SCA, Dependency-Review, Signaturverifikation etablieren.
-3. **Monitoring erweitern**: Security-Events an SIEM oder zentrales Log-System weiterleiten, Alerting-Policy definieren.
+3. **Monitoring skalierbar halten**: Manuelle Log-Prüfung dokumentieren; bei größerem Team Security-Events an SIEM oder zentrales Log-System weiterleiten und Alerting-Policy definieren.
 4. **Admin-Zugang absichern**: 2FA oder IP-Restriktionen für Django-Admin prüfen.
 5. **CDN/WAF evaluieren**: Falls Edge-Schutz benötigt wird, Anbieterwahl dokumentieren und Härtungsschritte ergänzen.
 6. **SBOM & Updates**: Regelmäßige SBOM-Generierung und Update-Reviews fest im Prozess verankern.
@@ -86,10 +86,10 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 | **Authentifizierung & Zugriff** | **8/10** | Starke JWT-Cookie-Implementierung, Argon2 und Throttling; Admin-Härtung noch ausbaufähig. |
 | **Daten- & Anwendungsschutz** | **8/10** | Umfangreiche Validierungen und privater Storage; Secrets weiterhin filesystem-basiert. |
 | **Infrastruktur & Deployment** | **7/10** | Container-Härtung und Health Checks vorhanden, aber keine automatisierte CI/CD-Security. |
-| **Monitoring & Response** | **5/10** | Security-Logs vorhanden, jedoch keine SIEM/Alerting-Integration – erhöht Reaktionszeit. |
+| **Monitoring & Response** | **6/10** | Manuelle Log-Prüfung deckt den Zwei-Personen-Betrieb ab; SIEM/Alerting für Wachstum vorbereiten. |
 
 ---
 
-### Gesamtbewertung: 7.0 / 10 (Gut)
+### Gesamtbewertung: 7.2 / 10 (Gut)
 
-Emma-Tresor verfügt über solide Sicherheitsmechanismen auf Applikations- und Infrastrukturebene. Für einen produktionsreifen Betrieb sind jedoch zusätzliche organisatorische Maßnahmen (Secrets-Management, Monitoring, Admin-Härtung) und ein definierter Verantwortungsprozess erforderlich. Die Umsetzung der Empfehlungen erhöht Transparenz, Reaktionsfähigkeit und reduziert das Risiko operativer Fehlkonfigurationen.
+Emma-Tresor verfügt über solide Sicherheitsmechanismen auf Applikations- und Infrastrukturebene. Im aktuellen Zwei-Personen-Betrieb reichen dokumentierte Minimalprozesse (z. B. manuelle Log-Prüfung) aus; für einen produktionsreifen Betrieb mit größerem Team sind zusätzliche organisatorische Maßnahmen (Secrets-Management, Monitoring-Automatisierung, Admin-Härtung) und ein definierter Verantwortungsprozess erforderlich. Die Umsetzung der Empfehlungen erhöht Transparenz, Reaktionsfähigkeit und reduziert das Risiko operativer Fehlkonfigurationen.
