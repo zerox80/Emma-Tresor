@@ -8,6 +8,13 @@ interface PublicRouteProps {
   children: React.ReactNode;
 }
 
+/**
+ * A route that is only accessible to unauthenticated users.
+ * If the user is authenticated, they are redirected to the home page.
+ *
+ * @param {PublicRouteProps} props The props for the component.
+ * @returns {JSX.Element} The rendered route.
+ */
 const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   const { isAuthenticated, hasInitialised } = useAuth();
   const location = useLocation();

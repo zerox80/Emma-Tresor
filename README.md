@@ -595,6 +595,22 @@ npm run preview
 
 > 📜 **Weitere Details:** Siehe `docs/SECURITY.md` für umfassende Sicherheitsrichtlinien.
 
+## 🧪 Running Tests
+
+To run the test suite, first set the required environment variables:
+
+```bash
+export DJANGO_SECRET_KEY='a-long-and-random-secret-key'
+export DB_VENDOR='sqlite'
+export DJANGO_DEBUG='True'
+```
+
+Then, run the tests using the `manage.py` script:
+
+```bash
+python manage.py test
+```
+
 ## 🔧 Troubleshooting
 
 ### 📷 QR-Code Probleme
