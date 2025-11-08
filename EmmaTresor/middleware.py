@@ -7,12 +7,24 @@ security_logger = logging.getLogger('security')
 
 
 class SecurityEventLoggingMiddleware(MiddlewareMixin):
-    """
-    Log security-relevant events for monitoring and alerting.
+    """Logs security-relevant events for monitoring and alerting.
+
+    This middleware logs security-relevant events, such as authentication
+    failures, authorization failures, and rate limit violations. This
+    information can be used for monitoring and alerting.
     """
     
     def process_response(self, request, response):
-        """Log security events based on response status."""
+        """
+        Logs security events based on the response status code.
+
+        Args:
+            request (HttpRequest): The incoming request.
+            response (HttpResponse): The outgoing response.
+
+        Returns:
+            HttpResponse: The original response.
+        """
         status_code = response.status_code
         
         # Log authentication failures
@@ -52,7 +64,15 @@ class SecurityEventLoggingMiddleware(MiddlewareMixin):
         return response
     
     def _get_client_ip(self, request):
-        """Extract client IP considering proxies."""
+        """
+        Extracts the client's IP address from the request, considering proxy headers.
+
+        Args:
+            request (HttpRequest): The incoming request.
+
+        Returns:
+            str: The client's IP address.
+        """
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             ip = x_forwarded_for.split(',')[0].strip()

@@ -1,3 +1,6 @@
+"""Views for the inventory app."""
+
+import csv
 import io
 import mimetypes
 import os
@@ -22,9 +25,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from django_filters import rest_framework as django_filters
+from django.utils import timezone
+from django.utils.text import slugify
 
-from .models import Item, ItemImage, ItemList, Location, Tag
+from .models import Item, ItemImage, ItemChangeLog, ItemList, Location, Tag
 from .serializers import (
+    ItemChangeLogSerializer,
     ItemImageSerializer,
     ItemListSerializer,
     ItemSerializer,
@@ -152,6 +158,119 @@ def _clear_token_cookies(response):
     )
 
 
+ITEM_EXPORT_HEADERS = [
+    'ID',
+    'Name',
+    'Beschreibung',
+    'Anzahl',
+    'Standort',
+    'Tags',
+    'Listen',
+    'Inventarnummer',
+    'Kaufdatum',
+    'Wert (EUR)',
+    'Asset-Tag',
+    'Erstellt am',
+    'Aktualisiert am',
+]
+
+
+def _format_decimal(value):
+    """
+    Formats a decimal value as a string with two decimal places.
+
+    Args:
+        value (Decimal): The decimal value to format.
+
+    Returns:
+        str: The formatted string, or an empty string if the value is None.
+    """
+    if value is None:
+        return ''
+    return format(value, '.2f')
+
+
+def _format_date(value):
+    """
+    Formats a date object as an ISO 8601 string.
+
+    Args:
+        value (date): The date object to format.
+
+    Returns:
+        str: The formatted string, or an empty string if the value is None.
+    """
+    if value is None:
+        return ''
+    return value.isoformat()
+
+
+def _format_datetime(value):
+    """
+    Formats a datetime object as a string in the format 'YYYY-MM-DD HH:MM:SS'.
+
+    Args:
+        value (datetime): The datetime object to format.
+
+    Returns:
+        str: The formatted string, or an empty string if the value is None.
+    """
+    if value is None:
+        return ''
+    if timezone.is_naive(value):
+        value = timezone.make_aware(value, timezone.get_default_timezone())
+    localized = timezone.localtime(value)
+    return localized.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _prepare_items_csv_response(filename_prefix):
+    """
+    Prepares an HttpResponse object for a CSV download.
+
+    Args:
+        filename_prefix (str): The prefix for the CSV filename.
+
+    Returns:
+        tuple: A tuple containing the HttpResponse object and the CSV writer.
+    """
+    timestamp = timezone.localtime().strftime('%Y%m%d-%H%M%S')
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename=\"{filename_prefix}-{timestamp}.csv\"'
+    response.write('\ufeff')  # Add BOM for better Excel compatibility
+    writer = csv.writer(response, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(ITEM_EXPORT_HEADERS)
+    return response, writer
+
+
+def _write_items_to_csv(writer, items):
+    """
+    Writes a list of items to a CSV writer.
+
+    Args:
+        writer: The CSV writer object.
+        items (QuerySet[Item]): A queryset of items to write.
+    """
+    for item in items:
+        tags = ', '.join(sorted(tag.name for tag in item.tags.all()))
+        lists = ', '.join(sorted(item_list.name for item_list in item.lists.all()))
+        location = item.location.name if item.location else ''
+        writer.writerow([
+            item.id,
+            item.name,
+            item.description or '',
+            item.quantity,
+            location,
+            tags,
+            lists,
+            item.wodis_inventory_number or '',
+            _format_date(item.purchase_date),
+            _format_decimal(item.value),
+            str(item.asset_tag),
+            _format_datetime(item.created_at),
+            _format_datetime(item.updated_at),
+        ])
+
+
 class LoginRateThrottle(throttling.AnonRateThrottle):
     """
     Throttles login attempts for anonymous users.
@@ -232,10 +351,25 @@ class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """A custom token obtain pair serializer for user authentication.
+
+    This serializer extends the default `TokenObtainPairSerializer` to allow
+    users to log in using either their username or their email address. It
+    also adds the user's ID, username, and email to the returned data payload
+    upon successful authentication.
     """
-    A custom token obtain pair serializer that allows logging in with either username or email.
-    """
+
     def __init__(self, *args, **kwargs):
+        """Initializes the serializer fields.
+
+        This override makes the username field not required, allowing for
+        email-only authentication. An email field is added to support this
+        authentication method.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.fields['email'] = serializers.EmailField(required=False, allow_blank=False)
         self.fields[self.username_field].required = False
@@ -528,9 +662,30 @@ class LogoutView(APIView):
 
 
 class UserScopedModelViewSet(viewsets.ModelViewSet):
+    """A base viewset for models that are scoped to a particular user.
+
+    This abstract viewset is designed to simplify the creation of endpoints
+    for models that have a direct ownership relationship with a user. It
+    automatically handles two key security and data integrity concerns:
+
+    1.  **QuerySet Scoping**: It filters all querysets to ensure that users
+        can only view and interact with objects they own. This is controlled
+        by the `owner_field`.
+    2.  **Ownership Assignment**: When a new object is created, it automatically
+        assigns the currently authenticated user as the owner.
+
+    To use this viewset, inherit from it and set the `queryset` and
+    `serializer_class` attributes as you would for a standard `ModelViewSet`.
+    You can also override the `owner_field` if your model uses a different
+    field name for the owner.
+
+    Attributes:
+        owner_field (str): The name of the field on the model that represents
+            the owner (user). Defaults to 'user'.
+        pagination_class (PageNumberPagination): The pagination class to use for
+            list views. Defaults to `None`.
     """
-    A base viewset for models that are scoped to the current user.
-    """
+
     owner_field = 'user'
     pagination_class = None
 
@@ -577,18 +732,23 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
         # Don't override owner in update
         serializer.save()
 
-
 class TagViewSet(UserScopedModelViewSet):
-    """
-    A viewset for tags.
+    """A viewset for managing tags.
+
+    This viewset provides CRUD operations for tags, scoped to the
+    currently authenticated user. It inherits from `UserScopedModelViewSet`
+    to ensure that users can only manage their own tags.
     """
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
 
 class LocationViewSet(UserScopedModelViewSet):
-    """
-    A viewset for locations.
+    """A viewset for managing locations.
+
+    This viewset provides CRUD operations for locations, scoped to the
+    currently authenticated user. It inherits from `UserScopedModelViewSet`
+    to ensure that users can only manage their own locations.
     """
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
@@ -596,16 +756,32 @@ class LocationViewSet(UserScopedModelViewSet):
 
 
 class NumberInFilter(django_filters.BaseInFilter, django_filters.NumberFilter):
-    """
-    A filter for numbers in a list.
+    """A filter that allows filtering by a comma-separated list of numbers.
+
+    This is useful for filtering many-to-many relationships, such as
+    finding items that have any of a given set of tags.
     """
     pass
 
 
 class ItemFilter(django_filters.FilterSet):
+    """A filter set for providing advanced filtering options for items.
+
+    This filter set is used by the `ItemViewSet` to allow clients to filter
+    the list of items based on their associated tags and location. It uses
+    a custom `NumberInFilter` to enable filtering by multiple tag or location
+    IDs in a single request.
+
+    For example, a client can request items that have either tag 1 or tag 2
+    by sending a request to `/api/items/?tags=1,2`.
+
+    Attributes:
+        tags (NumberInFilter): A filter that matches items associated with any
+            of the provided tag IDs.
+        location (NumberInFilter): A filter that matches items located in any
+            of the provided location IDs.
     """
-    A filter for items.
-    """
+
     tags = NumberInFilter(field_name='tags__id')
     location = NumberInFilter(field_name='location__id')
 
@@ -615,8 +791,17 @@ class ItemFilter(django_filters.FilterSet):
 
 
 class ItemPagination(PageNumberPagination):
-    """
-    Pagination for items.
+    """Pagination for the item list view.
+
+    This pagination class sets the default page size and allows the client
+    to override it using the `page_size` query parameter.
+
+    Attributes:
+        page_size (int): The default number of items to include on a page.
+        page_size_query_param (str): The name of the query parameter that
+            allows the client to override the page size.
+        max_page_size (int): The maximum number of items that can be
+            included on a page.
     """
     page_size = 20
     page_size_query_param = 'page_size'
@@ -624,8 +809,12 @@ class ItemPagination(PageNumberPagination):
 
 
 class ItemViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for items.
+    """A viewset for managing items.
+
+    This viewset provides CRUD operations for items, scoped to the
+    currently authenticated user. It also provides actions for exporting
+    items, looking up items by asset tag, generating QR codes, and
+    viewing the change history of an item.
     """
     serializer_class = ItemSerializer
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -671,6 +860,27 @@ class ItemViewSet(viewsets.ModelViewSet):
         else:
             throttles = super().get_throttles()
         return throttles
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export_items(self, request):
+        """
+        Exports the filtered inventory as a CSV file.
+
+        Args:
+            request (Request): The request object.
+
+        Returns:
+            HttpResponse: A streamed CSV response containing the items.
+        """
+        user = request.user
+        if not user.is_authenticated:
+            return Response({'detail': 'Authentifizierung erforderlich.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        response, writer = _prepare_items_csv_response('emmatresor-inventar')
+        _write_items_to_csv(writer, queryset)
+        return response
 
     def perform_create(self, serializer):
         """
@@ -768,10 +978,34 @@ class ItemViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = f'{disposition}; filename="item-{item.id}-qr.png"'
         return response
 
+    @action(detail=True, methods=['get'], url_path='changelog')
+    def changelog(self, request, pk=None):
+        """
+        Retrieves the change history for an item.
+
+        Args:
+            request (Request): The request object.
+            pk (int, optional): The primary key of the item. Defaults to None.
+
+        Returns:
+            Response: A response object containing the change history.
+        """
+        item = self.get_object()
+        if item.owner != request.user:
+            raise PermissionDenied('Dieser Gegenstand gehört nicht zu deinem Konto.')
+
+        # Get all change logs for this item, ordered by newest first
+        logs = ItemChangeLog.objects.filter(item=item).select_related('user').order_by('-created_at')
+        serializer = ItemChangeLogSerializer(logs, many=True)
+        return Response(serializer.data)
+
 
 class ItemImageViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for item images.
+    """A viewset for managing item images.
+
+    This viewset provides CRUD operations for item images, scoped to the
+    currently authenticated user. It ensures that users can only manage
+    images for their own items.
     """
     serializer_class = ItemImageSerializer
     pagination_class = None
@@ -814,9 +1048,17 @@ class ItemImageViewSet(viewsets.ModelViewSet):
 
 
 class ItemImageDownloadView(APIView):
+    """A view for securely downloading item images.
+
+    This view enables authenticated users to download images associated with
+    their own items. It performs an ownership check to ensure that users
+t    cannot access images belonging to other users.
+
+    The view sets appropriate HTTP headers to control how the browser handles
+    the file. It supports both `inline` and `attachment` dispositions, and
+    includes cache-control headers to prevent unintended caching of sensitive images.
     """
-    A view to download an item image.
-    """
+
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, pk: int, *args, **kwargs):
@@ -873,10 +1115,12 @@ class ItemImageDownloadView(APIView):
 
         return response
 
-
 class ItemListViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for item lists.
+    """A viewset for managing item lists.
+
+    This viewset provides CRUD operations for item lists, scoped to the
+    currently authenticated user. It also provides an action for exporting
+    the items in a list.
     """
     serializer_class = ItemListSerializer
     pagination_class = None
@@ -913,3 +1157,31 @@ class ItemListViewSet(viewsets.ModelViewSet):
         if instance.owner != self.request.user:
             raise PermissionDenied('Diese Inventarliste gehört nicht zu deinem Konto.')
         serializer.save()
+
+    @action(detail=True, methods=['get'], url_path='export')
+    def export_items(self, request, pk=None):
+        """
+        Exports all items that belong to the selected list as a CSV file.
+
+        Args:
+            request (Request): The request object.
+            pk (int, optional): The primary key of the list.
+
+        Returns:
+            HttpResponse: A streamed CSV response containing the list items.
+        """
+        item_list = self.get_object()
+        if item_list.owner != request.user:
+            raise PermissionDenied('Diese Inventarliste gehört nicht zu deinem Konto.')
+
+        items = (
+            item_list.items.select_related('location', 'owner')
+            .prefetch_related('tags', 'lists')
+            .order_by('name', 'id')
+        )
+
+        list_slug = slugify(item_list.name) or 'liste'
+        filename_prefix = f'emmatresor-liste-{item_list.id}-{list_slug}'
+        response, writer = _prepare_items_csv_response(filename_prefix)
+        _write_items_to_csv(writer, items)
+        return response

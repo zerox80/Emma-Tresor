@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS frontend-build
+FROM node:25-alpine AS frontend-build
 WORKDIR /app
 
 COPY frontend/package.json frontend/package-lock.json ./
@@ -9,7 +9,7 @@ RUN npm install --silent --legacy-peer-deps
 COPY frontend/ ./
 RUN npm run build
 
-FROM nginx:1.27.2-alpine
+FROM nginx:1.29.3-alpine
 
 # Copy custom site configuration
 COPY nginx/emmatresor.conf /etc/nginx/conf.d/default.conf

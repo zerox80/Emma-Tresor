@@ -1,3 +1,5 @@
+"""Serializers for the inventory app."""
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -7,15 +9,17 @@ from rest_framework.reverse import reverse
 import mimetypes
 import os
 
-from .models import Item, ItemImage, ItemList, Location, Tag, MAX_PURCHASE_AGE_YEARS
+from .models import Item, ItemImage, ItemChangeLog, ItemList, Location, Tag, MAX_PURCHASE_AGE_YEARS
 
 
 User = get_user_model()
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user registration.
+    """Serializer for user registration.
+
+    This serializer handles the creation of new users. It validates that the
+    passwords match and that the email address is not already in use.
     """
     email = serializers.EmailField(
         required=True,
@@ -82,8 +86,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """
-    Serializer for tags.
+    """Serializer for tags.
+
+    This serializer handles the creation and updating of tags. It ensures
+    that tag names are unique for each user.
     """
     class Meta:
         model = Tag
@@ -153,8 +159,10 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for locations.
+    """Serializer for locations.
+
+    This serializer handles the creation and updating of locations. It
+    ensures that location names are unique for each user.
     """
     class Meta:
         model = Location
@@ -226,8 +234,11 @@ class LocationSerializer(serializers.ModelSerializer):
 
 
 class ItemImageSerializer(serializers.ModelSerializer):
-    """
-    Serializer for item images.
+    """Serializer for item images.
+
+    This serializer handles the creation and updating of item images. It
+    provides download and preview URLs for the images, as well as
+    information about the filename, content type, and size.
     """
     download_url = serializers.SerializerMethodField()
     preview_url = serializers.SerializerMethodField()
@@ -462,8 +473,11 @@ class ItemImageSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    """
-    Serializer for items.
+    """Serializer for items.
+
+    This serializer handles the creation and updating of items. It ensures
+    that the user can only associate their own tags and locations with an
+    item.
     """
     tags = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
@@ -694,8 +708,11 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class ItemListSerializer(serializers.ModelSerializer):
-    """
-    Serializer for item lists.
+    """Serializer for item lists.
+
+    This serializer handles the creation and updating of item lists. It
+    ensures that list names are unique for each user and that users can
+    only add their own items to a list.
     """
     items = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Item.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
@@ -821,3 +838,72 @@ class ItemListSerializer(serializers.ModelSerializer):
             if invalid_items:
                 raise serializers.ValidationError('Listen können nur eigene Gegenstände enthalten.')
         return value
+
+
+class ItemChangeLogSerializer(serializers.ModelSerializer):
+    """Serializer for item change logs.
+
+    This serializer is used to display the change history of an item. It
+    resolves the location ID to a human-readable name.
+    """
+    user_username = serializers.CharField(source='user.username', read_only=True, default=None)
+    action_display = serializers.CharField(source='get_action_display', read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._location_cache: dict[int, str] = {}
+
+    def _resolve_location_name(self, value):
+        if value in (None, ''):
+            return None
+        try:
+            location_id = int(value)
+        except (TypeError, ValueError):
+            return value
+
+        if location_id in self._location_cache:
+            return self._location_cache[location_id]
+
+        location = Location.objects.filter(pk=location_id).only('name').first()
+        if location is None:
+            name = f"#{location_id}"
+        else:
+            name = location.name
+
+        self._location_cache[location_id] = name
+        return name
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        changes = data.get('changes')
+        if isinstance(changes, dict):
+            location_change = changes.get('location_id')
+            if isinstance(location_change, dict):
+                for key in ('old', 'new'):
+                    location_change[key] = self._resolve_location_name(location_change.get(key))
+        return data
+
+    class Meta:
+        model = ItemChangeLog
+        fields = [
+            'id',
+            'item',
+            'item_name',
+            'user',
+            'user_username',
+            'action',
+            'action_display',
+            'changes',
+            'created_at',
+        ]
+        read_only_fields = [
+            'id',
+            'item',
+            'item_name',
+            'user',
+            'user_username',
+            'action',
+            'action_display',
+            'changes',
+            'created_at',
+        ]

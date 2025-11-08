@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import Button from './common/Button';
-import { fetchItemQrCode } from '../api/inventory';
-import type { Item } from '../types/inventory';
+import ItemChangeHistory from './ItemChangeHistory';
+import { fetchItemQrCode, fetchItemChangelog } from '../api/inventory';
+import type { Item, ItemChangeLog } from '../types/inventory';
 import { apiBaseUrl } from '../api/client';
 
 interface DetailPositionInfo {
@@ -31,6 +32,11 @@ interface ItemScanViewProps {
 }
 
 
+/**
+ * A view that displays the details of an item after scanning a QR code.
+ * @param {ItemScanViewProps} props The props for the component.
+ * @returns {JSX.Element} The rendered component.
+ */
 const ItemScanView: React.FC<ItemScanViewProps> = ({
   item,
   loading,
@@ -65,12 +71,12 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
   const qrPreviewRef = useRef<QrPreview | null>(null);
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | number | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [changelog, setChangelog] = useState<ItemChangeLog[]>([]);
+  const [changelogLoading, setChangelogLoading] = useState(false);
+  const [changelogError, setChangelogError] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const confirmDeleteRef = useRef<HTMLDivElement | null>(null);
-  const navigationLockRef = useRef(false);
-  const touchStartYRef = useRef<number | null>(null);
-  const touchNavigatedRef = useRef(false);
 
   const canDelete = typeof onDelete === 'function';
 
@@ -275,6 +281,8 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
       }
       setCopySuccess(false);
       setAttachmentError(null);
+      setChangelog([]);
+      setChangelogError(null);
     }
   }, [item]);
 
@@ -304,6 +312,42 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     },
     [releaseQrPreview],
   );
+
+  useEffect(() => {
+    let active = true;
+
+    if (!item) {
+      setChangelog([]);
+      setChangelogLoading(false);
+      setChangelogError(null);
+      return;
+    }
+
+    const loadChangelog = async () => {
+      setChangelogLoading(true);
+      setChangelogError(null);
+      try {
+        const logs = await fetchItemChangelog(item.id);
+        if (active) {
+          setChangelog(logs);
+        }
+      } catch (err) {
+        if (active) {
+          setChangelogError('Änderungshistorie konnte nicht geladen werden.');
+        }
+      } finally {
+        if (active) {
+          setChangelogLoading(false);
+        }
+      }
+    };
+
+    void loadChangelog();
+
+    return () => {
+      active = false;
+    };
+  }, [item]);
 
   useEffect(() => {
     let active = true;
@@ -459,150 +503,6 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
   }, [shareLink]);
 
 
-  useEffect(() => {
-    if (!navigationDirection) {
-      navigationLockRef.current = false;
-      touchNavigatedRef.current = false;
-    }
-  }, [navigationDirection]);
-
-  useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer || !showNavigation) {
-      return;
-    }
-
-    const threshold = 12;
-
-    const handleWheel = (event: WheelEvent) => {
-      if (navigationLockRef.current || navigationDirection || loading) {
-        return;
-      }
-
-      const atTop = scrollContainer.scrollTop <= threshold;
-      const atBottom =
-        scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight <= threshold;
-
-      if (event.deltaY > 0 && atBottom && canNavigateNext && onNavigateNext) {
-        navigationLockRef.current = true;
-        event.preventDefault();
-        onNavigateNext();
-        return;
-      }
-
-      if (event.deltaY < 0 && atTop && canNavigatePrevious && onNavigatePrevious) {
-        navigationLockRef.current = true;
-        event.preventDefault();
-        onNavigatePrevious();
-      }
-    };
-
-    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      scrollContainer.removeEventListener('wheel', handleWheel);
-    };
-  }, [
-    canNavigateNext,
-    canNavigatePrevious,
-    loading,
-    navigationDirection,
-    onNavigateNext,
-    onNavigatePrevious,
-    showNavigation,
-  ]);
-
-  useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer || !showNavigation) {
-      return;
-    }
-
-    // Skip swipe navigation on touch devices to avoid accidental page changes when scrolling.
-    const isTouchLikeDevice =
-      (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0) ||
-      (typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-        ? window.matchMedia('(pointer: coarse)').matches
-        : false);
-
-    if (isTouchLikeDevice) {
-      return;
-    }
-
-    const positionalThreshold = 16;
-    const swipeThreshold = 80;
-
-    const handleTouchStart = (event: TouchEvent) => {
-      if (loading) {
-        return;
-      }
-      const touch = event.touches[0];
-      touchStartYRef.current = touch?.clientY ?? null;
-      touchNavigatedRef.current = false;
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (
-        navigationLockRef.current ||
-        navigationDirection ||
-        loading ||
-        touchNavigatedRef.current ||
-        touchStartYRef.current === null
-      ) {
-        return;
-      }
-
-      const touch = event.touches[0];
-      if (!touch) {
-        return;
-      }
-
-      const deltaY = touchStartYRef.current - touch.clientY;
-      const atTop = scrollContainer.scrollTop <= positionalThreshold;
-      const atBottom =
-        scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight <= positionalThreshold;
-
-      if (deltaY > swipeThreshold && atBottom && canNavigateNext && onNavigateNext) {
-        navigationLockRef.current = true;
-        touchNavigatedRef.current = true;
-        event.preventDefault();
-        onNavigateNext();
-        return;
-      }
-
-      if (deltaY < -swipeThreshold && atTop && canNavigatePrevious && onNavigatePrevious) {
-        navigationLockRef.current = true;
-        touchNavigatedRef.current = true;
-        event.preventDefault();
-        onNavigatePrevious();
-      }
-    };
-
-    const handleTouchEnd = () => {
-      touchStartYRef.current = null;
-      touchNavigatedRef.current = false;
-    };
-
-    scrollContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-    scrollContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
-    scrollContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
-    scrollContainer.addEventListener('touchcancel', handleTouchEnd, { passive: true });
-
-    return () => {
-      scrollContainer.removeEventListener('touchstart', handleTouchStart);
-      scrollContainer.removeEventListener('touchmove', handleTouchMove);
-      scrollContainer.removeEventListener('touchend', handleTouchEnd);
-      scrollContainer.removeEventListener('touchcancel', handleTouchEnd);
-    };
-  }, [
-    canNavigateNext,
-    canNavigatePrevious,
-    loading,
-    navigationDirection,
-    onNavigateNext,
-    onNavigatePrevious,
-    showNavigation,
-  ]);
 
   return (
     <div className="w-full" ref={scrollContainerRef}>
@@ -914,20 +814,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Audit Log Section (Placeholder) */}
+                  {/* Change History Section */}
                   <div className="rounded-xl border border-slate-200 bg-white p-6">
                     <h4 className="mb-4 text-lg font-semibold text-slate-900">Änderungshistorie</h4>
-                    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200">
-                        <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium text-slate-900">Dieses Feature wird bald verfügbar sein</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Hier werden zukünftig alle Änderungen an diesem Gegenstand protokolliert.
-                      </p>
-                    </div>
+                    <ItemChangeHistory changelog={changelog} loading={changelogLoading} error={changelogError} />
                   </div>
                 </div>
               )}

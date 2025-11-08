@@ -1,3 +1,5 @@
+"""Models for the inventory app."""
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -14,8 +16,7 @@ except ImportError as exc:
 
 
 class TimeStampedModel(models.Model):
-    """
-    An abstract base class model that provides self-updating
+    """An abstract base class model that provides self-updating
     `created_at` and `updated_at` fields.
     """
     created_at = models.DateTimeField(auto_now_add=True)
@@ -26,12 +27,11 @@ class TimeStampedModel(models.Model):
 
 
 class Tag(TimeStampedModel):
-    """
-    Represents a tag that can be associated with an item.
+    """Represents a tag that can be associated with an item.
 
     Attributes:
-        name (str): The name of the tag.
-        user (User): The user who created the tag.
+        name: The name of the tag.
+        user: The user who created the tag.
     """
     name = models.CharField(max_length=100)
     user = models.ForeignKey(
@@ -52,12 +52,11 @@ class Tag(TimeStampedModel):
 
 
 class Location(TimeStampedModel):
-    """
-    Represents a location where an item can be stored.
+    """Represents a location where an item can be stored.
 
     Attributes:
-        name (str): The name of the location.
-        user (User): The user who created the location.
+        name: The name of the location.
+        user: The user who created the location.
     """
     name = models.CharField(max_length=100)
     user = models.ForeignKey(
@@ -81,20 +80,20 @@ MAX_PURCHASE_AGE_YEARS = 50
 
 
 class Item(TimeStampedModel):
-    """
-    Represents an item in the inventory.
+    """Represents an item in the inventory.
 
     Attributes:
-        name (str): The name of the item.
-        description (str): A description of the item.
-        quantity (int): The quantity of the item.
-        purchase_date (date): The date the item was purchased.
-        value (Decimal): The value of the item.
-        asset_tag (UUID): A unique identifier for the item.
-        owner (User): The user who owns the item.
-        location (Location): The location where the item is stored.
-        wodis_inventory_number (str): An optional inventory number from an external system.
-        tags (ManyToManyField): The tags associated with the item.
+        name: The name of the item.
+        description: A description of the item.
+        quantity: The quantity of the item.
+        purchase_date: The date the item was purchased.
+        value: The value of the item.
+        asset_tag: A unique identifier for the item.
+        owner: The user who owns the item.
+        location: The location where the item is stored.
+        wodis_inventory_number: An optional inventory number from an external
+            system.
+        tags: The tags associated with the item.
     """
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -192,12 +191,11 @@ class Item(TimeStampedModel):
 
 
 class ItemImage(TimeStampedModel):
-    """
-    Represents an image associated with an item.
+    """Represents an image associated with an item.
 
     Attributes:
-        item (Item): The item the image is associated with.
-        image (FileField): The image file.
+        item: The item the image is associated with.
+        image: The image file.
     """
     item = models.ForeignKey('Item', on_delete=models.CASCADE, related_name='images')
     image = models.FileField(upload_to='item_attachments/', storage=private_item_storage)
@@ -286,15 +284,14 @@ class ItemImage(TimeStampedModel):
 
 
 class ItemChangeLog(TimeStampedModel):
-    """
-    Represents a log of changes made to an item.
+    """Represents a log of changes made to an item.
 
     Attributes:
-        item (Item): The item that was changed.
-        item_name (str): The name of the item at the time of the change.
-        user (User): The user who made the change.
-        action (str): The action that was performed (create, update, or delete).
-        changes (JSONField): A JSON object describing the changes made.
+        item: The item that was changed.
+        item_name: The name of the item at the time of the change.
+        user: The user who made the change.
+        action: The action that was performed (create, update, or delete).
+        changes: A JSON object describing the changes made.
     """
     ACTION_CREATE = 'create'
     ACTION_UPDATE = 'update'
@@ -353,14 +350,12 @@ class ItemChangeLog(TimeStampedModel):
 
 
 class ItemList(TimeStampedModel):
-    """
-
-    Represents a list of items.
+    """Represents a list of items.
 
     Attributes:
-        name (str): The name of the list.
-        owner (User): The user who owns the list.
-        items (ManyToManyField): The items in the list.
+        name: The name of the list.
+        owner: The user who owns the list.
+        items: The items in the list.
     """
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(

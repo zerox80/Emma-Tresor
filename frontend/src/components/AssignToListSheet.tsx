@@ -18,6 +18,11 @@ interface AssignToListSheetProps {
   onCreateList: (name: string) => Promise<ItemList>;
 }
 
+/**
+ * A sheet component for assigning items to a list.
+ * @param {AssignToListSheetProps} props The props for the component.
+ * @returns {JSX.Element | null} The rendered component.
+ */
 const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
   open,
   onClose,

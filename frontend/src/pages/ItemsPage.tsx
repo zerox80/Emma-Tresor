@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 
 import Button from '../components/common/Button';
@@ -20,6 +21,7 @@ import {
   fetchLocations,
   fetchTags,
   deleteItem,
+  exportItems,
   updateListItems,
 } from '../api/inventory';
 import type { Item, ItemList, Location, PaginatedResponse, Tag } from '../types/inventory';
@@ -63,10 +65,14 @@ const sortItemLists = (entries: ItemList[]): ItemList[] =>
  * @returns {JSX.Element} The rendered items page.
  */
 const ItemsPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [items, setItems] = useState<Item[]>([]);
   const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
   const [itemsError, setItemsError] = useState<string | null>(null);
+  const [exportingItems, setExportingItems] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const [tags, setTags] = useState<Tag[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -338,6 +344,34 @@ const ItemsPage: React.FC = () => {
     setSearchTerm('');
   };
 
+  const handleExportItems = useCallback(async () => {
+    setExportError(null);
+    setExportingItems(true);
+    try {
+      const blob = await exportItems({
+        query: debouncedSearchTerm || undefined,
+        tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+        locations: selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
+        ordering: ordering.trim().length > 0 ? ordering : undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `inventar-export-${timestamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const message = extractDetailMessage(axiosError) ?? 'Export fehlgeschlagen. Bitte versuche es erneut.';
+      setExportError(message);
+    } finally {
+      setExportingItems(false);
+    }
+  }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
+
   const handleCreateTag = useCallback(async (name: string) => {
     const newTag = await createTag(name);
     setTags((prev) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
@@ -409,6 +443,21 @@ const ItemsPage: React.FC = () => {
     },
     [items, loadItemDetails],
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const focusItemIdParam = params.get('focusItemId');
+    if (!focusItemIdParam) {
+      return;
+    }
+    const focusItemId = Number.parseInt(focusItemIdParam, 10);
+    if (!Number.isNaN(focusItemId)) {
+      handleOpenItemDetails(focusItemId);
+    }
+    params.delete('focusItemId');
+    const nextSearch = params.toString();
+    navigate({ pathname: location.pathname, search: nextSearch.length > 0 ? `?${nextSearch}` : '' }, { replace: true });
+  }, [handleOpenItemDetails, location.pathname, location.search, navigate]);
 
   const handleCloseItemDetails = useCallback(() => {
     setDetailItemId(null);
@@ -653,6 +702,15 @@ const ItemsPage: React.FC = () => {
             >
               {selectionMode ? 'Auswahlmodus beenden' : 'Auswahlmodus aktivieren'}
             </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => void handleExportItems()}
+              loading={exportingItems}
+            >
+              Exportieren
+            </Button>
             <Button variant="primary" size="sm" onClick={handleOpenCreateDialog}>
               Neuer Gegenstand
             </Button>
@@ -665,6 +723,17 @@ const ItemsPage: React.FC = () => {
               <span>{itemsError}</span>
               <Button variant="ghost" size="sm" onClick={() => void loadItems()}>
                 Erneut laden
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {exportError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="flex items-start justify-between gap-3">
+              <span>{exportError}</span>
+              <Button variant="ghost" size="sm" onClick={() => setExportError(null)}>
+                Schließen
               </Button>
             </div>
           </div>

@@ -21,70 +21,50 @@
 
 **EmmaTresor** ist eine moderne, sichere Inventar-Anwendung mit Django REST Framework Backend und React Frontend. Die Anwendung bietet eine vollständige QR-Code-Integration, robuste Authentifizierung und eine skalierbare Architektur für Teams und Einzelprojekte.
 
-## ✨ Hauptmerkmale
+## 🎯 Purpose
 
-- 🔐 **Sicherheit**: Argon2-Hashing, JWT-Authentifizierung, CSRF/CORS-Schutz
-- 📱 **QR-Code-Integration**: Automatische Generierung mit Asset-Tag-URLs
-- 🚀 **Moderne Technologien**: React 19.1, Django 5.2, TypeScript 5.6, Vite 6, Tailwind CSS 3.4
-- 🐳 **Docker-Ready**: Vollständige Containerisierung mit Docker Compose
-- 📊 **Dashboard**: Übersichtliche Statistiken und Inventarauswertungen
-- 🏷️ **Asset-Management**: UUID-basierte Asset-Tags für eindeutige Identifikation
+This repository serves as a comprehensive, well-documented inventory management system. It is designed to be a learning resource and a production-ready application. The codebase is fully documented with Google Style Python Docstrings for the backend and JSDoc for the frontend.
 
-## 📋 Inhaltsverzeichnis
+## ✨ Key Features
 
-- [🚀 Schnellstart](#-schnellstart)
-  - [📦 Setup über Skripte](#-setup-über-skripte)
-  - [🔧 Manuelle Einrichtung](#-manuelle-einrichtung)
-  - [⚛️ Frontend-Entwicklung](#️-frontend-entwicklung)
-- [📱 QR-Code-Integration](#-qr-code-integration)
-  - [🏷️ QR-Code generieren](#️-qr-code-generieren)
-  - [📸 QR-Code scannen](#-qr-code-scannen)
+- 🔐 **Security**: Argon2-Hashing, JWT authentication, CSRF/CORS protection
+- 📱 **QR Code Integration**: Automatic generation with asset tag URLs
+- 🚀 **Modern Technologies**: React 19.1, Django 5.2, TypeScript 5.6, Vite 6, Tailwind CSS 3.4
+- 🐳 **Docker-Ready**: Full containerization with Docker Compose
+- 📊 **Dashboard**: Clear statistics and inventory evaluations
+- 🏷️ **Asset Management**: UUID-based asset tags for unique identification
+
+## 📋 Table of Contents
+
+- [🚀 Quick Start](#-quick-start)
+  - [📦 Setup via Scripts](#-setup-via-scripts)
+  - [🔧 Manual Setup](#-manual-setup)
+  - [⚛️ Frontend Development](#️-frontend-development)
+- [📱 QR Code Integration](#-qr-code-integration)
+  - [🏷️ Generate QR Code](#️-generate-qr-code)
+  - [📸 Scan QR Code](#-scan-qr-code)
 - [🐳 Docker Deployment](#-docker-deployment)
-- [⚙️ Konfiguration](#️-konfiguration)
-- [🧪 Tests & Qualitätssicherung](#-tests--qualitätssicherung)
-- [📁 Projektstruktur](#-projektstruktur)
-- [🔐 Sicherheit](#-sicherheit)
+- [⚙️ Configuration](#️-configuration)
+- [🧪 Testing & Quality Assurance](#-testing--quality-assurance)
+- [📁 Project Structure](#-project-structure)
+- [🔐 Security](#-security)
 - [🛠️ Troubleshooting](#️-troubleshooting)
 - [🗺️ Roadmap](#️-roadmap)
-- [🤝 Beitragen](#-beitragen)
-- [📄 Lizenz](#-lizenz)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [📜 Documentation](#-documentation)
 
-## 📖 Detaillierte Funktionen
+## 📖 Usage
 
-### 🏢 Inventarverwaltung
-- **CRUD-Operationen** für alle Inventargegenstände
-- **Mengen- und Werttracking** mit Kaufdatum und monetärem Wert
-- **Standort- und Tag-Management** für bessere Organisation
-- **Benutzerspezifische Trennung** der Daten mit Datenisolation
-- **Änderungsprotokoll** (ItemChangeLog) für Audit-Trails
-- **Bildanhänge** mit privater Storage-Implementierung (max. 8MB, PDF-Support)
+Once the application is running, you can create an account and start managing your inventory. The main features include:
 
-### 🏷️ QR-Code-System
-- **Automatische UUID-Asset-Tags** für jeden Gegenstand (kollisionssicher)
-- **Dynamische QR-Code-Generierung** als PNG-Download (qrcode[pil] Backend)
-- **URL-basierte Scan-Integration** (über `/scan/{asset_tag}` Route)
-- **Direkte Detailansicht** nach dem Scannen mit QR-App
-- **Frontend QR-Code-Anzeige** (qrcode Library für Client-Side-Generierung)
+- **Dashboard**: Get an overview of your inventory, including total items, lists, and value.
+- **Inventory**: Add, edit, and delete items. You can also filter and search for items.
+- **Lists**: Create and manage lists of items.
+- **QR Codes**: Generate and scan QR codes to quickly access item details.
+- **Settings**: Manage your tags and locations.
 
-### 📊 Listen und Dashboard
-- **Benutzerdefinierte Listen** für Projekte und Übergaben
-- **Aggregierte Statistiken** und Wertberechnungen
-- **Performance-optimiert** mit Pagination und Suche
-- **Responsive Design** für alle Geräte
-
-### 🔒 Sicherheit und Authentifizierung
-- **JWT-basierte Authentifizierung** mit SimpleJWT und Cookie-Support
-- **Rate-Limiting** (5 Login-Versuche/min) und Logout-Blacklisting
-- **✅ CSRF-Protection aktiv** - Schutz vor Cross-Site Request Forgery (seit v2.0)
-- **✅ Secret-Key-Rotation** - Graceful Key-Rotation mit bis zu 3 Fallback-Keys (seit v2.0)
-- **CSRF/CORS-Schutz** mit gehärteter Konfiguration und Custom Middleware
-- **Sichere Token-Verwaltung** (HttpOnly Cookies, SameSite, Secure flags)
-- **CSP-Header** (Content Security Policy) für XSS-Schutz
-- **HSTS** für HTTPS-Erzwingung in Produktion
-
-> 🔐 **Security Update v2.0:** Kritische Sicherheitslücken wurden behoben! Siehe [`docs/SECURITY_UPDATE_CSRF_SECRETKEY.md`](docs/SECURITY_UPDATE_CSRF_SECRETKEY.md) für Details.
-
-## 🛠️ Technologie-Stack
+## 🛠️ Technology Stack
 
 <table>
 <tr>
@@ -118,12 +98,12 @@
 </tr>
 </table>
 
-## 🏗️ Architektur-Übersicht
+## 🏗️ Architecture Overview
 
 ```mermaid
 graph TB
     subgraph "Client Layer"
-        U[👤 Benutzer]
+        U[👤 User]
         B[🌐 Browser]
     end
     
@@ -158,51 +138,51 @@ graph TB
     D --> ST
 ```
 
-### 🔧 Komponentenstruktur
+### 🔧 Component Structure
 
-- **`inventory/`** - Django-App mit REST-APIs für Authentifizierung und Inventarverwaltung
-- **`frontend/`** - React/Vite-Anwendung mit TypeScript und modernen UI-Komponenten
-- **`docker/`** - Container-Konfigurationen für alle Services
-- **Nginx** - Reverse Proxy für API-Calls und statische Asset-Bereitstellung
+- **`inventory/`** - Django app with REST APIs for authentication and inventory management
+- **`frontend/`** - React/Vite application with TypeScript and modern UI components
+- **`docker/`** - Container configurations for all services
+- **Nginx** - Reverse proxy for API calls and static asset serving
 
-## 🚀 Schnellstart
+## 🚀 Quick Start
 
-> 💡 **Tipp**: Für die schnellste Einrichtung verwende die automatisierten Skripte!
+> 💡 **Tip**: For the fastest setup, use the automated scripts!
 
-### 📦 Setup über Skripte
+### 📦 Setup via Scripts
 
-**📋 Voraussetzungen:**
-- 🐍 Python 3.12+ (getestet mit 3.12 und 3.13)
+**📋 Prerequisites:**
+- 🐍 Python 3.12+ (tested with 3.12 and 3.13)
 - 📦 Node.js 22+
 - 📋 npm
 - 🐳 Docker & Docker Compose (optional)
 
 #### Windows (PowerShell)
 ```powershell
-# 1️⃣ Backend-Setup (erstellt .venv, installiert deps, führt Migrationen aus)
+# 1️⃣ Backend Setup (creates .venv, installs deps, runs migrations)
 py -3.12 setup_backend.py --use-venv
-# oder mit Python 3.13:
+# or with Python 3.13:
 py -3.13 setup_backend.py --use-venv
 
-# 2️⃣ Starte Backend + Frontend
+# 2️⃣ Start Backend + Frontend
 py -3.12 run_backend.py --use-venv --start-frontend
 ```
 
 #### Linux/macOS (Bash)
 ```bash
-# 1️⃣ Backend-Setup
+# 1️⃣ Backend Setup
 python3 setup_backend.py --use-venv
 
-# 2️⃣ Starte Backend + Frontend
+# 2️⃣ Start Backend + Frontend
 python3 run_backend.py --use-venv --start-frontend
 ```
 
-**🎯 Ergebnis:**
+**🎯 Result:**
 - 🔧 Django Backend: `http://127.0.0.1:8000/`
 - ⚛️ React Frontend: `http://127.0.0.1:5173/`
 
 <details>
-<summary>🔧 Virtuelle Umgebung manuell aktivieren</summary>
+<summary>🔧 Activate Virtual Environment Manually</summary>
 
 **Windows:**
 ```powershell
@@ -215,441 +195,457 @@ source .venv/bin/activate
 ```
 </details>
 
-### 🔧 Manuelle Einrichtung
+### 🔧 Manual Setup
 
 <details>
-<summary>📋 Schritt-für-Schritt Anleitung</summary>
+<summary>📋 Step-by-Step Instructions</summary>
 
 #### Backend Setup
 ```bash
-# 1️⃣ Virtuelle Umgebung erstellen
+# 1️⃣ Create Virtual Environment
 python -m venv .venv
 
-# 2️⃣ Aktivieren (siehe oben)
+# 2️⃣ Activate (see above)
 # Windows: .venv\Scripts\Activate.ps1
 # Linux/macOS: source .venv/bin/activate
 
-# 3️⃣ Dependencies installieren
+# 3️⃣ Install Dependencies
 pip install -r requirements.txt
 
-# 4️⃣ Datenbank migrieren
+# 4️⃣ Run Database Migrations
 python manage.py migrate
 
-# 5️⃣ Entwicklungsserver starten
+# 5️⃣ Start Development Server
 python manage.py runserver
 ```
 
-**✅ Backend läuft auf:** `http://127.0.0.1:8000/`
+**✅ Backend is running at:** `http://127.0.0.1:8000/`
 
 </details>
 
-### ⚛️ Frontend-Entwicklung
+### ⚛️ Frontend Development
 
-#### Schnellstart
+#### Quick Start
 ```bash
 cd frontend
-npm install          # Dependencies installieren
-npm run dev          # Dev-Server starten
+npm install          # Install Dependencies
+npm run dev          # Start Dev Server
 ```
 
 **🌐 Frontend URLs:**
 - 🔧 Development: `http://127.0.0.1:5173/`
-- 📡 API Proxy: Automatisch zu Django Backend
+- 📡 API Proxy: Automatically proxies to Django backend
 
-#### Produktionsbuild
+#### Production Build
 ```bash
-npm run build        # Build erstellen
-npm run preview      # Build testen
-npm run typecheck    # TypeScript prüfen
+npm run build        # Create Build
+npm run preview      # Test Build
+npm run typecheck    # Check TypeScript
 ```
 
-> 📱 **Produktions-Deployment:** 
-> Für HTTPS verwende `npm run dev -- --host --https` 
-> oder nutze einen Reverse Proxy mit TLS-Terminierung.
+> 📱 **Production Deployment:**
+> For HTTPS, use `npm run dev -- --host --https`
+> or use a reverse proxy with TLS termination.
 
-## 📱 QR-Code-Integration
+## 📱 QR Code Integration
 
-### 🏷️ QR-Code generieren
+### 🏷️ Generate QR Code
 
 ```mermaid
 sequenceDiagram
-    participant U as 👤 Benutzer
+    participant U as 👤 User
     participant F as ⚛️ Frontend
     participant B as 🐍 Backend
-    participant Q as 🏷️ QR-Generator
+    participant Q as 🏷️ QR Generator
     
-    U->>F: Klick auf "QR-Code"
+    U->>F: Click on "QR Code"
     F->>B: GET /api/inventory/items/{id}/generate_qr_code/
-    B->>Q: Generiere QR mit Scan-URL (UUID)
-    Q->>B: PNG-Datei
-    B->>F: QR-Code als Download
-    F->>U: Automatischer Download
+    B->>Q: Generate QR with Scan URL (UUID)
+    Q->>B: PNG File
+    B->>F: QR Code as Download
+    F->>U: Automatic Download
 ```
 
-**📋 Schritte:**
-1. 📝 **Item auswählen** in der Inventarliste
-2. 🏷️ **QR-Code Button** klicken
-3. 📥 **PNG herunterladen** für Labels/Etiketten
-4. 🖨️ **Ausdrucken** und an Gegenstand anbringen
+**📋 Steps:**
+1. 📝 **Select Item** in the inventory list
+2. 🏷️ **Click QR Code Button**
+3. 📥 **Download PNG** for labels/tags
+4. 🖨️ **Print** and attach to the item
 
-**🔑 QR-Code-Format:**
-Der generierte QR-Code enthält eine URL im Format:
+**🔑 QR Code Format:**
+The generated QR code contains a URL in the format:
 ```
-https://deine-domain.de/scan/{asset-tag-uuid}
+https://your-domain.com/scan/{asset-tag-uuid}
 ```
 
-### 📸 QR-Code scannen
+### 📸 Scan QR Code
 
-**📱 Scannen mit beliebiger QR-App:**
-1. 📷 **Standard-QR-Scanner** oder Kamera-App verwenden
-2. 🔍 **QR-Code erfassen** - Link wird automatisch erkannt
-3. 🌐 **Link öffnen** - führt direkt zu `/scan/{asset_tag}`
-4. 📊 **Detailansicht** des Items wird angezeigt
+**📱 Scan with any QR App:**
+1. 📷 **Use standard QR scanner** or camera app
+2. 🔍 **Capture QR code** - link is automatically recognized
+3. 🌐 **Open link** - leads directly to `/scan/{asset_tag}`
+4. 📊 **Item details** are displayed
 
-**📝 Direkte Ansicht & Bearbeitung:**
-- 📊 Alle Item-Details einsehen
-- 📍 Standorte und Tags anzeigen
-- 🖼️ Bildanhänge betrachten
-- ✏️ "Bearbeiten"-Button für Aktualisierungen
+**📝 Direct View & Editing:**
+- 📊 View all item details
+- 📍 See locations and tags
+- 🖼️ View image attachments
+- ✏️ "Edit" button for updates
 
-> 💡 **Hinweis:** Das Projekt verwendet **URL-basierte QR-Codes**, die mit jeder Standard-QR-Scanner-App funktionieren. Eine In-App-Kamera-Integration ist vorbereitet (Dependencies installiert), aber noch nicht implementiert.
+> 💡 **Note:** The project uses **URL-based QR codes** that work with any standard QR scanner app. An in-app camera integration is prepared (dependencies installed) but not yet implemented.
 
 ## 🐳 Docker Deployment
 
-### 🚀 Schnelles Deployment
+### 🚀 Quick Deployment
 
 ```bash
-# 1️⃣ Umgebungsvariablen konfigurieren
+# 1️⃣ Configure Environment Variables
 cp env.example .env
-# ✏️ .env bearbeiten (siehe Konfiguration)
+# ✏️ Edit .env (see Configuration)
 
-# 2️⃣ Security Logs Verzeichnis erstellen
+# 2️⃣ Create Security Logs Directory
 mkdir -p logs
 chmod 755 logs
 
-# 3️⃣ Stack starten
+# 3️⃣ Start the Stack
 docker compose up --build -d
 
-# 4️⃣ Volume Permissions setzen (WICHTIG für erste Installation!)
+# 4️⃣ Set Volume Permissions (IMPORTANT for first installation!)
 docker compose run --rm --user root backend \
   chown -R 1000:1000 /vol/web/static /vol/web/media /vol/web/private_media
 chown 1000:1000 logs
 
-# 5️⃣ Backend neustarten (nach Permission Fix)
+# 5️⃣ Restart Backend (after permission fix)
 docker compose restart backend
 
-# 6️⃣ Status prüfen
+# 6️⃣ Check Status
 docker compose ps
 ```
 
-### ⚠️ Troubleshooting: Backend crasht beim Start
+### ⚠️ Troubleshooting: Backend Crashes on Start
 
-Wenn das Backend mit `Restarting (1)` Status crasht:
+If the backend crashes with `Restarting (1)` status:
 
 ```bash
-# 1. Logs checken
+# 1. Check Logs
 docker compose logs backend --tail=50
 
-# 2. Häufigste Ursache: Permission-Fehler
-# Falls "Permission denied: '/vol/web/static/...'" in Logs:
+# 2. Most Common Cause: Permission Error
+# If "Permission denied: '/vol/web/static/...'" in logs:
 docker compose stop backend
 docker compose run --rm --user root backend \
   chown -R 1000:1000 /vol/web/static /vol/web/media /vol/web/private_media
 docker compose up -d backend
 
-# 3. Status verifizieren
-docker compose ps  # Backend sollte "Up" sein, nicht "Restarting"
+# 3. Verify Status
+docker compose ps  # Backend should be "Up", not "Restarting"
 ```
 
 ### 📊 Monitoring & Logs
 
 ```bash
-# 🔍 Live-Logs anzeigen
+# 🔍 View Live Logs
 docker compose logs -f backend
 docker compose logs -f nginx
 
-# 📊 Container-Status
+# 📊 Container Status
 docker compose ps
 
-# 🚯 Stack stoppen
+# 🚯 Stop Stack
 docker compose down
 
-# 🗑️ Volumes löschen (Achtung: Datenverlust!)
+# 🗑️ Delete Volumes (Warning: Data Loss!)
 docker compose down -v
 ```
 
-### 💾 Datenbank-Backup & Wiederherstellung
+### 💾 Database Backup & Restore
 
-#### Backup erstellen
+#### Create Backup
 ```bash
-# Manuelles Backup mit Zeitstempel
+# Manual backup with timestamp
 docker compose exec postgres pg_dump -U emmatresor -d emmatresor > backup_$(date +%Y%m%d_%H%M%S).sql
 
-# Komprimiertes Backup
+# Compressed backup
 docker compose exec postgres pg_dump -U emmatresor -d emmatresor | gzip > backup_$(date +%Y%m%d_%H%M%S).sql.gz
 
-# Backup in Verzeichnis speichern
+# Save backup to directory
 mkdir -p db_backups
 docker compose exec postgres pg_dump -U emmatresor -d emmatresor > db_backups/backup_$(date +%Y%m%d).sql
 ```
 
-#### Backup wiederherstellen
+#### Restore Backup
 ```bash
-# Aus SQL-Datei wiederherstellen
+# Restore from SQL file
 docker compose exec -T postgres psql -U emmatresor -d emmatresor < backup_20250930.sql
 
-# Aus komprimierter Datei
+# Restore from compressed file
 gunzip -c backup_20250930.sql.gz | docker compose exec -T postgres psql -U emmatresor -d emmatresor
 
-# ⚠️ WARNUNG: Datenbank zuvor leeren
+# ⚠️ WARNING: Clear database before restoring
 docker compose exec postgres psql -U emmatresor -d emmatresor -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 ```
 
-#### Automatische Backups (Cron)
+#### Automatic Backups (Cron)
 ```bash
-# Crontab bearbeiten
+# Edit crontab
 crontab -e
 
-# Tägliches Backup um 2 Uhr nachts
-0 2 * * * cd /pfad/zu/emmatresor && docker compose exec postgres pg_dump -U emmatresor -d emmatresor > db_backups/backup_$(date +\%Y\%m\%d).sql 2>&1
+# Daily backup at 2 AM
+0 2 * * * cd /path/to/emmatresor && docker compose exec postgres pg_dump -U emmatresor -d emmatresor > db_backups/backup_$(date +\%Y\%m\%d).sql 2>&1
 
-# Wöchentliches Backup mit Cleanup (nur letzte 4 Wochen behalten)
-0 3 * * 0 cd /pfad/zu/emmatresor && docker compose exec postgres pg_dump -U emmatresor -d emmatresor | gzip > db_backups/backup_$(date +\%Y\%m\%d).sql.gz && find db_backups/ -name "*.sql.gz" -mtime +28 -delete
+# Weekly backup with cleanup (keep last 4 weeks)
+0 3 * * 0 cd /path/to/emmatresor && docker compose exec postgres pg_dump -U emmatresor -d emmatresor | gzip > db_backups/backup_$(date +\%Y\%m\%d).sql.gz && find db_backups/ -name "*.sql.gz" -mtime +28 -delete
 ```
 
-> 💡 **Tipp:** Für automatisierte Backups verwende Umgebungsvariablen aus `.env`:
+> 💡 **Tip:** For automated backups, use environment variables from `.env`:
 > ```bash
 > source .env && docker compose exec postgres pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > backup.sql
 > ```
 
-### 🏢 Service-Architektur
+### 🏢 Service Architecture
 
-| Service | Port | Beschreibung | Volumes |
+| Service | Port | Description | Volumes |
 |---------|------|--------------|----------|
-| 🐘 **postgres** | 5432 | PostgreSQL 16 Datenbank | `postgres_data` |
+| 🐘 **postgres** | 5432 | PostgreSQL 16 Database | `postgres_data` |
 | 🐍 **backend** | 8000 | Django 5.2 + Gunicorn 22 API | `backend_static`, `backend_media`, `backend_private_media` |
 | 🌐 **nginx** | 8888:80 | Reverse Proxy + Frontend | `backend_static`, `backend_media` |
 
-**🌐 Zugriff nach Deployment:**
+**🌐 Access after Deployment:**
 - Frontend: `http://localhost:8888/`
 - API: `http://localhost:8888/api/`
 - Admin: `http://localhost:8888/admin/`
 
-## ⚙️ Konfiguration
+## ⚙️ Configuration
 
-> 📝 **Basis:** Kopiere `env.example` nach `.env` und passe die Werte an.
+> 📝 **Base:** Copy `env.example` to `.env` and customize the values.
 
-### 🔑 Sicherheits-Variablen
+### 🔑 Security Variables
 
-| Variable | Beschreibung | ⚠️ Wichtigkeit |
+| Variable | Description | ⚠️ Importance |
 |----------|--------------|----------------|
-| `DJANGO_SECRET_KEY` | Django Geheimschlüssel | 🔴 **KRITISCH** |
-| `POSTGRES_PASSWORD` | Datenbank-Passwort | 🔴 **KRITISCH** |
-| `DJANGO_SUPERUSER_PASSWORD` | Admin-Passwort | 🗽 **HOCH** |
+| `DJANGO_SECRET_KEY` | Django Secret Key | 🔴 **CRITICAL** |
+| `POSTGRES_PASSWORD` | Database Password | 🔴 **CRITICAL** |
+| `DJANGO_SUPERUSER_PASSWORD` | Admin Password | 🗽 **HIGH** |
 
-### 🌐 Host & Netzwerk
+### 🌐 Host & Network
 
-| Variable | Beschreibung | Standard |
+| Variable | Description | Default |
 |----------|--------------|----------|
-| `DJANGO_ALLOWED_HOSTS` | Erlaubte Hostnamen | `127.0.0.1,localhost` |
-| `CSRF_TRUSTED_ORIGINS` | CSRF-Origins | siehe `env.example` |
-| `VITE_API_BASE_URL` | Frontend API-Basis | `/api` |
+| `DJANGO_ALLOWED_HOSTS` | Allowed Hostnames | `127.0.0.1,localhost` |
+| `CSRF_TRUSTED_ORIGINS` | CSRF Origins | see `env.example` |
+| `VITE_API_BASE_URL` | Frontend API Base | `/api` |
 
-### 📊 Entwicklung & Features
+### 📊 Development & Features
 
-| Variable | Beschreibung | Standard |
+| Variable | Description | Default |
 |----------|--------------|----------|
-| `DJANGO_DEBUG` | Debug-Modus | `True` (Dev), `False` (Prod) |
-| `DJANGO_FORCE_SSL` | HTTPS-Erzwingung | `0` (Dev), `1` (Prod) |
-| `DJANGO_SSL_REDIRECT` | Django SSL-Redirect | `0` |
-| `ALLOW_USER_REGISTRATION` | Nutzerregistrierung | `false` |
-| `AUTO_CREATE_SUPERUSER` | Auto-Admin erstellen | `false` |
-| `VITE_ENABLE_QR_SCANNER` | QR-Scanner aktivieren | `true` |
+| `DJANGO_DEBUG` | Debug Mode | `True` (Dev), `False` (Prod) |
+| `DJANGO_FORCE_SSL` | Force HTTPS | `0` (Dev), `1` (Prod) |
+| `DJANGO_SSL_REDIRECT` | Django SSL Redirect | `0` |
+| `ALLOW_USER_REGISTRATION` | User Registration | `false` |
+| `AUTO_CREATE_SUPERUSER` | Auto-create Admin | `false` |
+| `VITE_ENABLE_QR_SCANNER` | Enable QR Scanner | `true` |
 
-### 📦 Datenbank
+### 📦 Database
 
-| Variable | Beschreibung | Standard |
+| Variable | Description | Default |
 |----------|--------------|----------|
-| `DB_VENDOR` | Datenbank-Typ | `postgres` |
-| `POSTGRES_DB` | Datenbank-Name | `emmatresor` |
-| `POSTGRES_USER` | DB-Benutzer | `emmatresor` |
-| `POSTGRES_HOST` | DB-Host | `localhost` |
-| `POSTGRES_PORT` | DB-Port | `5432` |
+| `DB_VENDOR` | Database Type | `postgres` |
+| `POSTGRES_DB` | Database Name | `emmatresor` |
+| `POSTGRES_USER` | DB User | `emmatresor` |
+| `POSTGRES_HOST` | DB Host | `localhost` |
+| `POSTGRES_PORT` | DB Port | `5432` |
 
-## 🧪 Tests & Qualitätssicherung
+## 🧪 Testing & Quality Assurance
 
-### 🐍 Backend-Tests
+### 🐍 Backend Tests
 ```bash
-# Django Tests ausführen
+# Run Django Tests
 python manage.py test
 
-# Oder mit setup_backend.py
+# Or with setup_backend.py
 python setup_backend.py --tests-only --use-venv
 
-# Mit Coverage (optional)
+# With Coverage (optional)
 pip install coverage
 coverage run --source='.' manage.py test
 coverage report
 ```
 
-### ⚛️ Frontend-Qualität
+### ⚛️ Frontend Quality
 ```bash
 cd frontend
 
-# TypeScript Prüfung
+# TypeScript Check
 npm run typecheck
 
-# Build-Test
+# Build Test
 npm run build
 
-# Build-Vorschau
+# Build Preview
 npm run preview
 ```
 
-### 🔄 CI/CD Empfehlungen
-- **GitHub Actions** für automatisierte Tests
-- **pytest** für erweiterte Backend-Tests  
-- **Jest/Vitest** für Frontend-Unit-Tests
-- **Cypress/Playwright** für E2E-Tests
+### 🔄 CI/CD Recommendations
+- **GitHub Actions** for automated tests
+- **pytest** for advanced backend tests
+- **Jest/Vitest** for frontend unit tests
+- **Cypress/Playwright** for E2E tests
 
-## 📁 Projektstruktur
+## 📁 Project Structure
 
 ```text
 📁 EmmaTresor/
-├── 🐍 EmmaTresor/            # Django Projektkonfiguration
-│   ├── settings.py        # ⚙️ Hauptkonfiguration
-│   ├── urls.py            # 🌐 URL-Routing
-│   ├── middleware.py      # 🔧 Custom Middleware (CSRF-Exempt für API)
-│   ├── wsgi.py            # 🚀 WSGI Server-Schnittstelle
-│   └── asgi.py            # 🚀 ASGI Server-Schnittstelle
-├── 📦 inventory/             # Backend-App (Kern)
-│   ├── models.py          # 📊 Datenmodelle (Item, Tag, Location, ItemList)
-│   ├── views.py           # 🔌 API-Endpunkte
-│   ├── serializers.py     # 🔄 JSON-Serialisierung
-│   ├── authentication.py  # 🔐 Cookie-JWT-Auth
+├── 🐍 EmmaTresor/            # Django Project Configuration
+│   ├── settings.py        # ⚙️ Main Configuration
+│   ├── urls.py            # 🌐 URL Routing
+│   ├── middleware.py      # 🔧 Custom Middleware (CSRF-Exempt for API)
+│   ├── wsgi.py            # 🚀 WSGI Server Interface
+│   └── asgi.py            # 🚀 ASGI Server Interface
+├── 📦 inventory/             # Backend App (Core)
+│   ├── models.py          # 📊 Data Models (Item, Tag, Location, ItemList)
+│   ├── views.py           # 🔌 API Endpoints
+│   ├── serializers.py     # 🔄 JSON Serialization
+│   ├── authentication.py  # 🔐 Cookie-JWT Auth
 │   ├── storage.py         # 💾 Private Media Storage
-│   ├── urls.py            # 🌐 App-URLs
-│   └── migrations/        # 📝 Datenbank-Migrationen
+│   ├── urls.py            # 🌐 App URLs
+│   └── migrations/        # 📝 Database Migrations
 ├── ⚛️ frontend/              # React/Vite Frontend
 │   ├── src/
-│   │   ├── components/    # 🧩 UI-Komponenten
-│   │   ├── pages/         # 📱 Seiten-Komponenten
-│   │   ├── routes/        # 🛣️ Route Guards & Konfiguration
-│   │   ├── api/           # 📡 API-Client (Axios)
-│   │   ├── store/         # 💾 Zustand-Management (Zustand)
+│   │   ├── components/    # 🧩 UI Components
+│   │   ├── pages/         # 📱 Page Components
+│   │   ├── routes/        # 🛣️ Route Guards & Configuration
+│   │   ├── api/           # 📡 API Client (Axios)
+│   │   ├── store/         # 💾 State Management (Zustand)
 │   │   ├── hooks/         # 🎣 Custom React Hooks
-│   │   ├── types/         # 📝 TypeScript Typen
-│   │   └── utils/         # 🔧 Utility-Funktionen
+│   │   ├── types/         # 📝 TypeScript Types
+│   │   └── utils/         # 🔧 Utility Functions
 │   ├── package.json       # 📦 Dependencies
-│   ├── vite.config.ts     # ⚙️ Vite-Konfiguration
-│   └── tsconfig.json      # ⚙️ TypeScript-Konfiguration
-├── 🐳 docker/                # Container-Setup
+│   ├── vite.config.ts     # ⚙️ Vite Configuration
+│   └── tsconfig.json      # ⚙️ TypeScript Configuration
+├── 🐳 docker/                # Container Setup
 │   ├── backend/
-│   │   ├── Dockerfile     # 🐍 Backend-Image
-│   │   └── entrypoint.sh  # 🚀 Container-Startskript
-│   ├── frontend/Dockerfile# ⚛️ Frontend-Image
-│   └── nginx/Dockerfile   # 🌐 Proxy-Image
-├── 📄 docs/                  # Dokumentation
-│   └── SECURITY.md        # 🔐 Sicherheitshinweise
-├── 🔐 nginx/                 # Nginx-Konfiguration
-│   ├── emmatresor.conf    # 🌐 Docker Compose Konfiguration
-│   └── emmatresor_host.conf # 🌐 Host-System Konfiguration
-├── 📋 templates/             # Django-Templates
+│   │   ├── Dockerfile     # 🐍 Backend Image
+│   │   └── entrypoint.sh  # 🚀 Container Start Script
+│   ├── frontend/Dockerfile# ⚛️ Frontend Image
+│   └── nginx/Dockerfile   # 🌐 Proxy Image
+├── 📄 docs/                  # Documentation
+│   └── SECURITY.md        # 🔐 Security Notes
+├── 🔐 nginx/                 # Nginx Configuration
+│   ├── emmatresor.conf    # 🌐 Docker Compose Configuration
+│   └── emmatresor_host.conf # 🌐 Host System Configuration
+├── 📋 templates/             # Django Templates
 ├── 🚀 Setup & Scripts
 │   ├── setup_backend.py   # 🔧 Auto-Setup (Python 3.12+)
-│   ├── run_backend.py     # ▶️ Dev-Server
-│   ├── deploy_ubuntu.sh   # 🐧 Ubuntu Deployment-Skript
+│   ├── run_backend.py     # ▶️ Dev Server
+│   ├── deploy_ubuntu.sh   # 🐧 Ubuntu Deployment Script
 │   └── manage.py          # 🐍 Django CLI
-└── 📄 Konfiguration
-    ├── requirements.txt   # 🐍 Python-Deps
+└── 📄 Configuration
+    ├── requirements.txt   # 🐍 Python Deps
     ├── docker-compose.yml # 🐳 Services (postgres, backend, nginx)
-    ├── env.example        # ⚙️ Umgebungsvariablen-Template
-    └── .env.production    # 🏭 Produktions-Konfiguration
+    ├── env.example        # ⚙️ Environment Variables Template
+    └── .env.production    # 🏭 Production Configuration
 ```
 
-## 🔐 Sicherheit
+## 🔐 Security
 
-### 🔑 Authentifizierung & Autorisierung
-- **💪 Argon2-Hashing** für Passwörter (state-of-the-art)
-- **🎩 JWT-Token** mit SimpleJWT und Refresh-Mechanismus
-- **🚪 Rate-Limiting** für Login-Versuche
-- **🚫 Logout-Blacklisting** verhindert Token-Wiederverwendung
+### 🔑 Authentication & Authorization
+- **💪 Argon2 Hashing** for passwords (state-of-the-art)
+- **🎩 JWT Tokens** with SimpleJWT and refresh mechanism
+- **🚪 Rate-Limiting** for login attempts
+- **🚫 Logout Blacklisting** prevents token reuse
 
-### 🌐 Web-Sicherheit
+### 🌐 Web Security
 - **🍪 Secure Cookies** (HttpOnly, Secure, SameSite)
-- **🔒 CSP-Header** (Content Security Policy)
-- **🔐 HSTS** für HTTPS-Erzwingung (Produktion)
-- **🚫 CORS-Schutz** mit restriktiven Origins
+- **🔒 CSP Headers** (Content Security Policy)
+- **🔐 HSTS** for enforcing HTTPS (Production)
+- **🚫 CORS Protection** with restrictive origins
 
-### 🛡️ Frontend-Schutz
-- **🔑 Token-Storage** in sicherem Local Storage
+### 🛡️ Frontend Protection
+- **🔑 Token Storage** in secure local storage
 - **🚪 Route Guards** (`ProtectedRoute`, `PublicRoute`)
-- **✅ Form-Validation** mit Zod + React Hook Form
-- **🔄 Auto-Logout** bei Token-Ablauf
+- **✅ Form Validation** with Zod + React Hook Form
+- **🔄 Auto-Logout** on token expiration
 
-### 📊 Backend-Validierung
-- **🏷️ Input-Sanitization** für alle API-Endpunkte
-- **📝 Schema-Validation** mit DRF-Serializers
-- **🚫 SQL-Injection-Schutz** durch Django ORM
+### 📊 Backend Validation
+- **🏷️ Input Sanitization** for all API endpoints
+- **📝 Schema Validation** with DRF Serializers
+- **🚫 SQL Injection Protection** through Django ORM
 
-> 📜 **Weitere Details:** Siehe `docs/SECURITY.md` für umfassende Sicherheitsrichtlinien.
+> 📜 **More Details:** See `docs/SECURITY.md` for comprehensive security guidelines.
+
+## 🧪 Running Tests
+
+To run the test suite, first set the required environment variables:
+
+```bash
+export DJANGO_SECRET_KEY='a-long-and-random-secret-key'
+export DB_VENDOR='sqlite'
+export DJANGO_DEBUG='True'
+```
+
+Then, run the tests using the `manage.py` script:
+
+```bash
+python manage.py test
+```
 
 ## 🔧 Troubleshooting
 
-### 📷 QR-Code Probleme
+### 📷 QR Code Problems
 
-| Problem | Lösung |
+| Problem | Solution |
 |---------|--------|
-| 📥 **QR-Code Download fehlgeschlagen** | ✅ Erneut einloggen (JWT-Token erneuern)<br/>✅ Backend erreichbar? Netzwerkfehler? |
-| 🔍 **Scan führt zu 404** | ✅ Asset-Tag korrekt? Item existiert noch?<br/>✅ Backend läuft und ist erreichbar? |
-| 🖨️ **QR-Code drucken schlägt fehl** | ✅ Browser-Druckeinstellungen prüfen<br/>✅ PNG herunterladen und separat drucken |
+| 📥 **QR Code Download Failed** | ✅ Log in again (renew JWT token)<br/>✅ Backend reachable? Network error? |
+| 🔍 **Scan leads to 404** | ✅ Asset tag correct? Item still exists?<br/>✅ Backend running and reachable? |
+| 🖨️ **Printing QR Code Fails** | ✅ Check browser print settings<br/>✅ Download PNG and print separately |
 
-### 🐍 Backend-Probleme
+### 🐍 Backend Problems
 
-| Problem | Lösung |
+| Problem | Solution |
 |---------|--------|
-| 📦 **qrcode[pil] fehlt** | `pip install -r requirements.txt` ausführen |
-| 📊 **Migrationen fehlgeschlagen** | `python manage.py migrate --run-syncdb` |
-| 🔑 **Authentifizierung-Fehler** | `.env`-Datei prüfen, `DJANGO_SECRET_KEY` setzen |
-| 🐘 **PostgreSQL-Verbindung** | `POSTGRES_PASSWORD` in `.env` gesetzt? `DB_VENDOR=postgres`? |
-| 📁 **Encoding-Probleme** | `fix_charset_live.sh` ausführen (UTF-8 Fix) |
+| 📦 **qrcode[pil] missing** | Run `pip install -r requirements.txt` |
+| 📊 **Migrations Failed** | `python manage.py migrate --run-syncdb` |
+| 🔑 **Authentication Error** | Check `.env` file, set `DJANGO_SECRET_KEY` |
+| 🐘 **PostgreSQL Connection** | `POSTGRES_PASSWORD` set in `.env`? `DB_VENDOR=postgres`? |
+| 📁 **Encoding Problems** | Run `fix_charset_live.sh` (UTF-8 Fix) |
 
-### ⚛️ Frontend-Probleme
+### ⚛️ Frontend Problems
 
-| Problem | Lösung |
+| Problem | Solution |
 |---------|--------|
-| 📡 **API-Verbindung fehlgeschlagen** | Backend-Server läuft auf Port 8000? CORS konfiguriert? |
-| 🔄 **Build-Fehler** | `npm run typecheck` ausführen, Dependencies aktuell? |
-| 📏 **Routing-Probleme** | Browser-Cache leeren, Hard-Refresh (Ctrl+F5) |
-| 🍪 **Cookie-Authentifizierung** | `JWT_COOKIE_SECURE=0` in Dev, Cookies aktiviert? |
+| 📡 **API Connection Failed** | Backend server running on port 8000? CORS configured? |
+| 🔄 **Build Error** | Run `npm run typecheck`, dependencies up to date? |
+| 📏 **Routing Problems** | Clear browser cache, hard refresh (Ctrl+F5) |
+| 🍪 **Cookie Authentication** | `JWT_COOKIE_SECURE=0` in Dev, cookies enabled? |
 
 ## 🗺️ Roadmap
 
-### 🔜 **Kurzfristig (2025 Q1-Q2)**
-- 📸 **In-App QR-Scanner** mit Kamerazugriff (@yudiel/react-qr-scanner implementieren)
-- 📋 **Drag & Drop** für Listen-Management
-- 📥 **Bulk-Import** für CSV/Excel-Dateien
-- 🖼️ **Erweiterte Bildergalerie** mit Vollbild-Ansicht
-- 📊 **Statistik-Exporte** (PDF, Excel)
+### 🔜 **Short-Term (2025 Q1-Q2)**
+- 📸 **In-App QR Scanner** with camera access (@yudiel/react-qr-scanner implementation)
+- 📋 **Drag & Drop** for list management
+- 📥 **Bulk Import** for CSV/Excel files
+- 🖼️ **Enhanced Image Gallery** with full-screen view
+- 📊 **Statistics Exports** (PDF, Excel)
 
-### 🔝 **Mittelfristig (2025 Q2-Q3)**
-- 🧪 **Erweiterte Test-Suites** (pytest, Jest, Cypress E2E)
-- 🔄 **CI/CD-Pipeline** mit GitHub Actions
-- 📈 **Analytics-Dashboard** mit erweiterten Metriken und Charts
-- 📱 **PWA-Support** für Offline-Nutzung
-- 🔔 **Benachrichtigungssystem** für wichtige Events
+### 🔝 **Mid-Term (2025 Q2-Q3)**
+- 🧪 **Extended Test Suites** (pytest, Jest, Cypress E2E)
+- 🔄 **CI/CD Pipeline** with GitHub Actions
+- 📈 **Analytics Dashboard** with advanced metrics and charts
+- 📱 **PWA Support** for offline use
+- 🔔 **Notification System** for important events
 
-### 🔞 **Langfristig (2025 Q4+)**
-- 🔐 **SECRET_KEY-Rotation** und erweiterte Sicherheit
-- 🌐 **Multi-Tenant-Support** für Teams und Organisationen
-- ☁️ **Cloud-Storage** (S3/MinIO) für Medien mit automatischer Migration
-- 📄 **OpenAPI-Dokumentation** mit DRF Spectacular
-- 🔍 **Erweiterte Suchfunktion** (Elasticsearch/Meilisearch)
-- 🌍 **Multi-Language-Support** (i18n)
+### 🔞 **Long-Term (2025 Q4+)**
+- 🔐 **SECRET_KEY Rotation** and advanced security
+- 🌐 **Multi-Tenant Support** for teams and organizations
+- ☁️ **Cloud Storage** (S3/MinIO) for media with automatic migration
+- 📄 **OpenAPI Documentation** with DRF Spectacular
+- 🔍 **Advanced Search** (Elasticsearch/Meilisearch)
+- 🌍 **Multi-Language Support** (i18n)
 
-## 🤝 Beitragen
+## 🤝 Contributing
 
-Beiträge sind herzlich willkommen! 🎉
+Contributions are welcome! 🎉
 
 ### 📝 Contribution Guidelines
 
@@ -659,7 +655,7 @@ Beiträge sind herzlich willkommen! 🎉
    git checkout -b feature/awesome-feature
    ```
 
-2. **🧪 Tests ausführen**
+2. **🧪 Run Tests**
    ```bash
    # Backend
    python manage.py test
@@ -670,46 +666,57 @@ Beiträge sind herzlich willkommen! 🎉
    npm run build
    ```
 
-3. **✏️ Commit-Standards**
-   - 🌟 Verwendung von [Conventional Commits](https://conventionalcommits.org/)
-   - 🗺️ Klare, beschreibende Commit-Messages
-   - 📈 Ein Feature = Ein Commit (squash wenn nötig)
+3. **✏️ Commit Standards**
+   - 🌟 Use [Conventional Commits](https://conventionalcommits.org/)
+   - 🗺️ Clear, descriptive commit messages
+   - 📈 One feature = One commit (squash if necessary)
 
 4. **🚀 Pull Request**
-   - 📋 Detaillierte Beschreibung der Änderungen
-   - 🖼️ Screenshots bei UI-Änderungen
-   - ✅ Alle Tests bestehen
+   - 📋 Detailed description of changes
+   - 🖼️ Screenshots for UI changes
+   - ✅ All tests pass
 
 ### 🐛 Bug Reports & Feature Requests
 
-- **🐛 Bugs:** [Issues](https://github.com/your-repo/EmmaTresor/issues) mit "bug" Label
-- **✨ Features:** [Issues](https://github.com/your-repo/EmmaTresor/issues) mit "enhancement" Label
-- **💬 Diskussionen:** [GitHub Discussions](https://github.com/your-repo/EmmaTresor/discussions)
+- **🐛 Bugs:** [Issues](https://github.com/your-repo/EmmaTresor/issues) with "bug" label
+- **✨ Features:** [Issues](https://github.com/your-repo/EmmaTresor/issues) with "enhancement" label
+- **💬 Discussions:** [GitHub Discussions](https://github.com/your-repo/EmmaTresor/discussions)
 
-### 🚀 Entwicklungsstandards
+### 🚀 Development Standards
 
 - **🐍 Backend:** Django Best Practices, PEP 8
 - **⚛️ Frontend:** TypeScript strict mode, ESLint + Prettier
-- **📄 Dokumentation:** Inline-Kommentare + README-Updates
-- **🔐 Sicherheit:** Keine Secrets in Commits!
+- **📄 Documentation:** Inline comments + README updates
+- **🔐 Security:** No secrets in commits!
 
 ---
 
-## 📄 Lizenz
+## 📄 License
 
-Dieses Projekt steht unter der **GNU General Public License Version 3.0** (GPL-v3).
+This project is licensed under the **GNU General Public License Version 3.0** (GPL-v3).
 
 © 2024 EmmaTresor Contributors
 
-**📜 [Vollständiger Lizenztext](LICENSE)**
+**📜 [Full License Text](LICENSE)**
 
 ---
 
 <div align="center">
   <p>
-    <strong>🚀 Erstellt mit ❤️ von der EmmaTresor Community</strong>
+    <strong>🚀 Created with ❤️ by the EmmaTresor Community</strong>
   </p>
   <p>
-    <a href="#-emmatresor---modern-inventory-management">⬆️ Zurück nach oben</a>
+    <a href="#-emmatresor---modern-inventory-management">⬆️ Back to Top</a>
   </p>
 </div>
+
+---
+
+## 📜 Documentation
+
+This repository is fully documented with docstrings. Every public function, method, and class includes a description of its purpose, parameters, and return value.
+
+- **Backend (Python)**: Google Style Python Docstrings
+- **Frontend (TypeScript)**: JSDoc
+
+This documentation serves as a reference for developers and is intended to make it easier to get started with the codebase.

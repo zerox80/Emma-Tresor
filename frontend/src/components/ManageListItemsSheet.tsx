@@ -28,6 +28,11 @@ export interface ManageListItemsSheetProps {
   onSave: (itemIds: number[]) => Promise<void>;
 }
 
+/**
+ * A sheet for managing the items in a list.
+ * @param {ManageListItemsSheetProps} props The props for the component.
+ * @returns {JSX.Element | null} The rendered component.
+ */
 const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
   open,
   onClose,
@@ -179,9 +184,9 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-5 sm:py-8 lg:px-8 lg:py-12">
       <div
-        className="absolute inset-0 bg-slate-900/40"
+        className="absolute inset-0 bg-slate-900/45"
         aria-hidden="true"
         onClick={() => {
           if (!saving) {
@@ -192,9 +197,10 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
       <section
         role="dialog"
         aria-modal="true"
-        className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-900/10"
+        className="relative flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-[0_36px_70px_-30px_rgba(15,23,42,0.4)] ring-1 ring-slate-900/10"
+        style={{ maxHeight: 'min(92vh, 800px)' }}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-8 py-6">
+        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 px-5 py-5 backdrop-blur sm:px-8 sm:py-6">
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Liste bearbeiten</p>
             <h2 className="text-2xl font-semibold text-slate-900">{listName}</h2>
@@ -215,9 +221,8 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
             ✕
           </button>
         </header>
-
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="space-y-5 border-b border-slate-200 px-8 py-6">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="space-y-5 border-b border-slate-200 px-5 py-5 sm:px-8 sm:py-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="w-full lg:max-w-lg">
                 <label htmlFor="manage-items-search" className="block text-sm font-medium text-slate-700">
@@ -296,9 +301,7 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
               </div>
             )}
           </div>
-
-          <div className="flex-1 overflow-hidden">
-            <div className="h-full overflow-y-auto px-8 py-6">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8 sm:py-6">
               {items.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
                   Noch keine Gegenstände erfasst. Lege zunächst Einträge im Inventar an.
@@ -312,7 +315,7 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
               )}
 
               {filteredCount > 0 && (
-                <ul className="grid gap-3 lg:grid-cols-2">
+                <ul className="grid gap-3 md:grid-cols-2">
                   {filteredItems.map((item: ManageableItem) => {
                     const checked = localSelectedIds.has(item.id);
                     const isUnassigned = item.assignmentCount === 0;
@@ -359,17 +362,23 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
                   })}
                 </ul>
               )}
-            </div>
           </div>
         </div>
 
-        <footer className="border-t border-slate-200 bg-white px-8 py-6">
+        <footer className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-5 py-5 backdrop-blur sm:px-8 sm:py-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="text-sm text-slate-500">
               {summaryText}
             </div>
-            <div className="flex items-center gap-3">
-              <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={saving}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                disabled={saving}
+                className="w-full sm:w-auto"
+              >
                 Abbrechen
               </Button>
               <Button
@@ -379,6 +388,7 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
                 onClick={handleSave}
                 loading={saving}
                 disabled={saving || !hasChanges}
+                className="w-full sm:w-auto"
               >
                 Änderungen speichern
               </Button>

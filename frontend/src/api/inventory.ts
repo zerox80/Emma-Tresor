@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Item, ItemImage, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory';
+import type { Item, ItemChangeLog, ItemImage, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory';
 
 export interface FetchItemsOptions {
   query?: string;
@@ -98,6 +98,32 @@ export const fetchAllItems = async (query?: string): Promise<Item[]> => {
   return collected;
 };
 
+export interface ExportItemsOptions extends FetchItemsOptions {}
+
+/**
+ * Exports the current inventory selection as a CSV file.
+ *
+ * @param {ExportItemsOptions} [options={}] - Filters to apply before exporting.
+ * @returns {Promise<Blob>} A promise that resolves to the CSV blob.
+ */
+export const exportItems = async ({
+  query,
+  tags,
+  locations,
+  ordering,
+}: ExportItemsOptions = {}): Promise<Blob> => {
+  const params: Record<string, string> = {};
+  if (query) params.search = query;
+  if (tags && tags.length > 0) params.tags = tags.join(',');
+  if (locations && locations.length > 0) params.location = locations.join(',');
+  if (ordering) params.ordering = ordering;
+  const response = await apiClient.get<Blob>('/items/export/', {
+    params,
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
 /**
  * Fetches all lists from the API.
  *
@@ -106,6 +132,19 @@ export const fetchAllItems = async (query?: string): Promise<Item[]> => {
 export const fetchLists = async (): Promise<ItemList[]> => {
   const { data } = await apiClient.get<ItemList[]>('/lists/');
   return data;
+};
+
+/**
+ * Exports all items belonging to a specific list.
+ *
+ * @param {number} listId - The list to export.
+ * @returns {Promise<Blob>} A promise that resolves to the CSV blob.
+ */
+export const exportListItems = async (listId: number): Promise<Blob> => {
+  const response = await apiClient.get<Blob>(`/lists/${listId}/export/`, {
+    responseType: 'blob',
+  });
+  return response.data;
 };
 
 /**
@@ -250,5 +289,16 @@ export const uploadItemImage = async (itemId: number, file: File): Promise<ItemI
 
   const { data } = await apiClient.post<ItemImage>('/item-images/', formData);
 
+  return data;
+};
+
+/**
+ * Fetches the change history for an item.
+ *
+ * @param {number} itemId - The ID of the item to fetch the change history for.
+ * @returns {Promise<ItemChangeLog[]>} A promise that resolves to the change history.
+ */
+export const fetchItemChangelog = async (itemId: number): Promise<ItemChangeLog[]> => {
+  const { data } = await apiClient.get<ItemChangeLog[]>(`/items/${itemId}/changelog/`);
   return data;
 };
