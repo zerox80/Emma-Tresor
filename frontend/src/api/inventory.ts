@@ -1,12 +1,21 @@
-import apiClient from './client';
-import type { Item, ItemChangeLog, ItemImage, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory';
+import apiClient from './client.js';
+import type { Item, ItemChangeLog, ItemImage, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory.js';
 
+/**
+ * Options for fetching items.
+ */
 export interface FetchItemsOptions {
+  /** A search query to filter items by. */
   query?: string;
+  /** The page number to fetch. */
   page?: number;
+  /** The number of items to fetch per page. */
   pageSize?: number;
+  /** An array of tag IDs to filter items by. */
   tags?: number[];
+  /** An array of location IDs to filter items by. */
   locations?: number[];
+  /** The field to order the items by. */
   ordering?: string;
 }
 
@@ -57,7 +66,11 @@ export const fetchItemByAssetTag = async (assetTag: string): Promise<Item> => {
   return data;
 };
 
+/**
+ * Options for fetching an item's QR code.
+ */
 export interface FetchItemQrCodeOptions {
+  /** If true, the QR code will be downloaded as a file. */
   download?: boolean;
 }
 
@@ -98,6 +111,9 @@ export const fetchAllItems = async (query?: string): Promise<Item[]> => {
   return collected;
 };
 
+/**
+ * Options for exporting items. Extends FetchItemsOptions to allow filtering.
+ */
 export interface ExportItemsOptions extends FetchItemsOptions {}
 
 /**

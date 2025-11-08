@@ -1,18 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { AxiosError } from 'axios';
 
-import Button from '../components/common/Button';
-import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
-import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory';
-import type { Item, ItemList } from '../types/inventory';
-
-import React, { useEffect, useMemo, useState } from 'react';
-import type { AxiosError } from 'axios';
-
-import Button from '../components/common/Button';
-import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
-import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory';
-import type { Item, ItemList } from '../types/inventory';
+import Button from '../components/common/Button.js';
+import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet.js';
+import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory.js';
+import type { Item, ItemList } from '../types/inventory.js';
 
 /**
  * Extends the base `ItemList` interface to include the resolved `Item` objects.
@@ -70,12 +62,12 @@ const ListsPage: React.FC = () => {
           return;
         }
         setAllItems(items);
-        const itemMap = new Map<number, Item>(items.map((item) => [item.id, item]));
-        const mappedLists: ListWithItems[] = listsResponse.map((list): ListWithItems => ({
+        const itemMap = new Map<number, Item>(items.map((item: Item) => [item.id, item]));
+        const mappedLists: ListWithItems[] = listsResponse.map((list: ItemList): ListWithItems => ({
           ...list,
           resolvedItems: list.items
-            .map((itemId) => itemMap.get(itemId))
-            .filter((entry): entry is Item => Boolean(entry)),
+            .map((itemId: number) => itemMap.get(itemId))
+            .filter((entry?: Item): entry is Item => Boolean(entry)),
         }));
         setLists(mappedLists);
       } catch (err) {
@@ -110,12 +102,12 @@ const ListsPage: React.FC = () => {
         fetchAllItems(),
       ]);
       setAllItems(items);
-      const itemMap = new Map<number, Item>(items.map((item) => [item.id, item]));
-      const mappedLists: ListWithItems[] = listsResponse.map((list): ListWithItems => ({
+      const itemMap = new Map<number, Item>(items.map((item: Item) => [item.id, item]));
+      const mappedLists: ListWithItems[] = listsResponse.map((list: ItemList): ListWithItems => ({
         ...list,
         resolvedItems: list.items
-          .map((itemId) => itemMap.get(itemId))
-          .filter((entry): entry is Item => Boolean(entry)),
+          .map((itemId: number) => itemMap.get(itemId))
+          .filter((entry?: Item): entry is Item => Boolean(entry)),
       }));
       setLists(mappedLists);
       setError(null);
@@ -144,7 +136,7 @@ const ListsPage: React.FC = () => {
         ...newList,
         resolvedItems: [],
       };
-      setLists((prev: ListWithItems[]) => [...prev, listWithItems]);
+      setLists((prev) => [...prev, listWithItems]);
       setShowCreateModal(false);
       setNewListName('');
     } catch (err) {
@@ -167,7 +159,7 @@ const ListsPage: React.FC = () => {
    * Memoized map for quick lookup of item objects by their ID.
    * @type {Map<number, Item>}
    */
-  const itemMap = useMemo(() => new Map<number, Item>(allItems.map((item) => [item.id, item])), [allItems]);
+  const itemMap = useMemo(() => new Map<number, Item>(allItems.map((item: Item) => [item.id, item])), [allItems]);
 
   /**
    * Memoized list of all items, augmented with their assignment count to various lists.
@@ -176,13 +168,13 @@ const ListsPage: React.FC = () => {
    */
   const manageableItems = useMemo<ManageableItem[]>(() => {
     const assignmentCountMap = new Map<number, number>();
-    lists.forEach((list) => {
-      list.items.forEach((itemId) => {
+    lists.forEach((list: ListWithItems) => {
+      list.items.forEach((itemId: number) => {
         assignmentCountMap.set(itemId, (assignmentCountMap.get(itemId) ?? 0) + 1);
       });
     });
 
-    return allItems.map((item) => ({
+    return allItems.map((item: Item) => ({
       ...item,
       assignmentCount: assignmentCountMap.get(item.id) ?? 0,
     }));
@@ -227,10 +219,10 @@ const ListsPage: React.FC = () => {
     try {
       const updated = await updateListItems(manageListTarget.id, itemIds);
       const resolvedItems = updated.items
-        .map((itemId) => itemMap.get(itemId))
-        .filter((entry): entry is Item => Boolean(entry));
+        .map((itemId: number) => itemMap.get(itemId))
+        .filter((entry?: Item): entry is Item => Boolean(entry));
 
-      setLists((prev) =>
+      setLists((prev: ListWithItems[]) =>
         prev.map((list: ListWithItems) =>
           list.id === updated.id
             ? {
@@ -282,7 +274,7 @@ const ListsPage: React.FC = () => {
     setDeletingListId(listId);
     try {
       await deleteList(listId);
-      setLists((prev) => prev.filter((list) => list.id !== listId));
+      setLists((prev: ListWithItems[]) => prev.filter((list: ListWithItems) => list.id !== listId));
       if (manageListTarget?.id === listId) {
         setManageListTarget(null);
         setManageError(null);
@@ -369,7 +361,7 @@ const ListsPage: React.FC = () => {
             </div>
           )}
 
-          {lists.map((list) => {
+          {lists.map((list: ListWithItems) => {
             const itemCount = list.items.length;
             const itemCountLabel = itemCount === 1 ? '1 Item' : `${itemCount} Items`;
             return (
@@ -415,7 +407,7 @@ const ListsPage: React.FC = () => {
                 </header>
 
                 <ul className="space-y-3 text-sm text-slate-700">
-                  {list.resolvedItems.slice(0, 6).map((item) => (
+                  {list.resolvedItems.slice(0, 6).map((item: Item) => (
                     <li
                       key={item.id}
                       className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm"
@@ -487,11 +479,11 @@ const ListsPage: React.FC = () => {
                   id="list-name"
                   type="text"
                   value={newListName}
-                  onChange={(e) => setNewListName(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewListName(e.target.value)}
                   placeholder="z.B. Umzug Küche, Werkzeuge, …"
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
                   disabled={isCreating}
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === 'Enter') {
                       void handleCreateList();
                     } else if (e.key === 'Escape') {

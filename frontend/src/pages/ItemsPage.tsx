@@ -2,15 +2,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 
-import Button from '../components/common/Button';
-import AddItemDialog from '../components/AddItemDialog';
-import ItemDetailView from '../components/ItemDetailView';
-import AssignToListSheet from '../components/AssignToListSheet';
-import StatisticsCards from '../components/items/StatisticsCards';
-import FilterSection from '../components/items/FilterSection';
-import ItemsGrid from '../components/items/ItemsGrid';
-import ItemsTable from '../components/items/ItemsTable';
-import SelectionToolbar from '../components/items/SelectionToolbar';
+import Button from '../components/common/Button.js';
+import AddItemDialog from '../components/AddItemDialog.js';
+import ItemDetailView from '../components/ItemDetailView.js';
+import AssignToListSheet from '../components/AssignToListSheet.js';
+import StatisticsCards from '../components/items/StatisticsCards.js';
+import FilterSection from '../components/items/FilterSection.js';
+import ItemsGrid from '../components/items/ItemsGrid.js';
+import ItemsTable from '../components/items/ItemsTable.js';
+import SelectionToolbar from '../components/items/SelectionToolbar.js';
 import {
   createList,
   createLocation,
@@ -23,9 +23,9 @@ import {
   deleteItem,
   exportItems,
   updateListItems,
-} from '../api/inventory';
-import type { Item, ItemList, Location, PaginatedResponse, Tag } from '../types/inventory';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+} from '../api/inventory.js';
+import type { Item, ItemList, Location, PaginatedResponse, Tag } from '../types/inventory.js';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 
 /**
  * The number of items to display per page in the inventory list.
@@ -160,13 +160,13 @@ const ItemsPage: React.FC = () => {
    * Memoized map for quick lookup of tag names by their ID.
    * @type {Record<number, string>}
    */
-  const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
+  const tagMap = useMemo(() => Object.fromEntries(tags.map((tag: Tag) => [tag.id, tag.name])), [tags]);
   /**
    * Memoized map for quick lookup of location names by their ID.
    * @type {Record<number, string>}
    */
   const locationMap = useMemo(
-    () => Object.fromEntries(locations.map((location) => [location.id, location.name])),
+    () => Object.fromEntries(locations.map((location: Location) => [location.id, location.name])),
     [locations],
   );
 
@@ -224,7 +224,7 @@ const ItemsPage: React.FC = () => {
       });
       setItems(response.results);
       setPagination(response);
-      setItemsVersion((prev) => prev + 1);
+      setItemsVersion((prev: number) => prev + 1);
     } catch (error) {
       setItemsError('Deine Gegenstände konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.');
       setPendingDetailNavigation(null);
@@ -296,13 +296,14 @@ const ItemsPage: React.FC = () => {
     }
   }, [assignSheetOpen]);
 
+  const selectedItemsSet = useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
   const areAllSelectedOnPage = items.length > 0 && items.every((item: Item) => selectedItemsSet.has(item.id));
 
   /**
    * Toggles the selection mode on or off. Clears selection if exiting selection mode.
    */
   const handleToggleSelectionMode = useCallback(() => {
-    setSelectionMode((prev) => {
+    setSelectionMode((prev: boolean) => {
       const next = !prev;
       if (!next) {
         setSelectedItemIds([]);
@@ -317,7 +318,7 @@ const ItemsPage: React.FC = () => {
    */
   const handleToggleItemSelected = useCallback((itemId: number) => {
     setSelectedItemIds((prev: number[]) =>
-      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId],
+      prev.includes(itemId) ? prev.filter((id: number) => id !== itemId) : [...prev, itemId],
     );
   }, []);
 
@@ -327,7 +328,7 @@ const ItemsPage: React.FC = () => {
    */
   const handleSelectAllCurrentPage = useCallback(() => {
     if (areAllSelectedOnPage) {
-      setSelectedItemIds((prev: number[]) => prev.filter((id) => !items.some((item) => item.id === id)));
+      setSelectedItemIds((prev: number[]) => prev.filter((id: number) => !items.some((item: Item) => item.id === id)));
       return;
     }
     const currentItemIds = items.map((item: Item) => item.id);
@@ -383,7 +384,7 @@ const ItemsPage: React.FC = () => {
         selectedItemIds.forEach((id) => mergedIds.add(id));
         const updated = await updateListItems(listId, Array.from(mergedIds));
         setLists((prevLists: ItemList[]) => {
-          const next = prevLists.some((list) => list.id === updated.id)
+          const next = prevLists.some((list: ItemList) => list.id === updated.id)
             ? prevLists.map((list: ItemList) => (list.id === updated.id ? updated : list))
             : [...prevLists, updated];
           return sortItemLists(next);
@@ -498,7 +499,7 @@ const ItemsPage: React.FC = () => {
    */
   const handleCreateTag = useCallback(async (name: string) => {
     const newTag = await createTag(name);
-    setTags((prev) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
+    setTags((prev: Tag[]) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
     return newTag;
   }, []);
 
@@ -509,7 +510,7 @@ const ItemsPage: React.FC = () => {
    */
   const handleCreateLocation = useCallback(async (name: string) => {
     const newLocation = await createLocation(name);
-    setLocations((prev) => [...prev, newLocation].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
+    setLocations((prev: Location[]) => [...prev, newLocation].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
     return newLocation;
   }, []);
 
@@ -581,14 +582,14 @@ const ItemsPage: React.FC = () => {
   const handleOpenItemDetails = useCallback(
     (itemId: number, options?: { fromNavigation?: 'next' | 'previous' }) => {
       setDetailItemId(itemId);
-      const cachedItem = items.find((currentItem) => currentItem.id === itemId) ?? null;
+      const cachedItem = items.find((currentItem: Item) => currentItem.id === itemId) ?? null;
       setDetailItem(cachedItem);
 
       const loadPromise = loadItemDetails(itemId);
 
       if (options?.fromNavigation) {
         void loadPromise.finally(() => {
-          setDetailNavigationDirection((current) =>
+          setDetailNavigationDirection((current: 'next' | 'previous' | null) =>
             current === options.fromNavigation ? null : current,
           );
         });
@@ -756,7 +757,7 @@ const ItemsPage: React.FC = () => {
           navStartItemsVersionRef.current = itemsVersion;
           setPendingDetailNavigation('next');
           setDetailNavigationTarget(null);
-          setPage((prev) => prev + 1);
+          setPage((prev: number) => prev + 1);
         }
         return;
       }
@@ -772,7 +773,7 @@ const ItemsPage: React.FC = () => {
           navStartItemsVersionRef.current = itemsVersion;
           setPendingDetailNavigation('previous');
           setDetailNavigationTarget(null);
-          setPage((prev) => Math.max(prev - 1, 1));
+          setPage((prev: number) => Math.max(prev - 1, 1));
         }
       }
     },
