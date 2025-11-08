@@ -3,9 +3,14 @@ from django.core.files.storage import FileSystemStorage
 
 
 class PrivateMediaStorage(FileSystemStorage):
-    """
-    A file storage backend that stores files in a private directory, outside of the public MEDIA_ROOT.
-    This is used for files that should not be publicly accessible via a URL.
+    """A file storage backend for private media.
+
+    This storage backend stores files in a directory that is not publicly
+    accessible via a URL. This is useful for sensitive files, such as
+    receipts or other private documents.
+
+    The location of the private media directory is configured by the
+    `PRIVATE_MEDIA_ROOT` setting.
     """
 
     def __init__(self, *args, **kwargs):

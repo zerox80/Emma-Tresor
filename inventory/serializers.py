@@ -14,8 +14,10 @@ User = get_user_model()
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user registration.
+    """Serializer for user registration.
+
+    This serializer handles the creation of new users. It validates that the
+    passwords match and that the email address is not already in use.
     """
     email = serializers.EmailField(
         required=True,
@@ -82,8 +84,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """
-    Serializer for tags.
+    """Serializer for tags.
+
+    This serializer handles the creation and updating of tags. It ensures
+    that tag names are unique for each user.
     """
     class Meta:
         model = Tag
@@ -153,8 +157,10 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for locations.
+    """Serializer for locations.
+
+    This serializer handles the creation and updating of locations. It
+    ensures that location names are unique for each user.
     """
     class Meta:
         model = Location
@@ -226,8 +232,11 @@ class LocationSerializer(serializers.ModelSerializer):
 
 
 class ItemImageSerializer(serializers.ModelSerializer):
-    """
-    Serializer for item images.
+    """Serializer for item images.
+
+    This serializer handles the creation and updating of item images. It
+    provides download and preview URLs for the images, as well as
+    information about the filename, content type, and size.
     """
     download_url = serializers.SerializerMethodField()
     preview_url = serializers.SerializerMethodField()
@@ -462,8 +471,11 @@ class ItemImageSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    """
-    Serializer for items.
+    """Serializer for items.
+
+    This serializer handles the creation and updating of items. It ensures
+    that the user can only associate their own tags and locations with an
+    item.
     """
     tags = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
@@ -694,8 +706,11 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class ItemListSerializer(serializers.ModelSerializer):
-    """
-    Serializer for item lists.
+    """Serializer for item lists.
+
+    This serializer handles the creation and updating of item lists. It
+    ensures that list names are unique for each user and that users can
+    only add their own items to a list.
     """
     items = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Item.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
@@ -824,8 +839,10 @@ class ItemListSerializer(serializers.ModelSerializer):
 
 
 class ItemChangeLogSerializer(serializers.ModelSerializer):
-    """
-    Serializer for item change logs.
+    """Serializer for item change logs.
+
+    This serializer is used to display the change history of an item. It
+    resolves the location ID to a human-readable name.
     """
     user_username = serializers.CharField(source='user.username', read_only=True, default=None)
     action_display = serializers.CharField(source='get_action_display', read_only=True)

@@ -10,9 +10,28 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 
 
 class CookieJWTAuthentication(JWTAuthentication):
-    """Authenticate JWT tokens from cookies with header fallback."""
+    """Authenticate JWT tokens from cookies with header fallback.
 
-    def authenticate(self, request: Request) -> authentication.Authenticator | None:
+    This authentication class first attempts to authenticate using the standard
+    `Authorization` header. If no token is found in the header, it falls
+    back to checking for an access token in a cookie.
+
+    The name of the cookie is configured by the `JWT_ACCESS_COOKIE_NAME`
+    setting.
+    """
+
+    def authenticate(
+        self, request: Request
+    ) -> tuple[authentication.User, str] | None:
+        """Authenticate the request.
+
+        Args:
+            request: The request object.
+
+        Returns:
+            A tuple of (user, token) if authentication is successful, or
+            None otherwise.
+        """
         header = self.get_header(request)
         if header is not None:
             return super().authenticate(request)
