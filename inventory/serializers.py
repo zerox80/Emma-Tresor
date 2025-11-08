@@ -18,6 +18,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     This serializer handles the creation of new users. It validates that the
     passwords match and that the email address is not already in use.
+    It also ensures password strength requirements are met.
     """
     email = serializers.EmailField(
         required=True,
@@ -88,7 +89,8 @@ class TagSerializer(serializers.ModelSerializer):
     """Serializer for tags.
 
     This serializer handles the creation and updating of tags. It ensures
-    that tag names are unique for each user.
+    that tag names are unique for each user and validates user
+    permissions for tag operations.
     """
     class Meta:
         """Scope tag fields exposed via the serializer."""
@@ -162,7 +164,8 @@ class LocationSerializer(serializers.ModelSerializer):
     """Serializer for locations.
 
     This serializer handles the creation and updating of locations. It
-    ensures that location names are unique for each user.
+    ensures that location names are unique for each user and validates
+    user permissions for location operations.
     """
     class Meta:
         """Expose location identifiers and timestamps."""
@@ -715,7 +718,8 @@ class ItemListSerializer(serializers.ModelSerializer):
 
     This serializer handles the creation and updating of item lists. It
     ensures that list names are unique for each user and that users can
-    only add their own items to a list.
+    only add their own items to a list. It validates user
+    permissions and maintains proper item-list relationships.
     """
     items = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Item.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
@@ -848,7 +852,9 @@ class ItemChangeLogSerializer(serializers.ModelSerializer):
     """Serializer for item change logs.
 
     This serializer is used to display the change history of an item. It
-    resolves the location ID to a human-readable name.
+    resolves the location ID to a human-readable name and formats
+    change data for better readability. It includes caching for
+    efficient location name resolution.
     """
     user_username = serializers.CharField(source='user.username', read_only=True, default=None)
     action_display = serializers.CharField(source='get_action_display', read_only=True)

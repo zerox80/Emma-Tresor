@@ -32,6 +32,9 @@ def _load_env_file() -> None:
     This function reads a .env file in the project's base directory and
     loads the key-value pairs into the environment. It does not
     overwrite existing environment variables.
+    
+    The .env file should contain key=value pairs, one per line.
+    Lines starting with # are treated as comments and ignored.
     """
     env_file = BASE_DIR / '.env'
     if not env_file.exists():
@@ -58,17 +61,19 @@ def _env_bool(value: str | None, *, default: bool = False) -> bool:
     """Converts a string to a boolean.
 
     Args:
-        value: The string to convert.
+        value: The string to convert. Can be None.
         default: The default value to return if the string is None.
 
     Returns:
-        The boolean representation of the string.
+        bool: The boolean representation of the string. Returns True for
+        '1', 'true', 'yes', 'on' (case insensitive), False otherwise.
     """
     if value is None:
         return default
     return value.lower() in {'1', 'true', 'yes', 'on'}
 
 
+# Load environment variables from .env file
 _load_env_file()
 
 # Detect test environment to relax certain security redirects during tests
@@ -80,12 +85,13 @@ def _env_list(key: str, *, default: str = '') -> list[str]:
     """Converts a comma-separated string to a list of strings.
 
     Args:
-        key: The name of the environment variable.
+        key: The name of the environment variable to read.
         default: The default value to use if the environment variable is
             not set.
 
     Returns:
-        A list of strings.
+        list[str]: A list of strings with whitespace trimmed from each item.
+        Empty items are filtered out.
     """
     value = os.environ.get(key)
     if not value:
@@ -94,14 +100,15 @@ def _env_list(key: str, *, default: str = '') -> list[str]:
 
 
 def _https_host_allowed(hostname: str, allowed_hosts: list[str]) -> bool:
-    """Checks if a hostname is allowed.
+    """Checks if a hostname is allowed based on a list of allowed host patterns.
 
     Args:
         hostname: The hostname to check.
-        allowed_hosts: A list of allowed hostnames.
+        allowed_hosts: A list of allowed hostnames or patterns. Patterns can
+            include wildcards (*) or domain suffixes starting with a dot.
 
     Returns:
-        True if the hostname is allowed, False otherwise.
+        bool: True if the hostname is allowed, False otherwise.
     """
     if not allowed_hosts:
         return False
@@ -124,13 +131,16 @@ def _validate_https_url(
     allow_local_http: bool = True,
     allowed_https_hosts: list[str] | None = None,
 ) -> None:
-    """Validates that a URL is a valid HTTPS URL.
+    """Validates that a URL is a valid HTTP/HTTPS URL with proper security constraints.
 
     Args:
         value: The URL to validate.
-        setting_name: The name of the setting that the URL is for.
-        allow_local_http: Whether to allow HTTP for localhost.
-        allowed_https_hosts: A list of allowed HTTPS hosts.
+        setting_name: The name of the setting that the URL is for, used in error messages.
+        allow_local_http: Whether to allow HTTP for localhost/127.0.0.1.
+        allowed_https_hosts: A list of allowed HTTPS hosts for additional validation.
+
+    Raises:
+        ImproperlyConfigured: If the URL is invalid or doesn't meet security requirements.
     """
     parsed = urlparse(value)
     if not parsed.scheme or not parsed.netloc:

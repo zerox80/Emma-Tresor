@@ -3,6 +3,7 @@
 import logging
 from django.utils.deprecation import MiddlewareMixin
 
+# Security logger for logging security-related events
 security_logger = logging.getLogger('security')
 
 
@@ -15,15 +16,14 @@ class SecurityEventLoggingMiddleware(MiddlewareMixin):
     """
     
     def process_response(self, request, response):
-        """
-        Logs security events based on the response status code.
+        """Logs security events based on the response status code.
 
         Args:
-            request (HttpRequest): The incoming request.
-            response (HttpResponse): The outgoing response.
+            request (HttpRequest): The incoming request object.
+            response (HttpResponse): The outgoing response object.
 
         Returns:
-            HttpResponse: The original response.
+            HttpResponse: The original response, unchanged.
         """
         status_code = response.status_code
         
@@ -64,14 +64,13 @@ class SecurityEventLoggingMiddleware(MiddlewareMixin):
         return response
     
     def _get_client_ip(self, request):
-        """
-        Extracts the client's IP address from the request, considering proxy headers.
+        """Extracts the client's IP address from the request, considering proxy headers.
 
         Args:
-            request (HttpRequest): The incoming request.
+            request (HttpRequest): The incoming request object.
 
         Returns:
-            str: The client's IP address.
+            str: The client's IP address, or 'unknown' if it cannot be determined.
         """
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:

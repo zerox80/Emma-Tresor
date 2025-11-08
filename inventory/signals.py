@@ -22,8 +22,11 @@ _users_pending_deletion_lock = Lock()
 
 
 def _is_migrating() -> bool:
-    """
-    Checks if Django is currently running migrations.
+    """Checks if Django is currently running migrations.
+
+    This function determines if Django is in the process of running
+    database migrations by checking the migration plan. This is used
+    to prevent signal handlers from executing during migrations.
 
     Returns:
         bool: True if migrations are running, False otherwise.
@@ -38,8 +41,7 @@ def _is_migrating() -> bool:
 
 
 def _safe_signal_handler(func):
-    """
-    Decorator to make signal handlers migration-safe.
+    """Decorator to make signal handlers migration-safe.
 
     This decorator ensures that the decorated signal handler function is
     not executed during migrations or if the ItemChangeLog table is not
@@ -50,7 +52,7 @@ def _safe_signal_handler(func):
         func (callable): The signal handler function to wrap.
 
     Returns:
-        callable: The wrapped function.
+        callable: The wrapped function with migration safety and error handling.
     """
     def wrapper(*args, **kwargs):
         """Wrap a signal handler to skip migrations and swallow safe errors.
@@ -91,6 +93,10 @@ def _safe_signal_handler(func):
 class ItemSnapshot:
     """Represents a snapshot of a single field change for an item.
 
+    This dataclass captures the state of a single field before and
+    after a change, enabling detailed change tracking for audit
+    purposes.
+
     Attributes:
         field (str): The name of the field that was changed.
         old_value (Any): The value of the field before the change.
@@ -112,14 +118,17 @@ AUDITED_FIELDS: tuple[str, ...] = (
 
 
 def _format_value(value: Any) -> Any:
-    """
-    Formats a value for serialization in the change log.
+    """Formats a value for serialization in the change log.
+
+    This function prepares values for JSON serialization by converting
+    complex objects to their primitive representations. It handles
+    various data types including models, iterables, and primitives.
 
     Args:
-        value: The value to format.
+        value: The value to format for serialization.
 
     Returns:
-        The formatted value.
+        Any: The formatted value suitable for JSON serialization.
     """
     if isinstance(value, (int, float, str)) or value is None:
         return value
@@ -131,15 +140,18 @@ def _format_value(value: Any) -> Any:
 
 
 def _capture_changes(previous: Item, current: Item) -> list[ItemSnapshot]:
-    """
-    Captures the changes between two versions of an item.
+    """Captures the changes between two versions of an item.
+
+    This function compares two item instances and creates a list of
+    ItemSnapshot objects for each field that has changed. Only fields
+    in the AUDITED_FIELDS tuple are tracked.
 
     Args:
         previous: The previous state of the item.
         current: The current state of the item.
 
     Returns:
-        A list of ItemSnapshot objects representing the changes.
+        list[ItemSnapshot]: A list of ItemSnapshot objects representing the changes.
     """
     diffs: list[ItemSnapshot] = []
     for field in AUDITED_FIELDS:
@@ -151,14 +163,18 @@ def _capture_changes(previous: Item, current: Item) -> list[ItemSnapshot]:
 
 
 def _resolve_actor(instance: Item) -> User | None:
-    """
-    Resolves the user responsible for a change.
+    """Resolves the user responsible for a change.
+
+    This function determines which user initiated a change to an item.
+    It handles the special case where a user is being deleted
+    by checking a global set of users pending deletion.
 
     Args:
-        instance: The item instance.
+        instance: The item instance to resolve the actor for.
 
     Returns:
-        The user responsible for the change, or None if the user is being deleted.
+        User | None: The user responsible for the change, or None if
+            the user is being deleted.
     """
     owner = getattr(instance, 'owner', None)
     if owner is not None:

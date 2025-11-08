@@ -42,11 +42,14 @@ User = get_user_model()
 
 
 def _coerce_bool(value):
-    """
-    Coerces a value to a boolean.
+    """Coerces a value to a boolean.
+
+    This function converts various input types to boolean values,
+    handling strings, booleans, and other types with sensible
+    defaults.
 
     Args:
-        value: The value to coerce.
+        value: The value to coerce to a boolean.
 
     Returns:
         bool: The coerced boolean value.
@@ -59,14 +62,16 @@ def _coerce_bool(value):
 
 
 def _build_cookie_options(path: str):
-    """
-    Builds a dictionary of options for setting a cookie.
+    """Builds a dictionary of options for setting a cookie.
+
+    This function creates a dictionary of cookie options based on
+    Django settings, including security flags, domain, and path.
 
     Args:
         path (str): The path for the cookie.
 
     Returns:
-        dict: A dictionary of cookie options.
+        dict: A dictionary of cookie options for Django's set_cookie method.
     """
     options = {
         'httponly': settings.JWT_COOKIE_HTTPONLY,
@@ -174,14 +179,17 @@ ITEM_EXPORT_HEADERS = [
 
 
 def _format_decimal(value):
-    """
-    Formats a decimal value as a string with two decimal places.
+    """Formats a decimal value as a string with two decimal places.
+
+    This function formats decimal values for CSV export, ensuring
+    consistent decimal representation for monetary values.
 
     Args:
         value (Decimal): The decimal value to format.
 
     Returns:
-        str: The formatted string, or an empty string if the value is None.
+        str: The formatted string with two decimal places, or an empty
+            string if the value is None.
     """
     if value is None:
         return ''
@@ -189,14 +197,17 @@ def _format_decimal(value):
 
 
 def _format_date(value):
-    """
-    Formats a date object as an ISO 8601 string.
+    """Formats a date object as an ISO 8601 string.
+
+    This function formats date objects for CSV export, ensuring
+    consistent date representation across the application.
 
     Args:
         value (date): The date object to format.
 
     Returns:
-        str: The formatted string, or an empty string if the value is None.
+        str: The ISO 8601 formatted date string, or an empty
+            string if the value is None.
     """
     if value is None:
         return ''
@@ -204,14 +215,17 @@ def _format_date(value):
 
 
 def _format_datetime(value):
-    """
-    Formats a datetime object as a string in the format 'YYYY-MM-DD HH:MM:SS'.
+    """Formats a datetime object as a string in the format 'YYYY-MM-DD HH:MM:SS'.
+
+    This function formats datetime objects for CSV export, ensuring
+    consistent datetime representation with timezone awareness.
 
     Args:
         value (datetime): The datetime object to format.
 
     Returns:
-        str: The formatted string, or an empty string if the value is None.
+        str: The formatted datetime string in local timezone, or an empty
+            string if the value is None.
     """
     if value is None:
         return ''
@@ -222,14 +236,17 @@ def _format_datetime(value):
 
 
 def _prepare_items_csv_response(filename_prefix):
-    """
-    Prepares an HttpResponse object for a CSV download.
+    """Prepares an HttpResponse object for a CSV download.
+
+    This function creates an HTTP response configured for CSV download
+    with appropriate headers and a timestamped filename.
 
     Args:
         filename_prefix (str): The prefix for the CSV filename.
 
     Returns:
-        tuple: A tuple containing the HttpResponse object and the CSV writer.
+        tuple[HttpResponse, csv.writer]: A tuple containing the HttpResponse
+            object configured for CSV download and the CSV writer instance.
     """
     timestamp = timezone.localtime().strftime('%Y%m%d-%H%M%S')
     response = HttpResponse(content_type='text/csv; charset=utf-8')
@@ -241,11 +258,14 @@ def _prepare_items_csv_response(filename_prefix):
 
 
 def _write_items_to_csv(writer, items):
-    """
-    Writes a list of items to a CSV writer.
+    """Writes a list of items to a CSV writer.
+
+    This function iterates through items and writes each one as a row
+    in the CSV format, handling related objects and formatting
+    values appropriately.
 
     Args:
-        writer: The CSV writer object.
+        writer (csv.writer): The CSV writer object to write to.
         items (QuerySet[Item]): A queryset of items to write.
     """
     for item in items:
@@ -270,57 +290,73 @@ def _write_items_to_csv(writer, items):
 
 
 class LoginRateThrottle(throttling.AnonRateThrottle):
-    """
-    Throttles login attempts for anonymous users.
+    """Throttles login attempts for anonymous users.
+
+    This throttle class limits the rate of login attempts to prevent
+    brute force attacks on authentication endpoints.
     """
     scope = 'login'
 
 
 class RegisterRateThrottle(throttling.AnonRateThrottle):
-    """
-    Throttles registration attempts for anonymous users.
+    """Throttles registration attempts for anonymous users.
+
+    This throttle class limits the rate of user registration attempts
+    to prevent spam and automated account creation.
     """
     scope = 'register'
 
 
 class LogoutRateThrottle(throttling.AnonRateThrottle):
-    """
-    Throttles logout attempts for anonymous users.
+    """Throttles logout attempts for anonymous users.
+
+    This throttle class limits the rate of logout attempts to
+    prevent potential denial of service attacks.
     """
     scope = 'logout'
 
 
 class ItemCreateRateThrottle(throttling.UserRateThrottle):
-    """
-    Throttles item creation attempts for authenticated users.
+    """Throttles item creation attempts for authenticated users.
+
+    This throttle class limits the rate at which authenticated users
+    can create new items to prevent system abuse.
     """
     scope = 'item_create'
 
 
 class ItemUpdateRateThrottle(throttling.UserRateThrottle):
-    """
-    Throttles item update attempts for authenticated users.
+    """Throttles item update attempts for authenticated users.
+
+    This throttle class limits the rate at which authenticated users
+    can update existing items to prevent system abuse.
     """
     scope = 'item_update'
 
 
 class ItemDeleteRateThrottle(throttling.UserRateThrottle):
-    """
-    Throttles item deletion attempts for authenticated users.
+    """Throttles item deletion attempts for authenticated users.
+
+    This throttle class limits the rate at which authenticated users
+    can delete items to prevent accidental or malicious data loss.
     """
     scope = 'item_delete'
 
 
 class QRGenerateRateThrottle(throttling.UserRateThrottle):
-    """
-    Throttles QR code generation attempts for authenticated users.
+    """Throttles QR code generation attempts for authenticated users.
+
+    This throttle class limits the rate at which authenticated users
+    can generate QR codes to prevent system abuse.
     """
     scope = 'qr_generate'
 
 
 class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    """
-    A viewset for user registration.
+    """A viewset for user registration.
+
+    This viewset handles user registration with validation, rate limiting,
+    and optional registration restrictions based on system settings.
     """
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
@@ -349,8 +385,11 @@ class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """
-    A custom token obtain pair serializer that allows logging in with either username or email.
+    """A custom token obtain pair serializer that allows logging in with either username or email.
+
+    This serializer enhances the default JWT token serializer by supporting
+    login with either username or email address, and includes security
+    measures against timing attacks and user enumeration.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -549,8 +588,10 @@ class CustomTokenRefreshView(TokenRefreshView):
 
 
 class CurrentUserView(APIView):
-    """
-    A view to get the current user.
+    """A view to get the current user.
+
+    This view provides information about the currently authenticated user,
+    including their ID, username, and email address.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -650,6 +691,7 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
     This viewset automatically filters querysets to only include objects
     owned by the currently authenticated user. It also ensures that when new
     objects are created, the owner is set to the current user.
+    It includes ownership validation for update operations.
 
     Attributes:
         owner_field (str): The name of the field on the model that represents
@@ -729,8 +771,12 @@ class LocationViewSet(UserScopedModelViewSet):
 class NumberInFilter(django_filters.BaseInFilter, django_filters.NumberFilter):
     """A filter that allows filtering by a comma-separated list of numbers.
 
-    This is useful for filtering many-to-many relationships, such as
-    finding items that have any of a given set of tags.
+    This filter extends Django's BaseInFilter to support filtering by
+    comma-separated values, which is useful for many-to-many
+    relationships like tags or locations.
+
+    Example:
+        ?tags__in=1,2,3  # Filter for items with tags 1, 2, or 3
     """
     pass
 
@@ -759,7 +805,8 @@ class ItemPagination(PageNumberPagination):
     """Pagination for the item list view.
 
     This pagination class sets the default page size and allows the client
-    to override it using the `page_size` query parameter.
+    to override it using the `page_size` query parameter. It includes
+    reasonable limits to prevent performance issues.
 
     Attributes:
         page_size (int): The default number of items to include on a page.

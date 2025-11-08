@@ -9,17 +9,17 @@ class LandingPageView(TemplateView):
     passes the URL of the frontend login page to the template, so that
     the "Login" button can link to the correct page.
     """
+    
     template_name = 'index.html'
 
     def get_context_data(self, **kwargs):
-        """
-        Gets the context data for the template.
+        """Gets the context data for the template.
 
         Args:
-            **kwargs: Arbitrary keyword arguments.
+            **kwargs: Arbitrary keyword arguments passed to the view.
 
         Returns:
-            dict: The context data.
+            dict: The context data containing the frontend login URL.
         """
         context = super().get_context_data(**kwargs)
         context['frontend_login_url'] = settings.FRONTEND_LOGIN_URL

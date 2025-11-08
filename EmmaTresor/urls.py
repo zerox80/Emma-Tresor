@@ -21,12 +21,17 @@ from django.urls import include, path
 
 from .views import LandingPageView
 
+# URL patterns for the EmmaTresor project
 urlpatterns = [
+    # Django admin interface
     path('admin/', admin.site.urls),
+    # API endpoints for the inventory application
     path('api/', include('inventory.urls')),
+    # Landing page route
     path('', LandingPageView.as_view(), name='home'),
 ]
 
+# In development mode, serve media files through Django
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 else:

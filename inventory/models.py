@@ -16,6 +16,10 @@ except ImportError as exc:
 class TimeStampedModel(models.Model):
     """An abstract base class model that provides self-updating
     `created_at` and `updated_at` fields.
+
+    This model automatically tracks when an instance is created and
+    last updated, providing audit trail functionality for all models
+    that inherit from it.
     """
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -28,15 +32,20 @@ class TimeStampedModel(models.Model):
 class Tag(TimeStampedModel):
     """Represents a tag that can be associated with an item.
 
+    Tags provide a flexible way to categorize and organize inventory items.
+    Each tag is scoped to a specific user to ensure data isolation between
+    users.
+
     Attributes:
-        name: The name of the tag.
-        user: The user who created the tag.
+        name: The name of the tag (max 100 characters).
+        user: The user who created the tag (foreign key relationship).
     """
     name = models.CharField(max_length=100)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='tags',
+        help_text='The user who owns this tag'
     )
 
     class Meta:
@@ -54,15 +63,20 @@ class Tag(TimeStampedModel):
 class Location(TimeStampedModel):
     """Represents a location where an item can be stored.
 
+    Locations provide a way to track where inventory items are physically
+    stored. Each location is scoped to a specific user to ensure data
+    isolation between users.
+
     Attributes:
-        name: The name of the location.
-        user: The user who created the location.
+        name: The name of the location (max 100 characters).
+        user: The user who created the location (foreign key relationship).
     """
     name = models.CharField(max_length=100)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='locations',
+        help_text='The user who owns this location'
     )
 
     class Meta:
@@ -83,18 +97,21 @@ MAX_PURCHASE_AGE_YEARS = 50
 class Item(TimeStampedModel):
     """Represents an item in the inventory.
 
+    This is the core model of the inventory system, tracking all relevant
+    information about physical items including their location, value, and
+    associated metadata.
+
     Attributes:
-        name: The name of the item.
-        description: A description of the item.
-        quantity: The quantity of the item.
-        purchase_date: The date the item was purchased.
-        value: The value of the item.
-        asset_tag: A unique identifier for the item.
-        owner: The user who owns the item.
-        location: The location where the item is stored.
-        wodis_inventory_number: An optional inventory number from an external
-            system.
-        tags: The tags associated with the item.
+        name: The name of the item (max 255 characters).
+        description: A detailed description of the item (optional).
+        quantity: The quantity of the item (positive integer, max 999999).
+        purchase_date: The date the item was purchased (optional).
+        value: The monetary value of the item (decimal, max 12 digits).
+        asset_tag: A unique UUID identifier for the item.
+        owner: The user who owns the item (foreign key relationship).
+        location: The storage location (foreign key, optional).
+        wodis_inventory_number: External inventory number from Wodis system.
+        tags: Many-to-many relationship with Tag objects.
     """
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -136,12 +153,16 @@ class Item(TimeStampedModel):
         ]
 
     def clean(self):
-        """
-        Validates the item's data.
+        """Validates the item's data before saving.
+
+        Performs comprehensive validation of the item's fields including
+        purchase date constraints, value limits, and inventory number
+        formatting.
 
         Raises:
             ValidationError: If the purchase date is in the future or too old,
-                or if the value is negative or too high.
+                if the value is negative or too high, or if other validation
+                rules are violated.
         """
         super().clean()
         # Validate purchase date
@@ -165,12 +186,20 @@ class Item(TimeStampedModel):
             self.wodis_inventory_number = cleaned or None
 
     def save(self, *args, **kwargs):
-        """
-        Saves the item, ensuring a unique asset tag is generated.
+        """Saves the item, ensuring a unique asset tag is generated.
+
+        This method overrides the default save behavior to handle UUID
+        collisions by retrying with a new UUID if an integrity error
+        occurs due to a duplicate asset tag.
 
         Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            *args: Variable length argument list passed to parent save.
+            **kwargs: Arbitrary keyword arguments passed to parent save.
+                Can include 'max_uuid_attempts' to control retry attempts.
+
+        Raises:
+            IntegrityError: If unable to generate a unique UUID after
+                the maximum number of attempts.
         """
         max_attempts = kwargs.pop('max_uuid_attempts', 5)
         attempt = 0
@@ -275,12 +304,14 @@ class ItemImage(TimeStampedModel):
                 file_obj.seek(pos)
 
     def save(self, *args, **kwargs):
-        """
-        Saves the item image after validation.
+        """Saves the item image after validation.
+
+        This method ensures that full_clean() is called before saving
+        to maintain data integrity and security.
 
         Args:
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
+            *args: Variable length argument list passed to parent save.
+            **kwargs: Arbitrary keyword arguments passed to parent save.
         """
         self.full_clean()  # Ensure validation runs
         super().save(*args, **kwargs)
