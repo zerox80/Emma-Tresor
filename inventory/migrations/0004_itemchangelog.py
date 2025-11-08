@@ -6,6 +6,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """Introduce the ItemChangeLog model for auditing updates."""
 
     dependencies = [
         ('inventory', '0003_alter_item_options_alter_itemimage_options_and_more'),

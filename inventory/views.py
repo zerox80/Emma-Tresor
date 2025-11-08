@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 import io
 import mimetypes
 import os
@@ -750,6 +750,7 @@ class ItemFilter(django_filters.FilterSet):
     location = NumberInFilter(field_name='location__id')
 
     class Meta:
+        """Limit which Item fields are available for filtering."""
         model = Item
         fields: list[str] = []
 

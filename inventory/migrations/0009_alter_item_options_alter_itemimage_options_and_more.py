@@ -4,6 +4,7 @@ import inventory.storage
 
 
 class Migration(migrations.Migration):
+    """Polish verbose names and ordering for several inventory models."""
 
     dependencies = [
         ("inventory", "0008_add_missing_indexes"),

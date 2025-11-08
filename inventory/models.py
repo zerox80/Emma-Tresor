@@ -21,6 +21,7 @@ class TimeStampedModel(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Meta configuration for the abstract timestamped base model."""
         abstract = True
 
 
@@ -39,6 +40,7 @@ class Tag(TimeStampedModel):
     )
 
     class Meta:
+        """Meta options that scope tags per user and order alphabetically."""
         unique_together = ('user', 'name')
         ordering = ['name']
         verbose_name = 'Schlagwort'
@@ -64,6 +66,7 @@ class Location(TimeStampedModel):
     )
 
     class Meta:
+        """Meta options that ensure location names are unique per user."""
         unique_together = ('user', 'name')
         ordering = ['name']
         verbose_name = 'Standort'
@@ -124,6 +127,7 @@ class Item(TimeStampedModel):
     tags = models.ManyToManyField('Tag', related_name='items', blank=True)
 
     class Meta:
+        """Meta configuration for items, including ordering and indexes."""
         ordering = ['name']
         verbose_name = 'Gegenstand'
         verbose_name_plural = 'Gegenstände'
@@ -199,6 +203,7 @@ class ItemImage(TimeStampedModel):
     image = models.FileField(upload_to='item_attachments/', storage=private_item_storage)
 
     class Meta:
+        """Meta configuration for stored item images."""
         verbose_name = 'Gegenstandsbild'
         verbose_name_plural = 'Gegenstandsbilder'
 
@@ -314,6 +319,7 @@ class ItemChangeLog(TimeStampedModel):
     changes = models.JSONField(blank=True, default=dict)
 
     class Meta:
+        """Meta settings for change log entries sorted by recency."""
         ordering = ['-created_at']
         verbose_name = 'Änderungsprotokoll'
         verbose_name_plural = 'Änderungsprotokolle'
@@ -364,6 +370,7 @@ class ItemList(TimeStampedModel):
     items = models.ManyToManyField('Item', related_name='lists', blank=True)
 
     class Meta:
+        """Meta configuration for user-defined item lists."""
         unique_together = ('owner', 'name')
         ordering = ['name']
         verbose_name = 'Inventarliste'

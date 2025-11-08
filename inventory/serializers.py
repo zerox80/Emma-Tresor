@@ -31,6 +31,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
+        """Model binding and field list for the registration serializer."""
         model = User
         fields = ['id', 'username', 'email', 'password', 'password_confirm']
         read_only_fields = ['id']
@@ -90,6 +91,7 @@ class TagSerializer(serializers.ModelSerializer):
     that tag names are unique for each user.
     """
     class Meta:
+        """Scope tag fields exposed via the serializer."""
         model = Tag
         fields = ['id', 'name', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -163,6 +165,7 @@ class LocationSerializer(serializers.ModelSerializer):
     ensures that location names are unique for each user.
     """
     class Meta:
+        """Expose location identifiers and timestamps."""
         model = Location
         fields = ['id', 'name', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -245,6 +248,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
     size = serializers.SerializerMethodField()
 
     class Meta:
+        """Control fields and read-only flags for item images."""
         model = ItemImage
         fields = [
             'id',
@@ -491,6 +495,7 @@ class ItemSerializer(serializers.ModelSerializer):
     images = ItemImageSerializer(many=True, read_only=True)
 
     class Meta:
+        """Map Item fields, including tag/location relations, to API output."""
         model = Item
         fields = [
             'id',
@@ -716,6 +721,7 @@ class ItemListSerializer(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.id')
 
     class Meta:
+        """Describe the ItemList fields surfaced through the API."""
         model = ItemList
         fields = ['id', 'name', 'owner', 'items', 'created_at', 'updated_at']
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
@@ -872,6 +878,14 @@ class ItemChangeLogSerializer(serializers.ModelSerializer):
         return name
 
     def to_representation(self, instance):
+        """Convert a change log instance to JSON-ready data.
+
+        Args:
+            instance (ItemChangeLog): Change log entry being serialized.
+
+        Returns:
+            dict: Serialized data with resolved location names.
+        """
         data = super().to_representation(instance)
         changes = data.get('changes')
         if isinstance(changes, dict):
@@ -882,6 +896,7 @@ class ItemChangeLogSerializer(serializers.ModelSerializer):
         return data
 
     class Meta:
+        """Restrict serialized fields for item change log entries."""
         model = ItemChangeLog
         fields = [
             'id',

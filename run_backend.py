@@ -36,6 +36,11 @@ IS_WINDOWS = os.name == "nt"
 
 
 def get_venv_python() -> Path:
+    """Return the interpreter path inside the local virtual environment.
+
+    Returns:
+        Path: Absolute path to the `.venv` Python executable.
+    """
     bin_dir = VENV_DIR / ("Scripts" if IS_WINDOWS else "bin")
     candidates = ["python.exe"] if IS_WINDOWS else ["python3", "python", f"python{sys.version_info.major}.{sys.version_info.minor}"]
     for name in candidates:
@@ -66,6 +71,11 @@ ENV_FILES = [BASE_DIR / ".env", BASE_DIR / ".env.local"]
 
 
 def load_env_file() -> dict[str, str]:
+    """Load key/value pairs from known dotenv files on disk.
+
+    Returns:
+        dict[str, str]: Parsed environment variable overrides.
+    """
     env_vars: dict[str, str] = {}
     for env_path in ENV_FILES:
         if not env_path.exists():
@@ -89,6 +99,17 @@ if ENV_FROM_FILE:
 
 
 def run(command: list[str], *, cwd: Path | None = None, allow_failure: bool = False, env: dict[str, str] | None = None) -> None:
+    """Execute a subprocess and optionally ignore failures.
+
+    Args:
+        command (list[str]): Command segments to execute.
+        cwd (Path | None): Working directory for the subprocess.
+        allow_failure (bool): Whether to suppress non-zero exit codes.
+        env (dict[str, str] | None): Extra environment variables.
+
+    Raises:
+        SystemExit: If the command fails while `allow_failure` is False.
+    """
     location = cwd or BASE_DIR
     display = " ".join(command)
     print(f"[runner] Executing ({location}): {display}")
@@ -103,6 +124,11 @@ def run(command: list[str], *, cwd: Path | None = None, allow_failure: bool = Fa
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse supported CLI flags for the dev runner.
+
+    Returns:
+        argparse.Namespace: User-provided options.
+    """
     parser = argparse.ArgumentParser(
         description="Bootstrap EmmaTresor Inventory backend and frontend for development.",
     )
@@ -140,6 +166,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def ensure_frontend_dependencies() -> None:
+    """Install npm packages when `node_modules` is absent or empty."""
     node_modules = FRONTEND_DIR / "node_modules"
     if node_modules.exists() and any(node_modules.iterdir()):
         print("[runner] Frontend dependencies already installed.")
@@ -149,6 +176,11 @@ def ensure_frontend_dependencies() -> None:
 
 
 def start_frontend_server() -> subprocess.Popen[str]:
+    """Launch the Vite server and return its running process handle.
+
+    Returns:
+        subprocess.Popen[str]: The spawned Vite process.
+    """
     print("[runner] Starting Vite dev server (frontend)...")
     env = os.environ.copy()
     env.setdefault("BROWSER", "none")
@@ -158,6 +190,11 @@ def start_frontend_server() -> subprocess.Popen[str]:
 
 
 def ensure_setup(skip_tests: bool) -> None:
+    """Execute the setup script to provision backend prerequisites.
+
+    Args:
+        skip_tests (bool): Whether to omit test execution in the setup step.
+    """
     setup_args = [sys.executable, str(SETUP_SCRIPT)]
     if skip_tests:
         setup_args.append("--skip-tests")
@@ -167,6 +204,12 @@ def ensure_setup(skip_tests: bool) -> None:
 
 
 def python_env() -> dict[str, str] | None:
+    """Build environment variables for Django commands when using a venv.
+
+    Returns:
+        dict[str, str] | None: Updated environment including PATH when the virtual
+            environment is active, otherwise None to inherit the parent env.
+    """
     if USE_VENV:
         env = os.environ.copy()
         venv_python = get_venv_python()
@@ -182,10 +225,12 @@ def python_env() -> dict[str, str] | None:
 
 
 def run_tests() -> None:
+    """Invoke Django's test suite using the configured interpreter."""
     run([str(RUNTIME_PYTHON), "manage.py", "test"], env=python_env())
 
 
 def create_superuser_if_configured() -> None:
+    """Create or update the default superuser when env flags demand it."""
     flag = os.environ.get("AUTO_CREATE_SUPERUSER", "false").lower()
     if flag not in {"1", "true", "yes"}:
         return
@@ -246,6 +291,7 @@ def create_superuser_if_configured() -> None:
 
 
 def main() -> None:
+    """Entry point that wires together setup, tests, and dev servers."""
     args = parse_args()
     global USE_VENV
     USE_VENV = args.use_venv

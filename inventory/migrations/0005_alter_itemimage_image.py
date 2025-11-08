@@ -2,6 +2,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """Change ItemImage storage to the private media backend."""
 
     dependencies = [
         ("inventory", "0004_itemchangelog"),

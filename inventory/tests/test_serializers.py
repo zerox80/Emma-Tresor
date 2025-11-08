@@ -8,7 +8,14 @@ from ..serializers import ItemListSerializer, ItemSerializer, UserRegistrationSe
 User = get_user_model()
 
 class UserRegistrationSerializerTests(TestCase):
+    """Coverage for the user registration API serializer."""
+
     def test_password_mismatch_raises_error(self):
+        """Ensure the serializer flags mismatched passwords.
+
+        Returns:
+            None: Assertions inspect serializer errors.
+        """
         data = {
             'username': 'newuser',
             'email': 'newuser@example.com',
@@ -21,6 +28,11 @@ class UserRegistrationSerializerTests(TestCase):
         self.assertIn('password_confirm', serializer.errors)
 
     def test_create_hashes_password_and_returns_user(self):
+        """Verify account creation hashes the password securely.
+
+        Returns:
+            None: Assertions validate password hashing behavior.
+        """
         data = {
             'username': 'secureuser',
             'email': 'secureuser@example.com',
@@ -38,7 +50,10 @@ class UserRegistrationSerializerTests(TestCase):
 
 
 class ItemSerializerTests(TestCase):
+    """Ensure the ItemSerializer enforces ownership and data integrity."""
+
     def setUp(self):
+        """Initialize shared users, tags, and locations for each test."""
         self.user = User.objects.create_user('alice', 'alice@example.com', 'StrongPass123!')
         self.other_user = User.objects.create_user('bob', 'bob@example.com', 'StrongPass123!')
         self.tag_user = Tag.objects.create(name='Electronics', user=self.user)
@@ -48,9 +63,25 @@ class ItemSerializerTests(TestCase):
         self.location_other = Location.objects.create(name='Garage', user=self.other_user)
 
     def _build_request(self, user):
+        """Create a request-like object for serializer context.
+
+        Args:
+            user (User | AnonymousUser): Authenticated user to attach.
+
+        Returns:
+            SimpleNamespace: Minimal object mimicking DRF's request.
+        """
         return SimpleNamespace(user=user, auth=None)
 
     def _get_serializer(self, **kwargs):
+        """Instantiate the serializer with scoped querysets.
+
+        Args:
+            **kwargs: Keyword arguments forwarded to the serializer.
+
+        Returns:
+            ItemSerializer: Configured serializer bound to the test user.
+        """
         serializer = ItemSerializer(context={'request': kwargs.pop('request', self._build_request(self.user))}, **kwargs)
         tag_queryset = Tag.objects.filter(user=self.user)
         tag_field = serializer.fields['tags']
@@ -61,18 +92,33 @@ class ItemSerializerTests(TestCase):
         return serializer
 
     def test_querysets_scoped_to_authenticated_user(self):
+        """Ensure authenticated users only see their own tags and locations.
+
+        Returns:
+            None: Assertions inspect queryset contents.
+        """
         serializer = ItemSerializer(context={'request': self._build_request(self.user)})
 
         self.assertCountEqual(serializer.fields['tags'].queryset, [self.tag_user, self.tag_user_2])
         self.assertEqual(list(serializer.fields['location'].queryset), [self.location_user])
 
     def test_querysets_empty_for_anonymous_user(self):
+        """Verify anonymous contexts yield empty choice querysets.
+
+        Returns:
+            None: Assertions check filtered querysets.
+        """
         serializer = ItemSerializer(context={'request': self._build_request(AnonymousUser())})
 
         self.assertEqual(serializer.fields['tags'].queryset.count(), 0)
         self.assertEqual(serializer.fields['location'].queryset.count(), 0)
 
     def test_create_assigns_owner_and_tags(self):
+        """Confirm create() sets owner, tags, and other fields correctly.
+
+        Returns:
+            None: Assertions validate the saved model fields.
+        """
         data = {
             'name': 'Laptop',
             'description': 'Work laptop',
@@ -94,6 +140,11 @@ class ItemSerializerTests(TestCase):
         self.assertEqual(item.wodis_inventory_number, 'W-12345')
 
     def test_update_replaces_tags_and_fields(self):
+        """Ensure updates overwrite basic attributes and tag relations.
+
+        Returns:
+            None: Assertions inspect the refreshed item.
+        """
         item = Item.objects.create(name='Camera', owner=self.user, location=self.location_user)
         item.tags.set([self.tag_user])
         data = {
@@ -119,6 +170,11 @@ class ItemSerializerTests(TestCase):
         self.assertEqual(updated_item.wodis_inventory_number, 'W-987')
 
     def test_blank_wodis_inventory_number_becomes_none(self):
+        """Verify blank Wodis inventory numbers are normalized to None.
+
+        Returns:
+            None: Assertions check the stored value.
+        """
         item = Item.objects.create(name='Tablet', owner=self.user, location=self.location_user, wodis_inventory_number='TMP-1')
         data = {
             'name': 'Tablet',
@@ -139,7 +195,10 @@ class ItemSerializerTests(TestCase):
 
 
 class ItemListSerializerTests(TestCase):
+    """Exercise list serializer logic for ownership and validation."""
+
     def setUp(self):
+        """Create sample owners and items for list serializer tests."""
         self.user = User.objects.create_user('listowner', 'listowner@example.com', 'StrongPass123!')
         self.other_user = User.objects.create_user('intruder', 'intruder@example.com', 'StrongPass123!')
         self.item_one = Item.objects.create(name='Camera', owner=self.user)
@@ -147,9 +206,25 @@ class ItemListSerializerTests(TestCase):
         self.other_item = Item.objects.create(name='Saw', owner=self.other_user)
 
     def _build_request(self, user):
+        """Build a request-like object bound to the supplied user.
+
+        Args:
+            user (User | AnonymousUser): Actor for serializer context.
+
+        Returns:
+            SimpleNamespace: Minimal request stand-in.
+        """
         return SimpleNamespace(user=user, auth=None)
 
     def _get_serializer(self, **kwargs):
+        """Instantiate the serializer with properly scoped item querysets.
+
+        Args:
+            **kwargs: Keyword arguments passed to the serializer.
+
+        Returns:
+            ItemListSerializer: Configured serializer ready for validation.
+        """
         context = kwargs.pop('context', {'request': self._build_request(self.user)})
         serializer = ItemListSerializer(context=context, **kwargs)
         item_queryset = Item.objects.filter(owner=self.user)
@@ -160,6 +235,11 @@ class ItemListSerializerTests(TestCase):
         return serializer
 
     def test_querysets_scoped_to_authenticated_user(self):
+        """Ensure users only see their own items in selection querysets.
+
+        Returns:
+            None: Assertions inspect queryset contents.
+        """
         serializer = ItemListSerializer(context={'request': self._build_request(self.user)})
         item_queryset = Item.objects.filter(owner=self.user)
         serializer.fields['items'].queryset = item_queryset
@@ -169,11 +249,21 @@ class ItemListSerializerTests(TestCase):
         self.assertCountEqual(serializer.fields['items'].queryset, [self.item_one, self.item_two])
 
     def test_querysets_empty_for_anonymous_user(self):
+        """Verify anonymous contexts cannot access any items.
+
+        Returns:
+            None: Assertions check queryset counts.
+        """
         serializer = ItemListSerializer(context={'request': self._build_request(AnonymousUser())})
 
         self.assertEqual(serializer.fields['items'].queryset.count(), 0)
 
     def test_create_assigns_owner_and_items(self):
+        """Confirm create() stores the owner and selected items.
+
+        Returns:
+            None: Assertions verify the persisted list relationships.
+        """
         data = {'name': 'Photography', 'items': [self.item_one.id, self.item_two.id]}
         serializer = self._get_serializer(data=data)
 
@@ -184,6 +274,11 @@ class ItemListSerializerTests(TestCase):
         self.assertSetEqual(set(item_list.items.all()), {self.item_one, self.item_two})
 
     def test_create_rejects_items_from_other_user(self):
+        """Ensure validation fails when foreign-owned items are provided.
+
+        Returns:
+            None: Assertions focus on serializer errors.
+        """
         data = {'name': 'Invalid', 'items': [self.other_item.id]}
         serializer = self._get_serializer(data=data)
 
@@ -191,6 +286,11 @@ class ItemListSerializerTests(TestCase):
         self.assertIn('items', serializer.errors)
 
     def test_update_replaces_items_and_name(self):
+        """Verify updates can rename lists and replace their members.
+
+        Returns:
+            None: Assertions inspect the refreshed list.
+        """
         item_list = ItemList.objects.create(name='Gear', owner=self.user)
         item_list.items.set([self.item_one])
         data = {'name': 'Studio Gear', 'items': [self.item_two.id]}

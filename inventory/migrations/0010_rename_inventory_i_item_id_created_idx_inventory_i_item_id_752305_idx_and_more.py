@@ -6,6 +6,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """Rename indexes and enforce uniqueness constraints on Wodis IDs."""
 
     dependencies = [
         ('inventory', '0009_alter_item_options_alter_itemimage_options_and_more'),

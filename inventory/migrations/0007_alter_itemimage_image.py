@@ -3,6 +3,7 @@ import inventory.storage
 
 
 class Migration(migrations.Migration):
+    """Update image storage options following previous media changes."""
 
     dependencies = [
         ("inventory", "0006_alter_item_description"),

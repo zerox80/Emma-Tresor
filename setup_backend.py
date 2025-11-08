@@ -32,6 +32,11 @@ IS_WINDOWS = os.name == "nt"
 
 
 def get_venv_python() -> Path:
+    """Return the interpreter path within the managed virtual environment.
+
+    Returns:
+        Path: Absolute path to the `.venv` Python executable.
+    """
     bin_dir = VENV_DIR / ("Scripts" if IS_WINDOWS else "bin")
     candidates = ["python.exe"] if IS_WINDOWS else ["python3", "python", f"python{sys.version_info.major}.{sys.version_info.minor}"]
     for name in candidates:
@@ -58,8 +63,16 @@ FRONTEND_PKG_MANAGER = "npm.cmd" if os.name == "nt" else "npm"
 
 
 def run(command: list[str], *, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
-    """Run a subprocess command, streaming output and raising on error."""
+    """Execute a subprocess while streaming its output.
 
+    Args:
+        command (list[str]): Command and arguments to run.
+        cwd (Path | None): Working directory for the subprocess.
+        env (dict[str, str] | None): Environment overrides for the process.
+
+    Raises:
+        SystemExit: If the command exits with a non-zero status.
+    """
     print(f"\n[setup] Executing: {' '.join(command)}")
     result = subprocess.run(command, cwd=cwd or BASE_DIR, check=False, env=env)
     if result.returncode != 0:
@@ -69,6 +82,11 @@ def run(command: list[str], *, cwd: Path | None = None, env: dict[str, str] | No
 
 
 def ensure_python_version() -> None:
+    """Validate the interpreter version meets the minimum requirement.
+
+    Raises:
+        SystemExit: If Python is older than 3.12.
+    """
     major, minor = sys.version_info[:2]
     if (major, minor) < (3, 12):
         raise SystemExit(
@@ -79,6 +97,7 @@ def ensure_python_version() -> None:
 
 
 def create_virtualenv() -> None:
+    """Create or refresh the `.venv` directory for backend dependencies."""
     if VENV_DIR.exists():
         interpreter = get_venv_python()
         if interpreter.exists():
@@ -95,11 +114,13 @@ def create_virtualenv() -> None:
 
 
 def install_dependencies() -> None:
+    """Install backend Python packages into the selected interpreter."""
     python = str(RUNTIME_PYTHON)
     run([python, "-m", "pip", "install", *REQUIRED_PACKAGES])
 
 
 def install_frontend_dependencies() -> None:
+    """Run `npm install` in the frontend directory when available."""
     if not FRONTEND_DIR.exists():
         print("[setup] Frontend directory not found, skipping frontend dependency installation.")
         return
@@ -111,6 +132,7 @@ def install_frontend_dependencies() -> None:
 
 
 def build_frontend() -> None:
+    """Compile the frontend assets via the project's package scripts."""
     if not FRONTEND_DIR.exists():
         print("[setup] Frontend directory not found, skipping frontend build.")
         return
@@ -122,6 +144,11 @@ def build_frontend() -> None:
 
 
 def run_management_command(*args: str) -> None:
+    """Execute a Django management command with the configured interpreter.
+
+    Args:
+        *args (str): Positional arguments passed to `manage.py`.
+    """
     python = str(RUNTIME_PYTHON)
     env = None
     if USING_VENV:
@@ -134,14 +161,21 @@ def run_management_command(*args: str) -> None:
 
 
 def apply_migrations() -> None:
+    """Apply all pending Django migrations."""
     run_management_command("migrate")
 
 
 def run_tests() -> None:
+    """Execute the Django unit test suite."""
     run_management_command("test")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse CLI switches for backend and frontend provisioning.
+
+    Returns:
+        argparse.Namespace: Parsed command-line options.
+    """
     parser = argparse.ArgumentParser(description="Bootstrap or test the EmmaTresor backend.")
     parser.add_argument(
         "--skip-tests",
@@ -179,6 +213,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def ensure_virtualenv_exists() -> None:
+    """Ensure the `.venv` directory exists before running tests only.
+
+    Raises:
+        SystemExit: If the virtual environment interpreter is missing.
+    """
     if not get_venv_python().exists():
         raise SystemExit(
             "Virtual environment not found. Run the script with --use-venv first "
@@ -188,6 +227,7 @@ def ensure_virtualenv_exists() -> None:
 
 
 def main() -> None:
+    """Coordinate dependency installation, migrations, and optional tests."""
     args = parse_args()
     if args.frontend_only:
         install_frontend_dependencies()

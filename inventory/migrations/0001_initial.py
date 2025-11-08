@@ -6,6 +6,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """Create the initial inventory, location, tag, and list models."""
 
     initial = True
 

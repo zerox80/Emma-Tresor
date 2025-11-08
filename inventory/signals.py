@@ -53,6 +53,15 @@ def _safe_signal_handler(func):
         callable: The wrapped function.
     """
     def wrapper(*args, **kwargs):
+        """Wrap a signal handler to skip migrations and swallow safe errors.
+
+        Args:
+            *args: Positional arguments forwarded to the wrapped handler.
+            **kwargs: Keyword arguments forwarded to the wrapped handler.
+
+        Returns:
+            Any | None: The handler's return value when executed, otherwise None.
+        """
         # Skip during migrations
         if _is_migrating():
             logger.debug(f"Skipping {func.__name__} during migration")

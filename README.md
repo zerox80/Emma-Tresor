@@ -25,6 +25,34 @@
 
 This repository serves as a comprehensive, well-documented inventory management system. It is designed to be a learning resource and a production-ready application. The codebase is fully documented with Google Style Python Docstrings for the backend and JSDoc for the frontend.
 
+## 🧭 New Developer Onboarding
+
+1. **Understand the Landscape**  
+   - Skim the [Project Structure](#-project-structure) section to see how Django, DRF, React, and Vite fit together.  
+   - Review `env.example` and `docs/` to understand the available environment variables and deployment notes.
+
+2. **Bootstrap the Stack**  
+   - Install Python 3.12+, Node 20+, and Docker (optional).  
+   - Copy `env.example` to `.env` (backend) and `.env.local` (frontend) as needed, filling secrets such as database credentials and JWT cookie settings.  
+   - Run `py -3.12 setup_backend.py --use-venv` (or `python3 setup_backend.py --use-venv`) to create `.venv`, install backend dependencies, apply migrations, run tests, and optionally install/build the frontend.  
+   - Use `py -3.12 run_backend.py --use-venv --start-frontend` to launch Django on `127.0.0.1:8000` and Vite on `127.0.0.1:5173`.
+
+3. **Daily Development Loop**  
+   - Backend only: `py -3.12 run_backend.py --use-venv --skip-tests` (tests already run) or `python manage.py test` when needed.  
+   - Frontend only: `cd frontend && npm install && npm run dev`.  
+   - Full-stack hot reload: rely on `run_backend.py --start-frontend` which keeps both servers running with auto-reload.
+
+4. **Usage Essentials**  
+   - Create a superuser with `AUTO_CREATE_SUPERUSER=1` in `.env` or via `python manage.py createsuperuser`.  
+   - Visit `http://127.0.0.1:5173` (Vite dev server) or `http://127.0.0.1:8000` (Django) to log in, seed tags/locations, and start scanning asset tags.
+
+### Documentation Standards
+
+- **Backend**: Google-style docstrings cover every public module, class, function, and method. They describe intent, parameters, and return values to keep Django/DRF code self-explanatory.  
+- **Frontend**: React components, hooks, API helpers, and Zustand stores use JSDoc so props, state transitions, and return types remain clear when hovering in modern IDEs.  
+- **Tests**: Unit and integration tests include docstrings outlining their scenario so failures immediately communicate the expected behavior.  
+- **README**: Acts as the canonical newcomer guide—keep this document updated whenever the workflow or architecture changes.
+
 ## ✨ Key Features
 
 - 🔐 **Security**: Argon2-Hashing, JWT authentication, CSRF/CORS protection

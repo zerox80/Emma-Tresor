@@ -3,6 +3,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+    """Add database indexes to accelerate common item queries."""
 
     dependencies = [
         ("inventory", "0007_alter_itemimage_image"),
