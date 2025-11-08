@@ -7,6 +7,11 @@ interface ItemChangeHistoryProps {
   error: string | null;
 }
 
+/**
+ * A component that displays the change history for an item.
+ * @param {ItemChangeHistoryProps} props The props for the component.
+ * @returns {JSX.Element} The rendered component.
+ */
 const ItemChangeHistory: React.FC<ItemChangeHistoryProps> = ({ changelog, loading, error }) => {
   const formatDate = (dateString: string): string => {
     try {

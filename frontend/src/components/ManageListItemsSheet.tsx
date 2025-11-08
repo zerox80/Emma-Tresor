@@ -28,6 +28,11 @@ export interface ManageListItemsSheetProps {
   onSave: (itemIds: number[]) => Promise<void>;
 }
 
+/**
+ * A sheet for managing the items in a list.
+ * @param {ManageListItemsSheetProps} props The props for the component.
+ * @returns {JSX.Element | null} The rendered component.
+ */
 const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
   open,
   onClose,

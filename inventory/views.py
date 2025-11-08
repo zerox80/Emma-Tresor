@@ -174,18 +174,45 @@ ITEM_EXPORT_HEADERS = [
 
 
 def _format_decimal(value):
+    """
+    Formats a decimal value as a string with two decimal places.
+
+    Args:
+        value (Decimal): The decimal value to format.
+
+    Returns:
+        str: The formatted string, or an empty string if the value is None.
+    """
     if value is None:
         return ''
     return format(value, '.2f')
 
 
 def _format_date(value):
+    """
+    Formats a date object as an ISO 8601 string.
+
+    Args:
+        value (date): The date object to format.
+
+    Returns:
+        str: The formatted string, or an empty string if the value is None.
+    """
     if value is None:
         return ''
     return value.isoformat()
 
 
 def _format_datetime(value):
+    """
+    Formats a datetime object as a string in the format 'YYYY-MM-DD HH:MM:SS'.
+
+    Args:
+        value (datetime): The datetime object to format.
+
+    Returns:
+        str: The formatted string, or an empty string if the value is None.
+    """
     if value is None:
         return ''
     if timezone.is_naive(value):
@@ -195,6 +222,15 @@ def _format_datetime(value):
 
 
 def _prepare_items_csv_response(filename_prefix):
+    """
+    Prepares an HttpResponse object for a CSV download.
+
+    Args:
+        filename_prefix (str): The prefix for the CSV filename.
+
+    Returns:
+        tuple: A tuple containing the HttpResponse object and the CSV writer.
+    """
     timestamp = timezone.localtime().strftime('%Y%m%d-%H%M%S')
     response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename=\"{filename_prefix}-{timestamp}.csv\"'
@@ -205,6 +241,13 @@ def _prepare_items_csv_response(filename_prefix):
 
 
 def _write_items_to_csv(writer, items):
+    """
+    Writes a list of items to a CSV writer.
+
+    Args:
+        writer: The CSV writer object.
+        items (QuerySet[Item]): A queryset of items to write.
+    """
     for item in items:
         tags = ', '.join(sorted(tag.name for tag in item.tags.all()))
         lists = ', '.join(sorted(item_list.name for item_list in item.lists.all()))

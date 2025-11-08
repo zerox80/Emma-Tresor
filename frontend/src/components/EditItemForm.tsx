@@ -35,6 +35,11 @@ interface EditItemFormProps {
   onCancel: () => void;
 }
 
+/**
+ * A form for editing an item.
+ * @param {EditItemFormProps} props The props for the component.
+ * @returns {JSX.Element} The rendered component.
+ */
 const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSuccess, onCancel }) => {
   const [formError, setFormError] = useState<string | null>(null);
 

@@ -32,6 +32,11 @@ interface ItemScanViewProps {
 }
 
 
+/**
+ * A view that displays the details of an item after scanning a QR code.
+ * @param {ItemScanViewProps} props The props for the component.
+ * @returns {JSX.Element} The rendered component.
+ */
 const ItemScanView: React.FC<ItemScanViewProps> = ({
   item,
   loading,

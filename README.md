@@ -48,6 +48,7 @@
 - [🗺️ Roadmap](#️-roadmap)
 - [🤝 Beitragen](#-beitragen)
 - [📄 Lizenz](#-lizenz)
+- [📜 Dokumentation](#-dokumentation)
 
 ## 📖 Detaillierte Funktionen
 
@@ -713,3 +714,14 @@ Dieses Projekt steht unter der **GNU General Public License Version 3.0** (GPL-v
     <a href="#-emmatresor---modern-inventory-management">⬆️ Zurück nach oben</a>
   </p>
 </div>
+
+---
+
+## 📜 Dokumentation
+
+Dieses Repository ist vollständig mit Docstrings dokumentiert. Jede öffentliche Funktion, Methode und Klasse enthält eine Beschreibung ihres Zwecks, ihrer Parameter und ihres Rückgabewerts.
+
+- **Backend (Python)**: Google Style Python Docstrings
+- **Frontend (TypeScript)**: JSDoc
+
+Diese Dokumentation dient als Referenz für Entwickler und soll die Einarbeitung in die Codebasis erleichtern.

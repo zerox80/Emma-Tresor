@@ -92,6 +92,11 @@ const stepFieldMap: (keyof ItemFormSchema)[][] = [
   [],
 ];
 
+/**
+ * A dialog for adding or editing an item.
+ * @param {AddItemDialogProps} props The props for the component.
+ * @returns {JSX.Element | null} The rendered component.
+ */
 const AddItemDialog: React.FC<AddItemDialogProps> = ({
   open,
   onClose,

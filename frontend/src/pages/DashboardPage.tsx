@@ -21,6 +21,10 @@ interface ListWithDetail extends ItemList {
 
 const MAX_LISTS_DISPLAYED = 4;
 
+/**
+ * The dashboard page.
+ * @returns {JSX.Element} The rendered component.
+ */
 const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);

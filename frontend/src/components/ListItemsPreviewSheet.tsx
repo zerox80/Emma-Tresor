@@ -27,6 +27,11 @@ const formatDate = (date: string | null): string => {
   }
 };
 
+/**
+ * A sheet that displays a preview of the items in a list.
+ * @param {ListItemsPreviewSheetProps} props The props for the component.
+ * @returns {JSX.Element | null} The rendered component.
+ */
 const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   open,
   onClose,
