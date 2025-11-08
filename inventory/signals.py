@@ -22,7 +22,12 @@ _users_pending_deletion_lock = Lock()
 
 
 def _is_migrating() -> bool:
-    """Check if Django is currently running migrations"""
+    """
+    Checks if Django is currently running migrations.
+
+    Returns:
+        bool: True if migrations are running, False otherwise.
+    """
     try:
         executor = MigrationExecutor(connection)
         plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
@@ -33,7 +38,20 @@ def _is_migrating() -> bool:
 
 
 def _safe_signal_handler(func):
-    """Decorator to make signal handlers migration-safe"""
+    """
+    Decorator to make signal handlers migration-safe.
+
+    This decorator ensures that the decorated signal handler function is
+    not executed during migrations or if the ItemChangeLog table is not
+    yet available. It also includes error handling to prevent signal
+    handler failures from breaking the main operation.
+
+    Args:
+        func (callable): The signal handler function to wrap.
+
+    Returns:
+        callable: The wrapped function.
+    """
     def wrapper(*args, **kwargs):
         # Skip during migrations
         if _is_migrating():

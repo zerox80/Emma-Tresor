@@ -28,6 +28,11 @@ type DropdownItem =
 
 const MAX_VISIBLE_OPTIONS = 8;
 
+/**
+ * A selector component for tags.
+ * @param {TagSelectorProps} props The props for the component.
+ * @returns {JSX.Element} The rendered component.
+ */
 const TagSelector: FC<TagSelectorProps> = ({
   options,
   selectedIds,
