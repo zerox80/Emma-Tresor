@@ -1,21 +1,26 @@
 import React from 'react';
 import Button from '../common/Button';
 
+/**
+ * Props for the SelectionToolbar component.
+ */
 type Props = {
-  /** The number of selected items. */
+  /** The total number of currently selected items. */
   selectedCount: number;
-  /** Whether all items on the current page are selected. */
+  /** Whether all items currently visible on the page are selected. */
   areAllSelectedOnPage: boolean;
-  /** Callback to toggle the selection of all items on the current page. */
+  /** Callback function to toggle the selection of all items on the current page. */
   onToggleSelectAllCurrentPage: () => void;
-  /** Callback to clear the selection. */
+  /** Callback function to clear the entire selection. */
   onClearSelection: () => void;
-  /** Callback to open the assign to list sheet. */
+  /** Callback function to open the sheet for assigning selected items to a list. */
   onOpenAssignSheet: () => void;
 };
 
 /**
- * A toolbar that appears when items are selected, providing actions for the selection.
+ * A floating toolbar that appears at the bottom of the screen when one or more items are selected.
+ * It displays the number of selected items and provides actions for the selection, such as
+ * assigning them to a list or clearing the selection.
  *
  * @param {Props} props The props for the component.
  * @returns {JSX.Element | null} The rendered toolbar, or null if no items are selected.

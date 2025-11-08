@@ -8,6 +8,14 @@ import { z } from 'zod';
 import Button from '../components/common/Button';
 import { useAuthStore } from '../store/authStore';
 
+/**
+ * Defines the Zod schema for password validation, enforcing strong password requirements:
+ * - Minimum 12 characters.
+ * - At least one uppercase letter.
+ * - At least one lowercase letter.
+ * - At least one digit.
+ * - At least one special character.
+ */
 const passwordSchema = z
   .string()
   .min(12, 'Mindestens 12 Zeichen erforderlich')
@@ -16,6 +24,16 @@ const passwordSchema = z
   .regex(/\d/, 'Mindestens eine Ziffer erforderlich')
   .regex(/[^A-Za-z0-9]/, 'Mindestens ein Sonderzeichen erforderlich');
 
+/**
+ * Defines the Zod schema for the user registration form.
+ * It includes validation for username, email, password, password confirmation, and terms acceptance.
+ * Also includes a refinement for cross-field validation to ensure passwords match.
+ * @property {string} username - The user's chosen username, minimum 3 characters.
+ * @property {string} email - The user's email address, must be a valid email format.
+ * @property {string} password - The user's password, validated by `passwordSchema`.
+ * @property {string} password_confirm - Confirmation of the user's password.
+ * @property {boolean} acceptTerms - Boolean indicating acceptance of terms, must be true.
+ */
 const registerSchema = z
   .object({
     username: z.string().min(3, 'Nutzername muss mindestens 3 Zeichen lang sein'),
@@ -29,10 +47,19 @@ const registerSchema = z
     message: 'Die Passwörter stimmen nicht überein',
   });
 
+/**
+ * Represents the inferred type from the `registerSchema`.
+ * This type is used for form state management with `react-hook-form`.
+ */
 type RegisterSchema = z.infer<typeof registerSchema>;
 
 /**
- * The registration page, allowing new users to create an account.
+ * The registration page component, allowing new users to create an account.
+ * It provides a form for username, email, password, and terms acceptance.
+ * The component handles form validation using `react-hook-form` and `zod`,
+ * interacts with the authentication store to register the user, and
+ * automatically logs them in upon successful registration, then redirects to the dashboard.
+ * It also includes robust error handling for API responses.
  *
  * @returns {JSX.Element} The rendered registration page.
  */
@@ -59,6 +86,16 @@ const RegisterPage: React.FC = () => {
     },
   });
 
+  /**
+   * Handles the submission of the registration form.
+   * It performs client-side validation, trims and normalizes input values,
+   * then attempts to register the user via the `register` action from the auth store.
+   * On successful registration, it automatically logs the user in and redirects.
+   * On failure, it parses the Axios error response to display a detailed error message.
+   *
+   * @param {RegisterSchema} values - The validated form values.
+   * @returns {Promise<void>} A promise that resolves when the submission process is complete.
+   */
   const onSubmit = async (values: RegisterSchema) => {
     setFormError(null);
 
@@ -104,6 +141,15 @@ const RegisterPage: React.FC = () => {
       await login({ email, password, rememberMe: false });
       navigate('/', { replace: true });
     } catch (error) {
+      /**
+       * Defines the expected structure of an error response from the registration API.
+       * @property {string[]} [email] - Array of error messages for the email field.
+       * @property {string[]} [username] - Array of error messages for the username field.
+       * @property {string[]} [password] - Array of error messages for the password field.
+       * @property {string[]} [password_confirm] - Array of error messages for the password confirmation field.
+       * @property {string[]} [non_field_errors] - Array of general error messages not tied to a specific field.
+       * @property {string} [detail] - A general detail message for the error.
+       */
       type RegisterErrorResponse = {
         email?: string[];
         username?: string[];

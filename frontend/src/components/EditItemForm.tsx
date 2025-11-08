@@ -8,6 +8,18 @@ import Button from './common/Button';
 import { updateItem } from '../api/inventory';
 import type { Item, ItemPayload, Location, Tag } from '../types/inventory';
 
+/**
+ * Defines the validation schema for the item edit form using Zod.
+ * This schema is used to validate form fields before submission.
+ * @property {string} name - The name of the item, required.
+ * @property {string|null|undefined} description - An optional description of the item.
+ * @property {string|undefined} wodis_inventory_number - An optional inventory number with a max length of 120 characters.
+ * @property {number} quantity - The quantity of the item, must be an integer and at least 1.
+ * @property {string|null|undefined} purchase_date - An optional purchase date.
+ * @property {string|null|undefined} value - An optional value of the item.
+ * @property {number|null|undefined} location - An optional ID of the item's location.
+ * @property {number[]|undefined} tags - An optional array of tag IDs associated with the item.
+ */
 const itemSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich'),
   description: z.string().nullable().optional(),
@@ -25,20 +37,35 @@ const itemSchema = z.object({
   tags: z.array(z.number()).optional(),
 });
 
+/**
+ * Represents the inferred type from the `itemSchema`.
+ * This type is used for form state management with `react-hook-form`.
+ */
 type ItemFormSchema = z.infer<typeof itemSchema>;
 
+/**
+ * Props for the EditItemForm component.
+ * @interface EditItemFormProps
+ */
 interface EditItemFormProps {
+  /** The item object to be edited. */
   item: Item;
+  /** An array of available locations to choose from. */
   locations: Location[];
+  /** An array of available tags to choose from. */
   tags: Tag[];
+  /** Callback function to be executed on successful item update. */
   onSuccess: () => void;
+  /** Callback function to be executed when the edit process is cancelled. */
   onCancel: () => void;
 }
 
 /**
- * A form for editing an item.
+ * A form component for editing the details of an inventory item.
+ * It handles form validation, submission, and API interaction for updating an item.
+ *
  * @param {EditItemFormProps} props The props for the component.
- * @returns {JSX.Element} The rendered component.
+ * @returns {JSX.Element} The rendered form element.
  */
 const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSuccess, onCancel }) => {
   const [formError, setFormError] = useState<string | null>(null);
@@ -65,6 +92,14 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
 
   const watchedTags = watch('tags') || [];
 
+  /**
+   * Normalises the raw form values into a payload suitable for the API.
+   * This includes trimming strings, converting empty strings to null for optional fields,
+   * and ensuring correct data types.
+   *
+   * @param {ItemFormSchema} values - The raw values from the form.
+   * @returns {ItemPayload} The normalised payload ready for API submission.
+   */
   const normalisePayload = (values: ItemFormSchema): ItemPayload => {
     const description = values.description?.trim();
     const purchaseDate = values.purchase_date?.trim();
@@ -84,6 +119,13 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
     };
   };
 
+  /**
+   * Handles the form submission process.
+   * It normalises the form data, calls the update API, and handles success or error cases.
+   *
+   * @param {ItemFormSchema} values - The validated form values.
+   * @returns {Promise<void>} A promise that resolves when the submission process is complete.
+   */
   const onSubmit = async (values: ItemFormSchema) => {
     setFormError(null);
 
@@ -96,6 +138,12 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
     }
   };
 
+  /**
+   * Toggles the selection of a tag.
+   * If the tag is already selected, it's removed; otherwise, it's added to the selection.
+   *
+   * @param {number} tagId - The ID of the tag to toggle.
+   */
   const handleTagToggle = (tagId: number) => {
     const currentTags = watchedTags;
     const newTags = currentTags.includes(tagId)

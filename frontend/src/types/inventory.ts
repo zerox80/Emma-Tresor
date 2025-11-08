@@ -1,164 +1,171 @@
 /**
- * Represents a tag that can be associated with an item.
- */
-export interface Tag {
-  /** The unique ID of the tag. */
-  id: number;
-  /** The name of the tag. */
-  name: string;
-  /** The creation timestamp. */
-  created_at: string;
-  /** The last update timestamp. */
-  updated_at: string;
-}
-
-/**
- * Represents a location where an item can be stored.
- */
-export interface Location {
-  /** The unique ID of the location. */
-  id: number;
-  /** The name of the location. */
-  name: string;
-  /** The creation timestamp. */
-  created_at: string;
-  /** The last update timestamp. */
-  updated_at: string;
-}
-
-/**
- * Represents an image associated with an item.
+ * Represents an image or file attachment associated with an inventory item.
  */
 export interface ItemImage {
-  /** The unique ID of the image. */
+  /** The unique identifier for the image. */
   id: number;
-  /** The ID of the item this image belongs to. */
-  item: number;
-  /** The URL to download the image. */
-  download_url: string;
-  /** The URL to preview the image. */
+  /** The URL for a preview of the image. */
   preview_url: string;
-  /** The name of the image file. */
+  /** The URL for downloading the full-resolution image. */
+  download_url: string;
+  /** The original filename of the image. */
   filename: string;
-  /** The content type of the image. */
+  /** The MIME type of the image (e.g., 'image/jpeg', 'application/pdf'). */
   content_type: string;
-  /** The size of the image in bytes. */
-  size: number;
-  /** The creation timestamp. */
-  created_at: string;
-  /** The last update timestamp. */
-  updated_at: string;
-  /** The path to the image file (optional). */
-  image?: string | null;
+  /** The URL of the image itself (might be the same as preview_url or download_url depending on context). */
+  image: string;
 }
 
 /**
- * Represents an item in the inventory.
+ * Represents a single inventory item.
  */
 export interface Item {
-  /** The unique ID of the item. */
+  /** The unique identifier for the item. */
   id: number;
   /** The name of the item. */
   name: string;
-  /** A description of the item. */
+  /** A detailed description of the item. */
   description: string | null;
-  /** The quantity of the item. */
+  /** The quantity of the item available. */
   quantity: number;
-  /** The date the item was purchased. */
+  /** The purchase date of the item in ISO format (e.g., 'YYYY-MM-DD'). */
   purchase_date: string | null;
-  /** The value of the item. */
+  /** The estimated monetary value of the item. */
   value: string | null;
-  /** A unique identifier for the item. */
+  /** The unique asset tag associated with the item, often used for QR codes. */
   asset_tag: string;
-  /** The ID of the user who owns the item. */
-  owner: number;
   /** The ID of the location where the item is stored. */
   location: number | null;
-  /** An optional inventory number from an external system. */
-  wodis_inventory_number: string | null;
-  /** A list of tag IDs associated with the item. */
+  /** An array of IDs of tags associated with the item. */
   tags: number[];
-  /** A list of images associated with the item. */
+  /** An array of image attachments for the item. */
   images: ItemImage[];
-  /** The creation timestamp. */
-  created_at: string;
-  /** The last update timestamp. */
-  updated_at: string;
+  /** The WODIS inventory number, if applicable. */
+  wodis_inventory_number: string | null;
 }
 
 /**
- * Represents the payload for creating or updating an item.
+ * Represents the payload structure for creating or updating an inventory item.
  */
 export interface ItemPayload {
   /** The name of the item. */
   name: string;
-  /** A description of the item. */
+  /** A detailed description of the item. */
   description: string | null;
   /** The quantity of the item. */
   quantity: number;
-  /** The date the item was purchased. */
+  /** The purchase date of the item in ISO format (e.g., 'YYYY-MM-DD'). */
   purchase_date: string | null;
-  /** The value of the item. */
+  /** The estimated monetary value of the item. */
   value: string | null;
   /** The ID of the location where the item is stored. */
   location: number | null;
-  /** An optional inventory number from an external system. */
-  wodis_inventory_number: string | null;
-  /** A list of tag IDs associated with the item. */
+  /** An array of IDs of tags associated with the item. */
   tags: number[];
+  /** The WODIS inventory number, if applicable. */
+  wodis_inventory_number: string | null;
 }
 
 /**
- * Represents a list of items.
+ * Represents a tag that can be applied to inventory items. */
+export interface Tag {
+  /** The unique identifier for the tag. */
+  id: number;
+  /** The name of the tag. */
+  name: string;
+}
+
+/**
+ * Represents a physical location where inventory items can be stored.
+ */
+export interface Location {
+  /** The unique identifier for the location. */
+  id: number;
+  /** The name of the location. */
+  name: string;
+}
+
+/**
+ * Represents a curated list of inventory items.
  */
 export interface ItemList {
-  /** The unique ID of the list. */
+  /** The unique identifier for the list. */
   id: number;
   /** The name of the list. */
   name: string;
-  /** A list of item IDs in the list. */
+  /** An array of IDs of items included in this list. */
   items: number[];
-  /** The creation timestamp. */
-  created_at: string;
-  /** The last update timestamp. */
-  updated_at: string;
 }
 
 /**
- * Represents a paginated response from the API.
- * @template T The type of the items in the response.
+ * Represents a single entry in an item's change log.
+ */
+export interface ItemChangeLog {
+  /** The unique identifier for the log entry. */
+  id: number;
+  /** The timestamp when the change occurred. */
+  created_at: string;
+  /** The type of action performed (e.g., 'create', 'update', 'delete'). */
+  action: string;
+  /** A human-readable display name for the action. */
+  action_display: string;
+  /** The username of the user who performed the action. */
+  user_username: string | null;
+  /** A JSON object detailing the changes made (e.g., old and new values for fields). */
+  changes: Record<string, any>;
+}
+
+/**
+ * Represents a paginated response structure from the API.
+ * @template T The type of the items in the results array.
  */
 export interface PaginatedResponse<T> {
-  /** The total number of items. */
+  /** The total number of items across all pages. */
   count: number;
-  /** The URL of the next page, or null if there is no next page. */
+  /** The URL for the next page of results, or null if there is no next page. */
   next: string | null;
-  /** The URL of the previous page, or null if there is no previous page. */
+  /** The URL for the previous page of results, or null if there is no previous page. */
   previous: string | null;
-  /** The list of items on the current page. */
+  /** An array of items for the current page. */
   results: T[];
 }
 
 /**
- * Represents a log of changes made to an item.
+ * Represents parameters for fetching a list of items from the API.
  */
-export interface ItemChangeLog {
-  /** The unique ID of the change log. */
-  id: number;
-  /** The ID of the item that was changed. */
-  item: number | null;
-  /** The name of the item at the time of the change. */
-  item_name: string;
-  /** The ID of the user who made the change. */
-  user: number | null;
-  /** The username of the user who made the change. */
-  user_username: string | null;
-  /** The action that was performed. */
-  action: 'create' | 'update' | 'delete';
-  /** The display name of the action. */
-  action_display: string;
-  /** A JSON object describing the changes made. */
-  changes: Record<string, any>;
-  /** The creation timestamp. */
-  created_at: string;
+export interface FetchItemsParams {
+  /** A search query string to filter items by name, description, or asset tag. */
+  query?: string;
+  /** The page number to fetch. */
+  page?: number;
+  /** The number of items per page. */
+  pageSize?: number;
+  /** An array of tag IDs to filter items by. */
+  tags?: number[];
+  /** An array of location IDs to filter items by. */
+  locations?: number[];
+  /** A string specifying the ordering of results (e.g., 'name', '-purchase_date'). */
+  ordering?: string;
+}
+
+/**
+ * Represents parameters for exporting items to a file (e.g., CSV).
+ */
+export interface ExportItemsParams {
+  /** A search query string to filter items for export. */
+  query?: string;
+  /** An array of tag IDs to filter items for export. */
+  tags?: number[];
+  /** An array of location IDs to filter items for export. */
+  locations?: number[];
+  /** A string specifying the ordering of items for export. */
+  ordering?: string;
+}
+
+/**
+ * Represents options for fetching a QR code.
+ */
+export interface FetchQrCodeOptions {
+  /** If true, the server should return the QR code as a downloadable file. */
+  download?: boolean;
 }

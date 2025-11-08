@@ -2,28 +2,32 @@ import React from 'react';
 import Button from '../common/Button';
 import type { Item } from '../../types/inventory';
 
+/**
+ * Props for the ItemsTable component.
+ */
 type Props = {
-  /** The list of items to display. */
+  /** The array of item objects to display in the table. */
   items: Item[];
-  /** A map of location IDs to location names. */
+  /** A key-value map of location IDs to location names for display. */
   locationMap: Record<number, string>;
-  /** A map of tag IDs to tag names. */
+  /** A key-value map of tag IDs to tag names for display. */
   tagMap: Record<number, string>;
-  /** Callback to open the details view for an item. */
+  /** Callback function invoked when a user clicks to see an item's details. */
   onOpenDetails: (itemId: number) => void;
-  /** Whether the table is in selection mode. */
+  /** If true, the table will display checkboxes for item selection. */
   selectionMode: boolean;
-  /** Whether all items on the current page are selected. */
+  /** Whether all items currently visible on the page are selected. Used for the header checkbox state. */
   areAllSelectedOnPage: boolean;
-  /** Callback to toggle the selection of all items on the current page. */
+  /** Callback function to toggle the selection state of all items currently visible on the page. */
   onToggleSelectAllCurrentPage: () => void;
 };
 
 /**
- * Formats a currency value.
+ * Formats a string value as a German currency (EUR).
+ * Returns '—' if the value is null, undefined, or not a valid number.
  *
- * @param {string | null | undefined} value The value to format.
- * @returns {string} The formatted currency value.
+ * @param {string | null | undefined} value The numeric string to format.
+ * @returns {string} The formatted currency string.
  */
 const formatCurrency = (value: string | null | undefined) => {
   if (!value) return '—';
@@ -33,7 +37,11 @@ const formatCurrency = (value: string | null | undefined) => {
 };
 
 /**
- * A component that displays a table of items.
+ * A component that displays a collection of inventory items in a data table.
+ * It shows key details for each item in columns and provides an action button to view full details.
+ * It also supports a `selectionMode` to show checkboxes for bulk actions.
+ *
+ * @todo The `selectionMode` prop enables a "select all" checkbox in the header, but the corresponding checkboxes for individual rows are missing. An `onSelectItem` prop and row-level checkboxes should be added to make selection functional.
  *
  * @param {Props} props The props for the component.
  * @returns {JSX.Element} The rendered table of items.

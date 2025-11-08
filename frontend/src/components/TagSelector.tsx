@@ -8,30 +8,57 @@ import {
   useState,
 } from 'react';
 
+/**
+ * Represents a single selectable tag option.
+ * @property {string} label - The human-readable text of the tag.
+ * @property {number} value - The unique identifier for the tag.
+ */
 export interface TagSelectorOption {
   label: string;
   value: number;
 }
 
+/**
+ * Props for the TagSelector component.
+ */
 interface TagSelectorProps {
+  /** The complete list of available tag options. */
   options: TagSelectorOption[];
+  /** An array of IDs for the currently selected tags. */
   selectedIds: number[];
+  /** Callback function invoked when the selection changes. */
   onChange: (ids: number[]) => void;
+  /**
+   * Async callback function to create a new tag.
+   * @param {string} name - The name of the new tag to create.
+   * @returns {Promise<TagSelectorOption | null>} A promise that resolves with the newly created tag option or null on failure.
+   */
   onCreateTag: (name: string) => Promise<TagSelectorOption | null>;
+  /** Whether the selector is disabled. Defaults to `false`. */
   disabled?: boolean;
+  /** Whether a tag creation operation is currently in progress. Defaults to `false`. */
   isCreating?: boolean;
 }
 
+/**
+ * Represents an item in the dropdown list, which can either be an existing option or a prompt to create a new one.
+ */
 type DropdownItem =
   | { type: 'option'; option: TagSelectorOption }
   | { type: 'create'; label: string };
 
+/**
+ * The maximum number of options to display in the dropdown before scrolling.
+ */
 const MAX_VISIBLE_OPTIONS = 8;
 
 /**
- * A selector component for tags.
+ * A highly interactive, custom-built component for selecting and creating tags.
+ * It supports typing to filter, creating new tags on-the-fly, keyboard navigation (arrows, Enter, Escape),
+ * and removing tags with backspace or a click.
+ *
  * @param {TagSelectorProps} props The props for the component.
- * @returns {JSX.Element} The rendered component.
+ * @returns {JSX.Element} The rendered tag selector component.
  */
 const TagSelector: FC<TagSelectorProps> = ({
   options,
@@ -47,19 +74,23 @@ const TagSelector: FC<TagSelectorProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  /** Memoized, normalized (trimmed, lowercase) version of the user's input. */
   const normalisedInput = useMemo(() => inputValue.trim().toLowerCase(), [inputValue]);
 
+  /** Memoized list of the full `TagSelectorOption` objects that are currently selected. */
   const selectedOptions = useMemo<TagSelectorOption[]>(() => {
     return selectedIds
       .map((id) => options.find((option) => option.value === id) ?? null)
       .filter((option): option is TagSelectorOption => option !== null);
   }, [options, selectedIds]);
 
+  /** Memoized list of options that are not currently selected. */
   const availableOptions = useMemo<TagSelectorOption[]>(() => {
     const selectedSet = new Set(selectedIds);
     return options.filter((option) => !selectedSet.has(option.value));
   }, [options, selectedIds]);
 
+  /** Memoized list of available options that match the user's current input, limited for display. */
   const matchingOptions = useMemo<TagSelectorOption[]>(() => {
     if (!normalisedInput) {
       return availableOptions.slice(0, MAX_VISIBLE_OPTIONS);
@@ -70,6 +101,7 @@ const TagSelector: FC<TagSelectorProps> = ({
       .slice(0, MAX_VISIBLE_OPTIONS);
   }, [availableOptions, normalisedInput]);
 
+  /** Memoized boolean indicating if the user's input exactly matches an existing tag label. */
   const hasExactMatch = useMemo<boolean>(() => {
     if (!normalisedInput) {
       return false;
@@ -77,6 +109,7 @@ const TagSelector: FC<TagSelectorProps> = ({
     return options.some((option) => option.label.toLowerCase() === normalisedInput);
   }, [normalisedInput, options]);
 
+  /** Memoized list of items to render in the dropdown, including matching options and a "create" prompt if applicable. */
   const dropdownItems = useMemo<DropdownItem[]>(() => {
     const items: DropdownItem[] = matchingOptions.map((option) => ({
       type: 'option',
@@ -90,17 +123,20 @@ const TagSelector: FC<TagSelectorProps> = ({
     return items;
   }, [hasExactMatch, inputValue, matchingOptions, normalisedInput]);
 
+  /** Closes the dropdown and resets the highlighted index. */
   const closeDropdown = useCallback(() => {
     setIsOpen(false);
     setHighlightedIndex(-1);
   }, []);
 
+  /** Opens the dropdown if the component is not disabled. */
   const openDropdown = useCallback(() => {
     if (!disabled) {
       setIsOpen(true);
     }
   }, [disabled]);
 
+  /** Effect to reset the highlighted index when the dropdown opens or items change. */
   useEffect(() => {
     if (!isOpen || dropdownItems.length === 0) {
       setHighlightedIndex(-1);
@@ -109,6 +145,7 @@ const TagSelector: FC<TagSelectorProps> = ({
     setHighlightedIndex(0);
   }, [dropdownItems.length, isOpen]);
 
+  /** Effect to handle clicks outside the component to close the dropdown. */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (!containerRef.current) {
@@ -119,16 +156,21 @@ const TagSelector: FC<TagSelectorProps> = ({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside as EventListener);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside as EventListener);
     };
   }, [closeDropdown]);
 
+  /** Focuses the text input element. */
   const focusInput = useCallback(() => {
     inputRef.current?.focus();
   }, []);
 
+  /**
+   * Adds a tag to the selection.
+   * @param {TagSelectorOption} option The tag option to add.
+   */
   const addTag = useCallback(
     (option: TagSelectorOption) => {
       if (selectedIds.includes(option.value)) {
@@ -142,6 +184,9 @@ const TagSelector: FC<TagSelectorProps> = ({
     [closeDropdown, focusInput, onChange, selectedIds],
   );
 
+  /**
+   * Handles the creation of a new tag from the user's input.
+   */
   const handleCreateTag = useCallback(async (): Promise<void> => {
     const trimmed = inputValue.trim();
     if (trimmed.length === 0 || disabled || isCreating) {
@@ -157,6 +202,10 @@ const TagSelector: FC<TagSelectorProps> = ({
     }
   }, [closeDropdown, disabled, focusInput, inputValue, isCreating, onChange, onCreateTag, selectedIds]);
 
+  /**
+   * Removes a tag from the selection.
+   * @param {number} id The ID of the tag to remove.
+   */
   const handleRemoveTag = useCallback(
     (id: number) => {
       onChange(selectedIds.filter((tagId) => tagId !== id));
@@ -165,8 +214,13 @@ const TagSelector: FC<TagSelectorProps> = ({
     [focusInput, onChange, selectedIds],
   );
 
+  /**
+   * Handles all keyboard interactions within the input, including navigation, selection, creation, and deletion.
+   * @param {KeyboardEvent<HTMLInputElement>} event The keyboard event.
+   */
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLInputElement>) => {
+      // Remove last tag on backspace if input is empty
       if (event.key === 'Backspace' && inputValue.length === 0 && selectedIds.length > 0) {
         event.preventDefault();
         const lastId = selectedIds[selectedIds.length - 1];
@@ -174,11 +228,13 @@ const TagSelector: FC<TagSelectorProps> = ({
         return;
       }
 
+      // Open dropdown with arrow keys
       if (!isOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
         openDropdown();
         return;
       }
 
+      // Navigate down
       if (event.key === 'ArrowDown') {
         event.preventDefault();
         if (dropdownItems.length === 0) {
@@ -191,6 +247,7 @@ const TagSelector: FC<TagSelectorProps> = ({
         return;
       }
 
+      // Navigate up
       if (event.key === 'ArrowUp') {
         event.preventDefault();
         if (dropdownItems.length === 0) {
@@ -203,6 +260,7 @@ const TagSelector: FC<TagSelectorProps> = ({
         return;
       }
 
+      // Select or create on Enter
       if (event.key === 'Enter') {
         if (highlightedIndex >= 0 && highlightedIndex < dropdownItems.length) {
           event.preventDefault();
@@ -215,12 +273,14 @@ const TagSelector: FC<TagSelectorProps> = ({
           return;
         }
 
+        // Fallback to create if there's input but no highlighted item
         if (normalisedInput && !hasExactMatch) {
           event.preventDefault();
           void handleCreateTag();
         }
       }
 
+      // Close on Escape
       if (event.key === 'Escape') {
         closeDropdown();
       }

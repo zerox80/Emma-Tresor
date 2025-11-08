@@ -6,14 +6,33 @@ import ManageListItemsSheet, { type ManageableItem } from '../components/ManageL
 import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory';
 import type { Item, ItemList } from '../types/inventory';
 
+import React, { useEffect, useMemo, useState } from 'react';
+import type { AxiosError } from 'axios';
+
+import Button from '../components/common/Button';
+import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
+import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory';
+import type { Item, ItemList } from '../types/inventory';
+
+/**
+ * Extends the base `ItemList` interface to include the resolved `Item` objects.
+ * @property {Item[]} resolvedItems - An array of actual item objects that belong to this list.
+ */
 interface ListWithItems extends ItemList {
   resolvedItems: Item[];
 }
 
 /**
- * The page for viewing and managing item lists.
+ * The page component for viewing and managing item lists.
+ * This page allows users to:
+ * - View all their created lists.
+ * - Create new lists.
+ * - Manage (add/remove) items within a specific list using a dedicated sheet.
+ * - Delete existing lists.
+ * - Export list contents to a CSV file.
+ * It handles data fetching, state management for lists and items, and user interactions.
  *
- * @returns {JSX.Element} The rendered lists page.
+ * @returns {JSX.Element} The rendered lists management page.
  */
 const ListsPage: React.FC = () => {
   const [lists, setLists] = useState<ListWithItems[]>([]);
@@ -32,6 +51,10 @@ const ListsPage: React.FC = () => {
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportingListId, setExportingListId] = useState<number | null>(null);
 
+  /**
+   * Effect hook to load all lists and items from the API on component mount.
+   * It populates the `lists` and `allItems` states and handles loading/error states.
+   */
   useEffect(() => {
     let isMounted = true;
 
@@ -59,7 +82,7 @@ const ListsPage: React.FC = () => {
         if (!isMounted) {
           return;
         }
-        setError('Die Listen konnten nicht synchronisiert werden. Pr├╝fe deine Verbindung und versuche es in K├╝rze erneut.');
+        setError('Die Listen konnten nicht synchronisiert werden. Prüfe deine Verbindung und versuche es in Kürze erneut.');
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -74,6 +97,10 @@ const ListsPage: React.FC = () => {
     };
   }, []);
 
+  /**
+   * Handles refreshing the lists and items data from the API.
+   * Updates the component's state with the latest data.
+   */
   const handleRefresh = async () => {
     try {
       setLoading(true);
@@ -99,6 +126,10 @@ const ListsPage: React.FC = () => {
     }
   };
 
+  /**
+   * Handles the creation of a new list.
+   * Validates the list name, calls the API, and updates the lists state.
+   */
   const handleCreateList = async () => {
     if (!newListName.trim()) {
       setCreateError('Listenname ist erforderlich.');
@@ -123,14 +154,26 @@ const ListsPage: React.FC = () => {
     }
   };
 
+  /**
+   * Cancels the new list creation process, closing the modal and resetting input.
+   */
   const handleCancelCreate = () => {
     setShowCreateModal(false);
     setNewListName('');
     setCreateError(null);
   };
 
+  /**
+   * Memoized map for quick lookup of item objects by their ID.
+   * @type {Map<number, Item>}
+   */
   const itemMap = useMemo(() => new Map<number, Item>(allItems.map((item) => [item.id, item])), [allItems]);
 
+  /**
+   * Memoized list of all items, augmented with their assignment count to various lists.
+   * Used for the `ManageListItemsSheet`.
+   * @type {ManageableItem[]}
+   */
   const manageableItems = useMemo<ManageableItem[]>(() => {
     const assignmentCountMap = new Map<number, number>();
     lists.forEach((list) => {
@@ -145,6 +188,10 @@ const ListsPage: React.FC = () => {
     }));
   }, [allItems, lists]);
 
+  /**
+   * Opens the `ManageListItemsSheet` for a specific list.
+   * @param {number} listId - The ID of the list to manage.
+   */
   const handleOpenManageItems = (listId: number) => {
     const target = lists.find((list) => list.id === listId);
     if (!target) {
@@ -154,6 +201,9 @@ const ListsPage: React.FC = () => {
     setManageError(null);
   };
 
+  /**
+   * Closes the `ManageListItemsSheet`. Prevents closing if a save operation is in progress.
+   */
   const handleCloseManageItems = () => {
     if (manageSaving) {
       return;
@@ -162,6 +212,11 @@ const ListsPage: React.FC = () => {
     setManageError(null);
   };
 
+  /**
+   * Handles saving changes made to a list's items via the `ManageListItemsSheet`.
+   * Updates the list in the state after a successful API call.
+   * @param {number[]} itemIds - The array of item IDs that should now be in the list.
+   */
   const handleSaveManageItems = async (itemIds: number[]) => {
     if (!manageListTarget) {
       return;
@@ -194,12 +249,17 @@ const ListsPage: React.FC = () => {
       const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
         ? (axiosError.response.data as { detail?: string }).detail
         : null;
-      setManageError(fallback ?? '├änderungen konnten nicht gespeichert werden.');
+      setManageError(fallback ?? 'Änderungen konnten nicht gespeichert werden.');
     } finally {
       setManageSaving(false);
     }
   };
 
+  /**
+   * Handles the deletion of a specific list.
+   * Prompts for user confirmation before proceeding with the API call.
+   * @param {number} listId - The ID of the list to delete.
+   */
   const handleDeleteList = async (listId: number) => {
     if (deletingListId !== null) {
       return;
@@ -212,7 +272,7 @@ const ListsPage: React.FC = () => {
 
     let confirmed = true;
     if (typeof window !== 'undefined') {
-      confirmed = window.confirm(`Liste "${target.name}" wirklich l├Âschen? Diese Aktion kann nicht r├╝ckg├ñngig gemacht werden.`);
+      confirmed = window.confirm(`Liste "${target.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
     }
     if (!confirmed) {
       return;
@@ -232,12 +292,17 @@ const ListsPage: React.FC = () => {
       const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
         ? (axiosError.response.data as { detail?: string }).detail
         : null;
-      setDeleteError(fallback ?? 'Liste konnte nicht gel├Âscht werden. Bitte versuche es erneut.');
+      setDeleteError(fallback ?? 'Liste konnte nicht gelöscht werden. Bitte versuche es erneut.');
     } finally {
       setDeletingListId(null);
     }
   };
 
+  /**
+   * Handles exporting the items of a specific list to a CSV file.
+   * @param {number} listId - The ID of the list to export.
+   * @param {string} listName - The name of the list, used for the filename.
+   */
   const handleExportList = async (listId: number, listName: string) => {
     setExportError(null);
     setExportingListId(listId);

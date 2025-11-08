@@ -5,55 +5,67 @@ import apiClient from '../api/client';
 import type { LoginRequest, LoginResponse, RegisterRequest, UserProfile } from '../types/auth';
 
 /**
- * Represents the state and actions for authentication.
+ * Represents the complete state and available actions within the authentication store.
+ * This interface defines all properties that describe the current authentication status
+ * and the methods to interact with it.
  */
 interface AuthState {
-  /** The current authenticated user's profile, or null if not authenticated. */
+  /** The current authenticated user's profile data, or `null` if not authenticated. */
   user: UserProfile | null;
-  /** True if the user is currently authenticated. */
+  /** A boolean indicating whether a user is currently authenticated. */
   isAuthenticated: boolean;
-  /** True if the store has performed its initial authentication check. */
+  /** A boolean indicating whether the authentication store has completed its initial loading/checking phase. */
   hasInitialised: boolean;
-  /** The timestamp (in milliseconds) when the current access token expires. */
+  /** The timestamp (in milliseconds) when the current access token is set to expire. */
   accessExpiresAt: number | null;
-  /** True if the user has selected the "remember me" option. */
+  /** A boolean indicating whether the user opted to "remember me" during login. */
   remembering: boolean;
   /**
-   * Logs in a user with the given credentials.
-   * @param credentials The login credentials.
-   * @returns A promise that resolves on successful login.
+   * Initiates the user login process.
+   * @param {LoginRequest} credentials - The user's login credentials (email, password, rememberMe).
+   * @returns {Promise<void>} A promise that resolves upon successful login, or rejects on failure.
    */
   login: (credentials: LoginRequest) => Promise<void>;
   /**
-   * Logs out the current user.
-   * @returns A promise that resolves when the user is logged out.
+   * Initiates the user logout process.
+   * Clears the authentication state and removes persisted data.
+   * @returns {Promise<void>} A promise that resolves when the user is logged out.
    */
   logout: () => Promise<void>;
   /**
-   * Registers a new user.
-   * @param payload The registration data.
-   * @returns A promise that resolves on successful registration.
+   * Initiates the user registration process.
+   * @param {RegisterRequest} payload - The user's registration data.
+   * @returns {Promise<void>} A promise that resolves upon successful registration, or rejects on failure.
    */
   register: (payload: RegisterRequest) => Promise<void>;
   /**
-   * Refreshes the access token.
-   * @returns A promise that resolves to true on success, false on failure.
+   * Attempts to refresh the access token using a refresh token.
+   * This is typically called by the Axios interceptor when an access token expires.
+   * @returns {Promise<void>} A promise that resolves to `true` if the token was successfully refreshed, `false` otherwise.
    */
   refreshAccessToken: () => Promise<void>;
   /**
-   * Initialises the authentication state, checking for an existing session.
-   * @returns A promise that resolves when initialisation is complete.
+   * Initializes the authentication state by checking for an existing session (e.g., from persisted storage)
+   * and fetching the user profile if a session is found.
+   * @returns {Promise<void>} A promise that resolves when the initialisation is complete.
    */
   initialise: () => Promise<void>;
 }
 
+/**
+ * The key used for storing the authentication state in browser's local/session storage.
+ */
 const AUTH_STORAGE_KEY = 'emmatresor_auth_state';
 
+/**
+ * Type definition for the Zustand setter function used within the store.
+ */
 type AuthStoreSetter = (partial: Partial<AuthState>) => void;
 
 /**
  * Resets the authentication state to its initial, unauthenticated values.
- * @param set The Zustand setter function.
+ * This is typically called during logout or when an authentication error occurs.
+ * @param {AuthStoreSetter} set - The Zustand setter function.
  */
 const resetState = (set: AuthStoreSetter) => {
   set({
@@ -65,14 +77,18 @@ const resetState = (set: AuthStoreSetter) => {
   });
 };
 
+/**
+ * Type definition for Zustand's persist middleware mutators.
+ */
 type PersistMutators = [['zustand/persist', unknown]];
 
 /**
- * The state creator function for the authentication store.
+ * The core state creator function for the authentication Zustand store.
+ * It defines the initial state and all actions that can modify the authentication state.
  *
- * @param set The Zustand setter function.
- * @param get The Zustand getter function.
- * @returns The authentication state and actions.
+ * @param {AuthStoreSetter} set - The Zustand setter function to update the state.
+ * @param {Function} get - The Zustand getter function to access the current state.
+ * @returns {AuthState} The authentication state and actions.
  */
 const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) => ({
   user: null,
@@ -98,7 +114,7 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
         user: data,
         isAuthenticated: true,
         hasInitialised: true,
-        accessExpiresAt: null,
+        accessExpiresAt: null, // Access token expiration is managed by interceptor
       });
     };
 
@@ -190,7 +206,8 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
 });
 
 /**
- * Configuration for persisting the authentication state.
+ * Configuration for persisting the authentication state across sessions.
+ * It specifies which parts of the state should be saved and restored.
  */
 const persistOptions: PersistOptions<AuthState> = {
   name: AUTH_STORAGE_KEY,
@@ -203,7 +220,9 @@ const persistOptions: PersistOptions<AuthState> = {
 };
 
 /**
- * The Zustand store for authentication, with persistence middleware.
+ * The Zustand store for managing authentication state, enhanced with persistence middleware.
+ * This store provides a centralized way to access and modify the user's authentication status,
+ * user profile, and session-related information throughout the application.
  */
 export const useAuthStore = create<AuthState>()(
   persist<AuthState>(authStoreCreator, persistOptions),

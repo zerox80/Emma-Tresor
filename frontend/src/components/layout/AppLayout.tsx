@@ -3,6 +3,11 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/useAuth';
 
+/**
+ * A helper function for `NavLink` to dynamically apply CSS classes based on whether the link is active.
+ * @param {{ isActive: boolean }} props - An object provided by `NavLink` indicating if the route is active.
+ * @returns {string} A string of CSS classes.
+ */
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
     'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -10,15 +15,18 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   ].join(' ');
 
 /**
- * The main layout for the application, including the header, navigation, and content area.
+ * The main layout for the authenticated areas of the application.
+ * It provides a consistent structure including a responsive header with navigation,
+ * a dynamic page title section, and a main content area where child routes are rendered via `<Outlet />`.
  *
- * @returns {JSX.Element} The rendered application layout.
+ * @returns {JSX.Element} The rendered application layout component.
  */
 const AppLayout: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  // Effect to automatically close the mobile navigation when the user navigates to a new page.
   useEffect(() => {
     if (!mobileNavOpen) {
       return;
@@ -26,6 +34,10 @@ const AppLayout: React.FC = () => {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
+  /**
+   * Memoized page metadata (title and subtitle) that dynamically updates based on the current route.
+   * @type {{title: string, subtitle: string}}
+   */
   const pageMeta = useMemo(() => {
     if (location.pathname.startsWith('/lists')) {
       return {
@@ -55,6 +67,9 @@ const AppLayout: React.FC = () => {
     };
   }, [location.pathname]);
 
+  /**
+   * Handles the user logout process.
+   */
   const handleLogout = async () => {
     await logout();
   };

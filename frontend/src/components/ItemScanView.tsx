@@ -6,36 +6,66 @@ import { fetchItemQrCode, fetchItemChangelog } from '../api/inventory';
 import type { Item, ItemChangeLog } from '../types/inventory';
 import { apiBaseUrl } from '../api/client';
 
+/**
+ * Represents the position of the currently viewed item within a larger list.
+ * @interface DetailPositionInfo
+ */
 interface DetailPositionInfo {
+  /** The 1-based index of the current item. */
   current: number;
+  /** The total number of items in the list. */
   total: number;
 }
 
+/**
+ * Props for the ItemScanView component.
+ * @interface ItemScanViewProps
+ */
 interface ItemScanViewProps {
+  /** The item object to display. Null if no item is selected or if it's loading. */
   item: Item | null;
+  /** Indicates if the item data is currently being loaded. */
   loading: boolean;
+  /** An error message if loading the item failed, otherwise null. */
   error: string | null;
+  /** Callback function to close the view (e.g., navigate away). */
   onClose: () => void;
+  /** Callback function to switch to the edit mode for the current item. */
   onEdit: () => void;
+  /** Optional callback to retry loading the item data. */
   onRetry?: () => void;
+  /** Optional callback to initiate the deletion of the item. */
   onDelete?: () => void;
+  /** Indicates if the item is currently being deleted. Defaults to `false`. */
   deleteLoading?: boolean;
+  /** An error message if deleting the item failed. Defaults to `null`. */
   deleteError?: string | null;
+  /** A key-value map of tag IDs to tag names for display purposes. */
   tagMap: Record<number, string>;
+  /** A key-value map of location IDs to location names for display purposes. */
   locationMap: Record<number, string>;
+  /** Optional callback to navigate to the previous item in a sequence. */
   onNavigatePrevious?: () => void;
+  /** Optional callback to navigate to the next item in a sequence. */
   onNavigateNext?: () => void;
+  /** Indicates if navigation to a previous item is possible. Defaults to `false`. */
   canNavigatePrevious?: boolean;
+  /** Indicates if navigation to a next item is possible. Defaults to `false`. */
   canNavigateNext?: boolean;
+  /** The current direction of navigation, used for showing loading states on navigation buttons. */
   navigationDirection?: 'next' | 'previous' | null;
+  /** Information about the item's position in a list, if applicable. */
   positionInfo?: DetailPositionInfo | null;
 }
 
 
 /**
- * A view that displays the details of an item after scanning a QR code.
+ * A view component designed to display the full details of an inventory item, typically after a QR code scan.
+ * It is not a modal and is intended to be embedded within a page. It provides information about the item,
+ * its attachments, QR code, and history, along with actions like editing or deleting.
+ *
  * @param {ItemScanViewProps} props The props for the component.
- * @returns {JSX.Element} The rendered component.
+ * @returns {JSX.Element} The rendered component displaying the item's details.
  */
 const ItemScanView: React.FC<ItemScanViewProps> = ({
   item,
@@ -56,6 +86,11 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
   navigationDirection = null,
   positionInfo = null,
 }) => {
+  /**
+   * Represents the state of the QR code preview.
+   * @property {string} url - The URL of the QR code image (can be a data URL or object URL).
+   * @property {boolean} revokable - True if the URL is an object URL that needs to be revoked later to prevent memory leaks.
+   */
   type QrPreview = {
     url: string;
     revokable: boolean;
@@ -87,6 +122,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
   const nextDisabled = !onNavigateNext || !canNavigateNext || loading || isNavigatingNext;
 
 
+  /**
+   * Computes the base URL for media assets, attempting to derive it from the API base URL or window location.
+   * @type {string}
+   */
   const apiMediaBase = useMemo(() => {
     try {
       const base = apiBaseUrl.replace(/\/@?api(?:\/)?$/i, '/');
@@ -101,6 +140,11 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     }
   }, []);
 
+  /**
+   * Resolves a relative asset path to a full URL using the determined media base URL.
+   * @param {string | null | undefined} path The relative path to the asset.
+   * @returns {string} The fully resolved URL for the asset. Returns an empty string if the path is invalid.
+   */
   const resolveAssetUrl = useCallback(
     (path: string | null | undefined) => {
       if (!path) {
@@ -126,6 +170,15 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     [apiMediaBase],
   );
 
+  /**
+   * A structured view of an item's attachment for rendering.
+   * @property {string|number} key - A unique key for the attachment.
+   * @property {string} previewUrl - URL for previewing the attachment.
+   * @property {string} downloadUrl - URL for downloading the attachment.
+   * @property {string} name - The filename of the attachment.
+   * @property {string} extension - The file extension.
+   * @property {'image'|'pdf'|'file'} type - The type of the attachment.
+   */
   type AttachmentView = {
     key: string | number;
     previewUrl: string;
@@ -135,6 +188,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     type: 'image' | 'pdf' | 'file';
   };
 
+  /**
+   * Memoized list of processed attachments for the current item, with resolved URLs.
+   * @type {AttachmentView[]}
+   */
   const attachments = useMemo<AttachmentView[]>(() => {
     if (!item?.images) {
       return [];
@@ -169,22 +226,37 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     });
   }, [item, resolveAssetUrl]);
 
+  /**
+   * Memoized, unique ID for the delete confirmation dialog's title.
+   * @type {string}
+   */
   const deleteConfirmTitleId = useMemo(
     () => (item ? `item-delete-confirm-${item.id}` : 'item-delete-confirm'),
     [item],
   );
 
+  /**
+   * Memoized, unique ID for the delete confirmation dialog's description.
+   * @type {string}
+   */
   const deleteConfirmDescriptionId = useMemo(
     () => `${deleteConfirmTitleId}-description`,
     [deleteConfirmTitleId],
   );
 
+  /**
+   * Safely releases a revocable object URL to prevent memory leaks.
+   * @param {QrPreview | null} preview The QR code preview object to release.
+   */
   const releaseQrPreview = useCallback((preview: QrPreview | null) => {
     if (preview?.revokable) {
       URL.revokeObjectURL(preview.url);
     }
   }, []);
 
+  /**
+   * Clears the current QR code preview, releasing its object URL if necessary.
+   */
   const clearQrPreview = useCallback(() => {
     setQrPreview((previous) => {
       releaseQrPreview(previous);
@@ -192,6 +264,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     });
   }, [releaseQrPreview]);
 
+  /**
+   * Sets a new QR code preview, ensuring the previous one is released.
+   * @param {QrPreview} preview The new QR code preview object.
+   */
   const setQrPreviewValue = useCallback(
     (preview: QrPreview) => {
       setQrPreview((previous) => {
@@ -202,6 +278,11 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     [releaseQrPreview],
   );
 
+  /**
+   * Formats a string value as a German currency (EUR).
+   * @param {string | null} value The numeric string to format.
+   * @returns {string} The formatted currency string, or '—' if invalid.
+   */
   const formatCurrency = (value: string | null) => {
     const numeric = Number(value ?? 0);
     if (!Number.isFinite(numeric)) {
@@ -210,6 +291,11 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
   };
 
+  /**
+   * Formats a date string into a German date format (DD.MM.YYYY).
+   * @param {string | null} value The date string to format.
+   * @returns {string} The formatted date string, or '—' if invalid.
+   */
   const formatDate = (value: string | null) => {
     if (!value) {
       return '—';
@@ -225,6 +311,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     }).format(date);
   };
 
+  /**
+   * Memoized public-facing link to the item's scan page.
+   * @type {string}
+   */
   const shareLink = useMemo(() => {
     if (!item?.asset_tag) {
       return '';
@@ -247,6 +337,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     }
   }, [item, apiMediaBase]);
 
+  /**
+   * Generates a QR code on the client-side as a fallback if the server-side generation fails.
+   * @returns {Promise<boolean>} A promise that resolves to true if the fallback was generated successfully.
+   */
   const generateFallbackQr = useCallback(async () => {
     if (!shareLink) {
       return false;
@@ -264,6 +358,9 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     }
   }, [shareLink, setQrPreviewValue]);
 
+  /**
+   * Effect to clean up the copy success message timeout on unmount.
+   */
   useEffect(() => (
     () => {
       if (copyTimeoutRef.current !== null) {
@@ -273,6 +370,9 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     }
   ), []);
 
+  /**
+   * Effect to reset component state when the item prop changes.
+   */
   useEffect(() => {
     if (!item) {
       if (copyTimeoutRef.current !== null) {
@@ -286,10 +386,16 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     }
   }, [item]);
 
+  /**
+   * Effect to hide the delete confirmation when the item changes.
+   */
   useEffect(() => {
     setConfirmingDelete(false);
   }, [item, canDelete]);
 
+  /**
+   * Effect to focus the delete confirmation dialog when it becomes visible.
+   */
   useEffect(() => {
     if (!confirmingDelete) {
       return;
@@ -302,10 +408,16 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     };
   }, [confirmingDelete]);
 
+  /**
+   * Effect to keep a ref to the current QR preview to prevent stale closures in cleanup.
+   */
   useEffect(() => {
     qrPreviewRef.current = qrPreview;
   }, [qrPreview]);
 
+  /**
+   * Effect to release the QR code's object URL on unmount.
+   */
   useEffect(
     () => () => {
       releaseQrPreview(qrPreviewRef.current);
@@ -313,6 +425,9 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     [releaseQrPreview],
   );
 
+  /**
+   * Effect to fetch the item's changelog whenever the item changes.
+   */
   useEffect(() => {
     let active = true;
 
@@ -349,6 +464,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     };
   }, [item]);
 
+  /**
+   * Effect to fetch the item's QR code from the server.
+   * It handles loading states, errors, and triggers a client-side fallback if necessary.
+   */
   useEffect(() => {
     let active = true;
 
@@ -394,10 +513,18 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     };
   }, [item, qrReloadToken, clearQrPreview, setQrPreviewValue, generateFallbackQr]);
 
+  /**
+   * Triggers a refresh of the server-generated QR code.
+   */
   const handleRefreshQr = useCallback(() => {
     setQrReloadToken((prev) => prev + 1);
   }, []);
 
+  /**
+   * Handles downloading the QR code as a PNG file.
+   * It attempts to fetch a high-quality version from the server first,
+   * then falls back to converting the currently displayed preview.
+   */
   const handleDownloadQr = useCallback(async () => {
     if (!item) {
       return;
@@ -446,6 +573,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     }
   }, [item, generateFallbackQr]);
 
+  /**
+   * Opens an attachment's preview URL in a new browser tab.
+   * @param {string} url The URL of the attachment to open.
+   */
   const handleOpenAttachment = useCallback((url: string) => {
     if (!url) {
       return;
@@ -453,6 +584,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     window.open(url, '_blank', 'noopener,noreferrer');
   }, []);
 
+  /**
+   * Initiates the download of an attachment file.
+   * @param {AttachmentView} attachment The attachment to download.
+   */
   const handleDownloadAttachment = useCallback(
     async (attachment: AttachmentView) => {
       setDownloadingAttachmentId(attachment.key);
@@ -483,6 +618,10 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
     [],
   );
 
+  /**
+   * Copies the item's share link to the user's clipboard.
+   * Shows a success message on completion.
+   */
   const handleCopyShareLink = useCallback(async () => {
     if (!shareLink) {
       return;

@@ -14,9 +14,14 @@ import RegisterPage from './pages/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
 
 /**
- * The root component of the application, which sets up the routing.
+ * The root component of the EmmaTresor application.
+ * It defines the main routing structure using `react-router-dom`,
+ * organizing the application into protected routes (requiring authentication)
+ * and public routes (accessible without authentication).
+ * It integrates various layout components (`AppLayout`, `AuthLayout`)
+ * and page components to form the complete user interface.
  *
- * @returns {JSX.Element} The rendered application.
+ * @returns {JSX.Element} The rendered application with its defined routes.
  */
 const App: React.FC = () => (
   <Routes>

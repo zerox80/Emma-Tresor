@@ -1,9 +1,11 @@
 import React from 'react';
 
 /**
- * A full-screen loading indicator.
+ * A simple, full-screen loading indicator component.
+ * It displays a centered spinner and a text message, covering the entire viewport.
+ * This is typically used to indicate the initial loading state of the application.
  *
- * @returns {JSX.Element} The rendered loading screen element.
+ * @returns {JSX.Element} The rendered full-screen loading indicator.
  */
 const LoadingScreen: React.FC = () => (
   <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-700">

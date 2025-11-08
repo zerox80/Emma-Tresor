@@ -8,16 +8,30 @@ import { z } from 'zod';
 import Button from '../components/common/Button';
 import { useAuthStore } from '../store/authStore';
 
+/**
+ * Defines the validation schema for the login form using Zod.
+ * @property {string} email - The user's email address, required and must be a valid email format.
+ * @property {string} password - The user's password, required and must be at least 8 characters long.
+ * @property {boolean} rememberMe - A boolean indicating whether to keep the user logged in.
+ */
 const loginSchema = z.object({
   email: z.string().min(1, 'E-Mail-Adresse erforderlich').email('Bitte eine gültige E-Mail-Adresse eingeben'),
   password: z.string().min(8, 'Mindestens 8 Zeichen erforderlich'),
   rememberMe: z.boolean(),
 });
 
+/**
+ * Represents the inferred type from the `loginSchema`.
+ * This type is used for form state management with `react-hook-form`.
+ */
 type LoginSchema = z.infer<typeof loginSchema>;
 
 /**
- * The login page, allowing users to sign in to their account.
+ * The login page component, allowing users to sign in to their account.
+ * It provides a form for email and password input, handles form validation
+ * using `react-hook-form` and `zod`, and interacts with the authentication store
+ * to perform the login operation. Upon successful login, it redirects the user
+ * to their intended destination or the dashboard.
  *
  * @returns {JSX.Element} The rendered login page.
  */
@@ -40,6 +54,14 @@ const LoginPage: React.FC = () => {
     },
   });
 
+  /**
+   * Handles the submission of the login form.
+   * It attempts to authenticate the user via the `login` action from the auth store.
+   * On success, it redirects the user. On failure, it displays an error message.
+   *
+   * @param {LoginSchema} values - The validated form values (email, password, rememberMe).
+   * @returns {Promise<void>} A promise that resolves when the submission process is complete.
+   */
   const onSubmit = async (values: LoginSchema) => {
     setFormError(null);
     try {
