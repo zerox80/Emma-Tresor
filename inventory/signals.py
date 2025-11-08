@@ -80,6 +80,9 @@ def _safe_signal_handler(func):
 
 @dataclass
 class ItemSnapshot:
+    """
+    Represents a snapshot of a single field change for an item.
+    """
     field: str
     old_value: Any
     new_value: Any
@@ -96,6 +99,15 @@ AUDITED_FIELDS: tuple[str, ...] = (
 
 
 def _format_value(value: Any) -> Any:
+    """
+    Formats a value for serialization in the change log.
+
+    Args:
+        value: The value to format.
+
+    Returns:
+        The formatted value.
+    """
     if isinstance(value, (int, float, str)) or value is None:
         return value
     if hasattr(value, 'pk'):
@@ -106,6 +118,16 @@ def _format_value(value: Any) -> Any:
 
 
 def _capture_changes(previous: Item, current: Item) -> list[ItemSnapshot]:
+    """
+    Captures the changes between two versions of an item.
+
+    Args:
+        previous: The previous state of the item.
+        current: The current state of the item.
+
+    Returns:
+        A list of ItemSnapshot objects representing the changes.
+    """
     diffs: list[ItemSnapshot] = []
     for field in AUDITED_FIELDS:
         old = getattr(previous, field)
@@ -116,6 +138,15 @@ def _capture_changes(previous: Item, current: Item) -> list[ItemSnapshot]:
 
 
 def _resolve_actor(instance: Item) -> User | None:
+    """
+    Resolves the user responsible for a change.
+
+    Args:
+        instance: The item instance.
+
+    Returns:
+        The user responsible for the change, or None if the user is being deleted.
+    """
     owner = getattr(instance, 'owner', None)
     if owner is not None:
         owner_id = getattr(owner, 'pk', None)
@@ -130,6 +161,9 @@ def _resolve_actor(instance: Item) -> User | None:
 @receiver(pre_save, sender=Item)
 @_safe_signal_handler
 def _cache_previous_state(sender, instance: Item, **kwargs):
+    """
+    Caches the previous state of an item before it is saved.
+    """
     if not instance.pk:
         instance._previous_state = None  # type: ignore[attr-defined]
         return
@@ -147,6 +181,9 @@ def _cache_previous_state(sender, instance: Item, **kwargs):
 @receiver(post_save, sender=Item)
 @_safe_signal_handler
 def _log_item_changes(sender, instance: Item, created: bool, **kwargs):
+    """
+    Logs changes made to an item after it is saved.
+    """
     previous: Item | None = getattr(instance, '_previous_state', None)
     user = _resolve_actor(instance)
 
@@ -187,6 +224,9 @@ def _log_item_changes(sender, instance: Item, created: bool, **kwargs):
 @receiver(post_delete, sender=Item)
 @_safe_signal_handler 
 def _log_item_deletion(sender, instance: Item, **kwargs):
+    """
+    Logs the deletion of an item.
+    """
     user = _resolve_actor(instance)
     ItemChangeLog.objects.create(
         item=None,
@@ -199,6 +239,9 @@ def _log_item_deletion(sender, instance: Item, **kwargs):
 
 @receiver(pre_delete, sender=User)
 def _mark_user_for_deletion(sender, instance: User, **kwargs):
+    """
+    Marks a user for deletion before they are deleted.
+    """
     if instance.pk is not None:
         with _users_pending_deletion_lock:
             _users_pending_deletion.add(instance.pk)
@@ -206,6 +249,9 @@ def _mark_user_for_deletion(sender, instance: User, **kwargs):
 
 @receiver(post_delete, sender=User)
 def _unmark_user_for_deletion(sender, instance: User, **kwargs):
+    """
+    Unmarks a user for deletion after they have been deleted.
+    """
     if instance.pk is not None:
         with _users_pending_deletion_lock:
             _users_pending_deletion.discard(instance.pk)
