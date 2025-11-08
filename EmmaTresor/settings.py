@@ -27,6 +27,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 def _load_env_file() -> None:
+    """Loads environment variables from a .env file.
+
+    This function reads a .env file in the project's base directory and
+    loads the key-value pairs into the environment. It does not
+    overwrite existing environment variables.
+    """
     env_file = BASE_DIR / '.env'
     if not env_file.exists():
         return
@@ -49,6 +55,15 @@ def _load_env_file() -> None:
 
 
 def _env_bool(value: str | None, *, default: bool = False) -> bool:
+    """Converts a string to a boolean.
+
+    Args:
+        value: The string to convert.
+        default: The default value to return if the string is None.
+
+    Returns:
+        The boolean representation of the string.
+    """
     if value is None:
         return default
     return value.lower() in {'1', 'true', 'yes', 'on'}
@@ -62,6 +77,16 @@ RUNNING_DEVSERVER = any(arg.startswith('runserver') for arg in sys.argv)
 
 
 def _env_list(key: str, *, default: str = '') -> list[str]:
+    """Converts a comma-separated string to a list of strings.
+
+    Args:
+        key: The name of the environment variable.
+        default: The default value to use if the environment variable is
+            not set.
+
+    Returns:
+        A list of strings.
+    """
     value = os.environ.get(key)
     if not value:
         value = default
@@ -69,6 +94,15 @@ def _env_list(key: str, *, default: str = '') -> list[str]:
 
 
 def _https_host_allowed(hostname: str, allowed_hosts: list[str]) -> bool:
+    """Checks if a hostname is allowed.
+
+    Args:
+        hostname: The hostname to check.
+        allowed_hosts: A list of allowed hostnames.
+
+    Returns:
+        True if the hostname is allowed, False otherwise.
+    """
     if not allowed_hosts:
         return False
     for pattern in allowed_hosts:
@@ -90,6 +124,14 @@ def _validate_https_url(
     allow_local_http: bool = True,
     allowed_https_hosts: list[str] | None = None,
 ) -> None:
+    """Validates that a URL is a valid HTTPS URL.
+
+    Args:
+        value: The URL to validate.
+        setting_name: The name of the setting that the URL is for.
+        allow_local_http: Whether to allow HTTP for localhost.
+        allowed_https_hosts: A list of allowed HTTPS hosts.
+    """
     parsed = urlparse(value)
     if not parsed.scheme or not parsed.netloc:
         raise ImproperlyConfigured(

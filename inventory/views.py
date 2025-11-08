@@ -645,8 +645,17 @@ class LogoutView(APIView):
 
 
 class UserScopedModelViewSet(viewsets.ModelViewSet):
-    """
-    A base viewset for models that are scoped to the current user.
+    """A base viewset for models that are scoped to the current user.
+
+    This viewset automatically filters querysets to only include objects
+    owned by the currently authenticated user. It also ensures that when new
+    objects are created, the owner is set to the current user.
+
+    Attributes:
+        owner_field (str): The name of the field on the model that represents
+            the owner of the object. Defaults to 'user'.
+        pagination_class (PageNumberPagination): The pagination class to use
+            for list views. Defaults to None.
     """
     owner_field = 'user'
     pagination_class = None
@@ -695,16 +704,22 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
         serializer.save()
 
 class TagViewSet(UserScopedModelViewSet):
-    """
-    A viewset for tags.
+    """A viewset for managing tags.
+
+    This viewset provides CRUD operations for tags, scoped to the
+    currently authenticated user. It inherits from `UserScopedModelViewSet`
+    to ensure that users can only manage their own tags.
     """
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
 
 class LocationViewSet(UserScopedModelViewSet):
-    """
-    A viewset for locations.
+    """A viewset for managing locations.
+
+    This viewset provides CRUD operations for locations, scoped to the
+    currently authenticated user. It inherits from `UserScopedModelViewSet`
+    to ensure that users can only manage their own locations.
     """
     queryset = Location.objects.all()
     serializer_class = LocationSerializer
@@ -712,15 +727,24 @@ class LocationViewSet(UserScopedModelViewSet):
 
 
 class NumberInFilter(django_filters.BaseInFilter, django_filters.NumberFilter):
-    """
-    A filter for numbers in a list.
+    """A filter that allows filtering by a comma-separated list of numbers.
+
+    This is useful for filtering many-to-many relationships, such as
+    finding items that have any of a given set of tags.
     """
     pass
 
 
 class ItemFilter(django_filters.FilterSet):
-    """
-    A filter for items.
+    """A filter set for items.
+
+    This filter set allows filtering items by tags and location.
+
+    Attributes:
+        tags (NumberInFilter): A filter for items that have any of the
+            given tags.
+        location (NumberInFilter): A filter for items that are in any of
+            the given locations.
     """
     tags = NumberInFilter(field_name='tags__id')
     location = NumberInFilter(field_name='location__id')
@@ -731,8 +755,17 @@ class ItemFilter(django_filters.FilterSet):
 
 
 class ItemPagination(PageNumberPagination):
-    """
-    Pagination for items.
+    """Pagination for the item list view.
+
+    This pagination class sets the default page size and allows the client
+    to override it using the `page_size` query parameter.
+
+    Attributes:
+        page_size (int): The default number of items to include on a page.
+        page_size_query_param (str): The name of the query parameter that
+            allows the client to override the page size.
+        max_page_size (int): The maximum number of items that can be
+            included on a page.
     """
     page_size = 20
     page_size_query_param = 'page_size'
@@ -740,8 +773,12 @@ class ItemPagination(PageNumberPagination):
 
 
 class ItemViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for items.
+    """A viewset for managing items.
+
+    This viewset provides CRUD operations for items, scoped to the
+    currently authenticated user. It also provides actions for exporting
+    items, looking up items by asset tag, generating QR codes, and
+    viewing the change history of an item.
     """
     serializer_class = ItemSerializer
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -928,8 +965,11 @@ class ItemViewSet(viewsets.ModelViewSet):
 
 
 class ItemImageViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for item images.
+    """A viewset for managing item images.
+
+    This viewset provides CRUD operations for item images, scoped to the
+    currently authenticated user. It ensures that users can only manage
+    images for their own items.
     """
     serializer_class = ItemImageSerializer
     pagination_class = None
@@ -972,8 +1012,12 @@ class ItemImageViewSet(viewsets.ModelViewSet):
 
 
 class ItemImageDownloadView(APIView):
-    """
-    A view to download an item image.
+    """A view for downloading item images.
+
+    This view allows authenticated users to download images for their own
+    items. It sets the appropriate headers to ensure that the browser
+
+    handles the download correctly.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -1032,8 +1076,11 @@ class ItemImageDownloadView(APIView):
         return response
 
 class ItemListViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for item lists.
+    """A viewset for managing item lists.
+
+    This viewset provides CRUD operations for item lists, scoped to the
+    currently authenticated user. It also provides an action for exporting
+    the items in a list.
     """
     serializer_class = ItemListSerializer
     pagination_class = None

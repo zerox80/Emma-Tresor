@@ -80,8 +80,12 @@ def _safe_signal_handler(func):
 
 @dataclass
 class ItemSnapshot:
-    """
-    Represents a snapshot of a single field change for an item.
+    """Represents a snapshot of a single field change for an item.
+
+    Attributes:
+        field (str): The name of the field that was changed.
+        old_value (Any): The value of the field before the change.
+        new_value (Any): The value of the field after the change.
     """
     field: str
     old_value: Any
@@ -161,8 +165,17 @@ def _resolve_actor(instance: Item) -> User | None:
 @receiver(pre_save, sender=Item)
 @_safe_signal_handler
 def _cache_previous_state(sender, instance: Item, **kwargs):
-    """
-    Caches the previous state of an item before it is saved.
+    """Caches the previous state of an item before it is saved.
+
+    This function is a signal handler that is called before an `Item`
+    instance is saved. It fetches the current state of the item from the
+    database and stores it on the instance, so that it can be compared
+    to the new state after the save is complete.
+
+    Args:
+        sender (type): The model class that sent the signal.
+        instance (Item): The instance of the model that is being saved.
+        **kwargs: Additional keyword arguments.
     """
     if not instance.pk:
         instance._previous_state = None  # type: ignore[attr-defined]
@@ -181,8 +194,19 @@ def _cache_previous_state(sender, instance: Item, **kwargs):
 @receiver(post_save, sender=Item)
 @_safe_signal_handler
 def _log_item_changes(sender, instance: Item, created: bool, **kwargs):
-    """
-    Logs changes made to an item after it is saved.
+    """Logs changes made to an item after it is saved.
+
+    This function is a signal handler that is called after an `Item`
+    instance is saved. It compares the new state of the item to the
+    previous state (which was cached by `_cache_previous_state`) and
+    creates an `ItemChangeLog` entry if there are any differences.
+
+    Args:
+        sender (type): The model class that sent the signal.
+        instance (Item): The instance of the model that was saved.
+        created (bool): A boolean indicating whether the instance was
+            created or updated.
+        **kwargs: Additional keyword arguments.
     """
     previous: Item | None = getattr(instance, '_previous_state', None)
     user = _resolve_actor(instance)
@@ -224,8 +248,16 @@ def _log_item_changes(sender, instance: Item, created: bool, **kwargs):
 @receiver(post_delete, sender=Item)
 @_safe_signal_handler 
 def _log_item_deletion(sender, instance: Item, **kwargs):
-    """
-    Logs the deletion of an item.
+    """Logs the deletion of an item.
+
+    This function is a signal handler that is called after an `Item`
+    instance is deleted. It creates an `ItemChangeLog` entry to record
+    the deletion.
+
+    Args:
+        sender (type): The model class that sent the signal.
+        instance (Item): The instance of the model that was deleted.
+        **kwargs: Additional keyword arguments.
     """
     user = _resolve_actor(instance)
     ItemChangeLog.objects.create(
@@ -239,8 +271,17 @@ def _log_item_deletion(sender, instance: Item, **kwargs):
 
 @receiver(pre_delete, sender=User)
 def _mark_user_for_deletion(sender, instance: User, **kwargs):
-    """
-    Marks a user for deletion before they are deleted.
+    """Marks a user for deletion before they are deleted.
+
+    This function is a signal handler that is called before a `User`
+    instance is deleted. It adds the user's ID to a global set of users
+    that are pending deletion. This is used to prevent the item change
+    log from trying to associate a deleted user with a change.
+
+    Args:
+        sender (type): The model class that sent the signal.
+        instance (User): The instance of the model that is being deleted.
+        **kwargs: Additional keyword arguments.
     """
     if instance.pk is not None:
         with _users_pending_deletion_lock:
@@ -249,8 +290,16 @@ def _mark_user_for_deletion(sender, instance: User, **kwargs):
 
 @receiver(post_delete, sender=User)
 def _unmark_user_for_deletion(sender, instance: User, **kwargs):
-    """
-    Unmarks a user for deletion after they have been deleted.
+    """Unmarks a user for deletion after they have been deleted.
+
+    This function is a signal handler that is called after a `User`
+    instance is deleted. It removes the user's ID from the global set of
+    users that are pending deletion.
+
+    Args:
+        sender (type): The model class that sent the signal.
+        instance (User): The instance of the model that was deleted.
+        **kwargs: Additional keyword arguments.
     """
     if instance.pk is not None:
         with _users_pending_deletion_lock:

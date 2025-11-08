@@ -3,8 +3,11 @@ from django.views.generic import TemplateView
 
 
 class LandingPageView(TemplateView):
-    """
-    Renders the landing page.
+    """Renders the landing page.
+
+    This view renders the main landing page of the application. It
+    passes the URL of the frontend login page to the template, so that
+    the "Login" button can link to the correct page.
     """
     template_name = 'index.html'
 

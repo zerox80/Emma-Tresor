@@ -7,8 +7,11 @@ security_logger = logging.getLogger('security')
 
 
 class SecurityEventLoggingMiddleware(MiddlewareMixin):
-    """
-    Log security-relevant events for monitoring and alerting.
+    """Logs security-relevant events for monitoring and alerting.
+
+    This middleware logs security-relevant events, such as authentication
+    failures, authorization failures, and rate limit violations. This
+    information can be used for monitoring and alerting.
     """
     
     def process_response(self, request, response):
