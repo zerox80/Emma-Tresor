@@ -20,23 +20,32 @@ export interface TagSelectorOption {
 
 /**
  * Props for the TagSelector component.
+ * 
+ * This component provides a sophisticated tag selection interface with:
+ * - Multi-select capability with visual tag chips
+ * - Real-time filtering as user types
+ * - Dynamic tag creation for non-existing tags
+ * - Full keyboard navigation (arrows, Enter, Escape, Backspace)
+ * - Accessibility support with proper ARIA attributes
+ * - Loading states during async operations
  */
 interface TagSelectorProps {
-  /** The complete list of available tag options. */
+  /** The complete list of available tag options from the backend. */
   options: TagSelectorOption[];
-  /** An array of IDs for the currently selected tags. */
+  /** An array of IDs for currently selected tags. */
   selectedIds: number[];
-  /** Callback function invoked when the selection changes. */
+  /** Callback function invoked when the selection changes (tags added or removed). */
   onChange: (ids: number[]) => void;
   /**
-   * Async callback function to create a new tag.
+   * Async callback function to create a new tag when user types a non-existing tag.
+   * This handles the server communication for tag creation.
    * @param {string} name - The name of the new tag to create.
    * @returns {Promise<TagSelectorOption | null>} A promise that resolves with the newly created tag option or null on failure.
    */
   onCreateTag: (name: string) => Promise<TagSelectorOption | null>;
-  /** Whether the selector is disabled. Defaults to `false`. */
+  /** Whether the selector is disabled (e.g., during form submission). Defaults to `false`. */
   disabled?: boolean;
-  /** Whether a tag creation operation is currently in progress. Defaults to `false`. */
+  /** Whether a tag creation operation is currently in progress (shows loading spinner). Defaults to `false`. */
   isCreating?: boolean;
 }
 

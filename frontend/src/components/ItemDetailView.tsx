@@ -62,13 +62,31 @@ const FOCUSABLE_SELECTOR =
   'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * A modal dialog component that displays comprehensive details for a single inventory item.
- * It includes item attributes, attachments, a QR code for sharing, change history, and actions like editing or deleting.
- * The component manages complex state, including asynchronous data fetching for QR codes and changelogs,
- * focus trapping for accessibility, and user interaction handlers for all actions.
+ * A comprehensive modal dialog component that displays complete details for a single inventory item.
+ * 
+ * This component serves as the central hub for item information and management, providing:
+ * - Complete item attribute display with German localization and proper formatting
+ * - Advanced attachment handling with preview, download, and error management
+ * - Dynamic QR code generation with server fallback and client-side generation
+ * - Full change history tracking with detailed diff display
+ * - Accessibility-compliant focus management and keyboard navigation
+ * - Responsive design with mobile-optimized layouts
+ * - Security considerations for file handling and URL generation
  *
- * @param {ItemDetailViewProps} props The props for the component.
- * @returns {JSX.Element} The rendered detail view modal.
+ * State Management Strategy:
+ * - Complex async state handling for QR codes, attachments, and change logs
+ * - Proper cleanup of object URLs to prevent memory leaks
+ * - Focus trapping for accessibility compliance
+ * - Error boundaries with user-friendly error messages
+ * 
+ * Performance Features:
+ * - Memoized calculations for expensive operations
+ * - Optimized image loading with lazy loading and error boundaries
+ * - Efficient QR code generation with caching mechanisms
+ * - Proper debouncing for user interactions
+ *
+ * @param {ItemDetailViewProps} props The props for the component including item data, callbacks, and UI state.
+ * @returns {JSX.Element} A fully accessible, responsive detail view modal with comprehensive functionality.
  */
 const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   item,

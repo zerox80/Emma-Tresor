@@ -89,20 +89,30 @@ const sortItemLists = (entries: ItemList[]): ItemList[] =>
 
 /**
  * The main page component for viewing and managing inventory items.
- * This page provides a comprehensive interface for users to:
- * - View item statistics (total count, quantity, value).
- * - Filter and sort items by search term, tags, locations, and various ordering options.
- * - Switch between grid and table view modes.
- * - Select multiple items for bulk actions (e.g., assigning to a list).
- * - Add new items via a dialog.
- * - View detailed information for a single item in a modal, with options to edit, delete, or navigate to adjacent items.
- * - Export filtered item data to CSV.
- * - Manage item assignments to lists.
+ * 
+ * This is the core page of the Emma-Tresor application, providing a comprehensive interface for users to:
+ * - View item statistics (total count, quantity, value) with real-time calculations
+ * - Filter and sort items by search term, tags, locations, and various ordering options
+ * - Switch between grid and table view modes for different browsing preferences
+ * - Select multiple items for bulk actions (e.g., assigning to a list)
+ * - Add new items via a sophisticated multi-step dialog
+ * - View detailed information for a single item in a modal, with options to edit, delete, or navigate to adjacent items
+ * - Export filtered item data to CSV with proper German formatting
+ * - Manage item assignments to lists with drag-and-drop functionality
  *
- * It manages a significant amount of local state for filters, selections, dialogs, and item details,
- * and interacts with the API for data fetching and modifications.
+ * State Management:
+ * - Manages complex local state for filters, selections, dialogs, and item details
+ * - Implements optimistic updates for better UX
+ * - Handles pagination with URL synchronization
+ * - Maintains cache for tags and locations to reduce API calls
+ * 
+ * Performance Optimizations:
+ * - Uses useMemo for expensive calculations (tag/location maps, totals)
+ * - Implements debounced search to reduce API requests
+ * - Caches API responses and handles race conditions
+ * - Uses useCallback to prevent unnecessary re-renders
  *
- * @returns {JSX.Element} The rendered inventory items page.
+ * @returns {JSX.Element} The rendered inventory items page with full CRUD functionality.
  */
 const ItemsPage: React.FC = () => {
   const location = useLocation();

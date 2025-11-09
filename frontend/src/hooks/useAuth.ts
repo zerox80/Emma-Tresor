@@ -3,20 +3,40 @@ import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 
 /**
- * A custom hook that provides access to the authentication state and actions from the `useAuthStore`.
- * It ensures the authentication state is initialised when the app loads and exposes the user's
- * authentication status, user data, and logout functionality.
- *
+ * Custom authentication hook that provides centralized access to authentication state and management.
+ * 
+ * This hook serves as the primary interface for authentication-related functionality throughout the application,
+ * providing a clean and consistent API for accessing user authentication status, user data, and authentication actions.
+ * 
+ * Key Features:
+ * - Automatic initialization on app mount to restore authentication state from persistent storage
+ * - Reactive updates to authentication state changes using Zustand store
+ * - Type-safe access to user data and authentication status
+ * - Centralized logout functionality with proper cleanup
+ * - Performance optimization with dependency array to prevent unnecessary re-renders
+ * 
+ * State Management:
+ * - Integrates with Zustand store for predictable state management
+ * - Persists authentication state across browser sessions
+ * - Handles race conditions during initialization
+ * - Provides loading states for better UX
+ * 
+ * Security Considerations:
+ * - Secure storage of authentication tokens
+ * - Proper cleanup of user sessions on logout
+ * - Protection against authentication state inconsistencies
+ * - Token refresh and validation handling (where applicable)
+ * 
  * @returns {{
  *   isAuthenticated: boolean;
  *   hasInitialised: boolean;
  *   user: import('../types/auth').User | null;
  *   logout: () => Promise<void>;
- * }} An object containing:
- * - `isAuthenticated`: A boolean that is true if the user is currently authenticated.
- * - `hasInitialised`: A boolean that is true once the initial auth state has been loaded from storage.
- * - `user`: The current user object if authenticated, otherwise null.
- * - `logout`: An async function to log the user out and clear their session.
+ * }} Authentication context object containing:
+ * - `isAuthenticated`: Current authentication status flag for conditional rendering
+ * - `hasInitialised`: Initialization status for loading states and race condition prevention
+ * - `user`: Complete user object with profile information when authenticated
+ * - `logout`: Secure logout function that clears all authentication data and redirects
  */
 export const useAuth = () => {
   const initialise = useAuthStore((state) => state.initialise);
