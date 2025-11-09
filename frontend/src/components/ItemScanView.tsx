@@ -119,7 +119,7 @@ const ItemScanView: React.FC<ItemScanViewProps> = ({
       if (!path) {
         return '';
       }
-      if (/^https?:\/\
+      if (/^https?:\/\//.test(path)) {
         return path;
       }
       const normalised = path.startsWith('/') ? path.slice(1) : path;
