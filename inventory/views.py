@@ -572,17 +572,21 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             else:
                 data = super().validate(attrs)
                 
-            # Calculate remaining time to reach target with randomization
-            elapsed = time.perf_counter() - start_time
-            target_with_variance = base_delay + random.uniform(0.05, 0.15)  # Add 50-150ms variance
-            
-            if elapsed < target_with_variance:
-                sleep_time = target_with_variance - elapsed
-                time.sleep(sleep_time)
-            
+            # SECURITY FIX: Only apply timing protection for FAILED authentication
+            # SUCCESSFUL authentication should work normally without artificial delays
             if not user_found:
+                # Calculate remaining time to reach target with randomization for FAILED auth
+                elapsed = time.perf_counter() - start_time
+                target_with_variance = base_delay + random.uniform(0.05, 0.15)  # Add 50-150ms variance
+                
+                if elapsed < target_with_variance:
+                    sleep_time = target_with_variance - elapsed
+                    time.sleep(sleep_time)
+                
+                # Only raise error for ACTUALLY failed authentication
                 raise AuthenticationFailed('Ungültige Anmeldedaten.')
             
+            # SUCCESSFUL authentication - proceed normally without artificial delays
             data['user'] = {
                 'id': authentication_result.id,
                 'username': authentication_result.username,
@@ -591,6 +595,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             return data
             
         except AuthenticationFailed:
+            # This handles actual authentication failures from super().validate()
             # Calculate remaining time for failed authentication
             elapsed = time.perf_counter() - start_time
             target_with_variance = base_delay + random.uniform(0.05, 0.15)
