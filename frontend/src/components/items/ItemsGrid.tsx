@@ -48,7 +48,6 @@ const formatCurrency = (value: string | null | undefined) => {
  */
 const ItemsGrid: React.FC<Props> = ({ items, locationMap, tagMap, onOpenDetails }) => {
   return (
-    {/* Responsive grid layout: 1 column on mobile, 2 on tablet, 3 on desktop */}
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {/* Map over items array to render a card for each item */}
       {items.map((item) => (
