@@ -1,33 +1,34 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
+    "target": "ES2022",                                      // Target modern JavaScript features for better performance
     "paths": {
-      "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@hooks/*": ["./src/hooks/*"],
-      "@pages/*": ["./src/pages/*"],
-      "@api/*": ["./src/api/*"],
-      "@types/*": ["./src/types/*"]
+      // Path aliases for cleaner imports
+      "@/*": ["./src/*"],                                    // Import from src directory with @ prefix
+      "@components/*": ["./src/components/*"],              // Import components with @components prefix
+      "@hooks/*": ["./src/hooks/*"],                        // Import hooks with @hooks prefix
+      "@pages/*": ["./src/pages/*"],                        // Import pages with @pages prefix
+      "@api/*": ["./src/api/*"],                            // Import API modules with @api prefix
+      "@types/*": ["./src/types/*"]                         // Import type definitions with @types prefix
     },
-    "skipLibCheck": true,
-    "module": "NodeNext",
-    "jsx": "react-jsx",
+    "skipLibCheck": true,                                    // Skip type checking of declaration files for faster compilation
+    "module": "NodeNext",                                    // Use modern Node.js module resolution
+    "jsx": "react-jsx",                                      // Use modern JSX transform without importing React
     "types": [
-      "vite/client"
+      "vite/client"                                          // Include Vite client types for import.meta.env
     ],
 
-    /* Module resolution */
-    "moduleResolution": "nodenext",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
+    /* Module Resolution Configuration */
+    "moduleResolution": "nodenext",                           // Use Next.js module resolution strategy
+    "allowImportingTsExtensions": true,                      // Allow importing .ts files directly
+    "verbatimModuleSyntax": true,                            // Preserve import/export syntax for proper bundling
+    "noEmit": true,                                          // Don't generate output files (Vite handles this)
 
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    /* Type Checking and Linting Options */
+    "strict": true,                                          // Enable all strict type checking options
+    "noUnusedLocals": false,                                 // Allow unused local variables (for development convenience)
+    "noUnusedParameters": false,                             // Allow unused parameters (for development convenience)
+    "noFallthroughCasesInSwitch": true,                      // Prevent fallthrough cases in switch statements
+    "noUncheckedSideEffectImports": true                     // Require side-effect imports to be explicit
   },
-  "include": ["src"]
+  "include": ["src"]                                         // Include source files in compilation
 }

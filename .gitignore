@@ -1,81 +1,100 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# EmmaTresor Git Ignore Configuration
+# ====================================
+# This file tells Git which files and directories to ignore during version control.
+# Ignored files won't be tracked, committed, or pushed to the repository.
+# This prevents sensitive data, temporary files, and build artifacts from being committed.
 
-# Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-/media
-/staticfiles
-/private_media
-/logs
+# Python Development Files
+# =========================
+__pycache__/                     # Python bytecode cache directory (compiled .pyc files)
+*.py[cod]                        # Compiled Python files (.pyc, .pyo, .pyd)
+*$py.class                       # Compiled Java class files (if using Jython)
+*.so                             # Compiled shared object files (C extensions)
+.Python                          # Python build directory
+build/                           # Build output directory
+develop-eggs/                    # Development egg directory
+dist/                            # Distribution directory
+downloads/                       # Package downloads directory
+eggs/                            # Egg directory
+.eggs/                           # Egg metadata directory
+lib/                             # Library directory
+lib64/                           # 64-bit library directory
+parts/                           # Build parts directory
+sdist/                           # Source distribution directory
+var/                             # Variable data directory
+wheels/                          # Wheel distribution directory
+*.egg-info/                      # Egg metadata directory
+.installed.cfg                   # Installation configuration file
+*.egg                            # Python egg files
 
-# Environment files - NEVER commit secrets!
-# Only ignore actual .env files with real secrets
-.env
-.env.local
-# Keep .env.example and .env.production as templates for GitHub
+# Django Framework Files
+# ======================
+*.log                            # Django log files (debug, error, access logs)
+local_settings.py                # Local development settings (should not be committed)
+db.sqlite3                       # SQLite database file (development database)
+db.sqlite3-journal               # SQLite journal file (transaction log)
+/media                           # User uploaded media files (photos, documents)
+/staticfiles                     # Collected static files (CSS, JS, images)
+/private_media                   # Private media files (not publicly accessible)
+/logs                            # Application log directory
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
+# Environment Configuration Files
+# ==============================
+# Security Note: NEVER commit files containing secrets, API keys, or passwords!
+.env                             # Environment variables file with production secrets
+.env.local                       # Local development environment variables
+# Keep these files as they contain templates/documentation:
+# .env.example    - Template for required environment variables
+# .env.production - Production environment configuration (no secrets)
 
-# Testing
-.coverage
-.pytest_cache/
-htmlcov/
+# Integrated Development Environment (IDE) Files
+# ===============================================
+.vscode/                         # Visual Studio Code workspace settings
+.idea/                           # JetBrains PyCharm/IntelliJ IDEA settings
+*.swp                            # Vim swap files (temporary backup)
+*.swo                            # Vim swap files (object files)
+*~                               # Backup files created by text editors
+.DS_Store                        # macOS Finder metadata and custom icon settings
 
-# Backups
-*.bak
-*.backup
-/db_backups/*.sql
-/db_backups/*.dump
+# Testing and Code Coverage Files
+# ===============================
+.coverage                        # Code coverage report file
+.pytest_cache/                   # pytest cache directory
+htmlcov/                         # HTML code coverage report directory
 
-# Node/Frontend
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-frontend/dist/
-frontend/.vite/
-frontend/.env.local
+# Database Backup Files
+# =====================
+*.bak                            # Database backup files
+*.backup                         # Alternative backup file extension
+/db_backups/*.sql                # SQL database backup files
+/db_backups/*.dump               # Database dump files
 
-# Docker
-*.pid
-*.seed
-*.pid.lock
+# Node.js and Frontend Development Files
+# ======================================
+node_modules/                    # Node.js package dependencies
+npm-debug.log*                   # npm debug log files
+yarn-debug.log*                  # Yarn debug log files
+yarn-error.log*                  # Yarn error log files
+frontend/dist/                   # Built frontend production files
+frontend/.vite/                  # Vite build tool cache and output
+frontend/.env.local              # Frontend local environment variables
 
-# Security
-*.pem
-*.key
-*.crt
-*.p12
-*.pfx
+# Docker Container Runtime Files
+# ===============================
+*.pid                            # Process ID files
+*.seed                           # Random seed files
+*.pid.lock                       # Process ID lock files
 
-# Temporary files
-*.tmp
-*.temp
+# SSL/TLS Certificate and Key Files
+# ==================================
+# Security: Never commit private keys or certificates to version control
+*.pem                            # PEM certificate files
+*.key                            # Private key files
+*.crt                            # Certificate files
+*.p12                            # PKCS#12 certificate bundle
+*.pfx                            # Personal Information Exchange certificate bundle
+
+# Temporary and Cache Files
+# =========================
+*.tmp                            # Temporary files
+*.temp                           # Alternative temporary file extension

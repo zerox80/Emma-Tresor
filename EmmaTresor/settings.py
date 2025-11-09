@@ -1,64 +1,114 @@
-import os
-import sys
-from datetime import timedelta
-from pathlib import Path
-from urllib.parse import urlparse
+# EmmaTresor Django Settings Configuration
+# ==========================================
+# This is the main Django settings file for EmmaTresor, a secure inventory management system.
+# It includes comprehensive security configurations, JWT authentication, CORS setup,
+# and supports both PostgreSQL (production) and SQLite (development) databases.
 
-from django.core.exceptions import ImproperlyConfigured
+import os  # Operating system interface for environment variables
+import sys  # System-specific parameters and functions
+from datetime import timedelta  # For time-based configurations (JWT tokens, cooldowns)
+from pathlib import Path  # Modern path handling filesystem paths
+from urllib.parse import urlparse  # URL parsing for validation
 
+from django.core.exceptions import ImproperlyConfigured  # Django configuration error handling
+
+# Base directory: Root of the Django project (2 levels up from this file)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 def _load_env_file() -> None:
-    
+    """
+    Load environment variables from .env file if it exists.
+    This allows local development without exporting environment variables.
+    Format: KEY=value or KEY="quoted value"
+    Lines starting with # are ignored as comments.
+    """
     env_file = BASE_DIR / '.env'
     if not env_file.exists():
         return
 
+    # Read and parse each line of the .env file
     for raw_line in env_file.read_text(encoding='utf-8').splitlines():
         line = raw_line.strip()
+        # Skip empty lines and comments
         if not line or line.startswith('#'):
             continue
 
+        # Split at first '=' to separate key and value
         key, sep, value = line.partition('=')
         if not sep:
             continue
 
         key = key.strip()
+        # Skip if key is empty or already exists in environment
         if not key or key in os.environ:
             continue
 
+        # Clean value by removing quotes and whitespace
         cleaned_value = value.strip().strip('"').strip("'")
         os.environ[key] = cleaned_value
 
 def _env_bool(value: str | None, *, default: bool = False) -> bool:
-    
+    """
+    Convert environment variable string to boolean.
+
+    Args:
+        value: Environment variable value as string
+        default: Default value if environment variable is None
+
+    Returns:
+        boolean: True if value is one of: 1, true, yes, on (case insensitive)
+    """
     if value is None:
         return default
     return value.lower() in {'1', 'true', 'yes', 'on'}
 
+# Load environment variables from .env file at startup
 _load_env_file()
 
-TESTING = 'test' in sys.argv
-RUNNING_DEVSERVER = any(arg.startswith('runserver') for arg in sys.argv)
+# Runtime context detection for conditional configuration
+TESTING = 'test' in sys.argv  # True when running Django tests
+RUNNING_DEVSERVER = any(arg.startswith('runserver') for arg in sys.argv)  # True when using manage.py runserver
 
 def _env_list(key: str, *, default: str = '') -> list[str]:
-    
+    """
+    Convert comma-separated environment variable to list of strings.
+
+    Args:
+        key: Environment variable key
+        default: Default value as comma-separated string
+
+    Returns:
+        list[str]: List of non-empty, trimmed values
+    """
     value = os.environ.get(key)
     if not value:
         value = default
     return [item.strip() for item in value.split(',') if item.strip()]
 
 def _https_host_allowed(hostname: str, allowed_hosts: list[str]) -> bool:
-    
+    """
+    Check if hostname is allowed by the allowed_hosts patterns.
+    Supports wildcards and subdomain matching.
+
+    Args:
+        hostname: Hostname to check
+        allowed_hosts: List of allowed host patterns
+
+    Returns:
+        bool: True if hostname is allowed
+    """
     if not allowed_hosts:
         return False
     for pattern in allowed_hosts:
+        # Wildcard allows any host
         if pattern == '*':
             return True
+        # Subdomain pattern (.example.com allows example.com and *.example.com)
         if pattern.startswith('.'):
             suffix = pattern[1:]
             if hostname == suffix or hostname.endswith(f'.{suffix}'):
                 return True
+        # Exact hostname match
         elif pattern == hostname:
             return True
     return False
@@ -70,7 +120,18 @@ def _validate_https_url(
     allow_local_http: bool = True,
     allowed_https_hosts: list[str] | None = None,
 ) -> None:
-    
+    """
+    Validate URL configuration for security settings.
+
+    Args:
+        value: URL to validate
+        setting_name: Name of the setting (for error messages)
+        allow_local_http: Whether HTTP is allowed for localhost
+        allowed_https_hosts: List of allowed HTTPS host patterns
+
+    Raises:
+        ImproperlyConfigured: If URL validation fails
+    """
     parsed = urlparse(value)
     if not parsed.scheme or not parsed.netloc:
         raise ImproperlyConfigured(
@@ -79,20 +140,29 @@ def _validate_https_url(
     if parsed.scheme not in {'http', 'https'}:
         raise ImproperlyConfigured(f"{setting_name} unterstützt nur HTTP- oder HTTPS-URLs.")
     hostname = parsed.hostname or ''
+    # Only allow HTTP for localhost in development
     if parsed.scheme == 'http' and (not allow_local_http or hostname not in {'localhost', '127.0.0.1'}):
         raise ImproperlyConfigured(
             f"{setting_name} darf nur mit HTTP verwendet werden, wenn die Domain localhost oder 127.0.0.1 ist."
         )
+    # Validate HTTPS hosts against allowed list
     if parsed.scheme == 'https' and allowed_https_hosts:
         if not _https_host_allowed(hostname, allowed_https_hosts):
             raise ImproperlyConfigured(
                 f"{setting_name}: Host '{hostname}' ist nicht in der zugelassenen HTTPS-Liste enthalten."
             )
 
+# ===============================
+# CORE DJANGO SECURITY CONFIGURATION
+# ===============================
+
+# Primary secret key for Django cryptographic signing (required for production)
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 if not SECRET_KEY:
     raise ImproperlyConfigured('DJANGO_SECRET_KEY environment variable is required.')
 
+# Support for key rotation: maintains a list of previous valid secret keys
+# This allows seamless rotation without invalidating existing sessions/tokens
 SECRET_KEY_FALLBACKS = [
     key for key in [
         os.environ.get('DJANGO_SECRET_KEY_OLD_1', ''),
@@ -101,89 +171,153 @@ SECRET_KEY_FALLBACKS = [
     ] if key and len(key) >= 50
 ]
 
+# Debug mode: Shows detailed error pages and disables security features
+# WARNING: Never enable DEBUG in production environments
 DEBUG = _env_bool(os.environ.get('DJANGO_DEBUG'), default=False)
 
+# Enforce secure secret key usage in production
 if not DEBUG and (SECRET_KEY.startswith('django-insecure') or len(SECRET_KEY) < 50 or SECRET_KEY == 'your-secret-key-here'):
     raise ImproperlyConfigured('Bitte setze eine sichere DJANGO_SECRET_KEY (mindestens 50 Zeichen) für Produktionsumgebungen.')
 
+# Allowed hosts for Django's Host header validation
+# Prevents HTTP Host header attacks by whitelisting valid hostnames
 ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1')
 
+# ===============================
+# SSL/HTTPS SECURITY CONFIGURATION
+# ===============================
+
+# Automatically force SSL in production (unless running dev server)
+# This ensures HTTPS is used in production environments
 _force_ssl_default = not DEBUG and not RUNNING_DEVSERVER
 FORCE_SSL = _env_bool(os.environ.get('DJANGO_FORCE_SSL'), default=_force_ssl_default)
 
+# Django's built-in SSL redirect middleware
+# Redirects all HTTP requests to HTTPS when enabled
 SSL_REDIRECT = _env_bool(os.environ.get('DJANGO_SSL_REDIRECT'), default=False)
 
+# URL handling: disable slash appending during tests for cleaner test URLs
 APPEND_SLASH = not TESTING
 
+# ===============================
+# DJANGO APPLICATIONS CONFIGURATION
+# ===============================
+
+# Core Django applications and third-party packages
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'axes',
-    'csp',
-    'corsheaders',
-    'rest_framework',
-    'rest_framework_simplejwt.token_blacklist',
-    'django_filters',
-    'inventory',
+    # Django core apps
+    'django.contrib.admin',         # Admin interface
+    'django.contrib.auth',          # Authentication system
+    'django.contrib.contenttypes',  # Content type framework
+    'django.contrib.sessions',      # Session framework
+    'django.contrib.messages',      # Message framework
+    'django.contrib.staticfiles',   # Static file handling
+
+    # Security and third-party apps
+    'axes',                         # Login attempt protection/brute force prevention
+    'csp',                          # Content Security Policy headers
+    'corsheaders',                  # Cross-Origin Resource Sharing headers
+    'rest_framework',               # Django REST Framework for API
+    'rest_framework_simplejwt.token_blacklist',  # JWT token blacklisting
+    'django_filters',               # Filtering support for DRF
+
+    # Custom applications
+    'inventory',                    # Core inventory management application
 ]
 
+# ===============================
+# MIDDLEWARE CONFIGURATION
+# Order is important - processed from top to bottom on request, bottom to top on response
+# ===============================
+
 MIDDLEWARE = [
+    # CORS headers must be processed first (before security middleware)
     'corsheaders.middleware.CorsMiddleware',
+
+    # Security middleware should be early to apply security headers
     'django.middleware.security.SecurityMiddleware',
+
+    # Content Security Policy to prevent XSS attacks
     'csp.middleware.CSPMiddleware',
+
+    # Session handling (required for authentication and messages)
     'django.contrib.sessions.middleware.SessionMiddleware',
+
+    # Common middleware for URL handling and other basic features
     'django.middleware.common.CommonMiddleware',
+
+    # CSRF protection middleware (must be after SessionMiddleware)
     'django.middleware.csrf.CsrfViewMiddleware',
+
+    # Authentication middleware (must be after SessionMiddleware)
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    # Axes login attempt protection (must be after AuthenticationMiddleware)
     'axes.middleware.AxesMiddleware',
+
+    # Message framework for flash messages
     'django.contrib.messages.middleware.MessageMiddleware',
+
+    # Clickjacking protection
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # Custom middleware for logging security events
     'EmmaTresor.middleware.SecurityEventLoggingMiddleware',
 ]
 
+# Root URL configuration module
 ROOT_URLCONF = 'EmmaTresor.urls'
+
+# ===============================
+# TEMPLATE CONFIGURATION
+# ===============================
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
+        'DIRS': [BASE_DIR / 'templates'],  # Global templates directory
+        'APP_DIRS': True,  # Allow apps to have their own templates directories
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.request',  # Request object in templates
+                'django.contrib.auth.context_processors.auth',  # User authentication context
+                'django.contrib.messages.context_processors.messages',  # Flash messages
             ],
         },
     },
 ]
 
+# WSGI application for production deployment
 WSGI_APPLICATION = 'EmmaTresor.wsgi.application'
+
+# ===============================
+# DATABASE CONFIGURATION
+# Supports both PostgreSQL (production) and SQLite (development)
+# ===============================
 
 DB_VENDOR = os.environ.get('DB_VENDOR', 'sqlite').lower()
 
 if DB_VENDOR == 'postgres':
+    # PostgreSQL configuration for production environments
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB', 'emmatresor'),
-            'USER': os.environ.get('POSTGRES_USER', 'emmatresor'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-            'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
-            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            'NAME': os.environ.get('POSTGRES_DB', 'emmatresor'),     # Database name
+            'USER': os.environ.get('POSTGRES_USER', 'emmatresor'),   # Database user
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),         # Database password (required)
+            'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),     # Database host
+            'PORT': os.environ.get('POSTGRES_PORT', '5432'),         # Database port
         }
     }
+    # Require password for PostgreSQL in production
     if not DATABASES['default']['PASSWORD']:
         raise ImproperlyConfigured('POSTGRES_PASSWORD environment variable is required when using PostgreSQL.')
 else:
+    # SQLite configuration for development environments
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',  # SQLite database file in project root
         }
     }
 
@@ -293,12 +427,17 @@ JWT_COOKIE_DOMAIN = os.environ.get('JWT_COOKIE_DOMAIN') or None
 JWT_ACCESS_COOKIE_PATH = '/'
 JWT_REFRESH_COOKIE_PATH = '/api/'
 
+# ===============================
+# PASSWORD HASHING CONFIGURATION
+# Uses Argon2 as the primary hasher for maximum security
+# ===============================
+
 PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.Argon2PasswordHasher',
-    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
-    'django.contrib.auth.hashers.ScryptPasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',     # Primary: Most secure, memory-hard
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',     # Fallback 1: Standard Django default
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher', # Fallback 2: SHA1 variant
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher', # Fallback 3: bcrypt variant
+    'django.contrib.auth.hashers.ScryptPasswordHasher',     # Fallback 4: Memory-hard alternative
 ]
 
 CORS_ALLOWED_ORIGINS = _env_list(
