@@ -58,7 +58,7 @@ Die Betriebs- und Deployment-Umgebung ist auf Sicherheit und Stabilität ausgele
 
 Wir nehmen die Sicherheit unserer Anwendung ernst. Wenn Sie eine Schwachstelle entdecken, bitten wir Sie, diese verantwortungsvoll offenzulegen.
 
-* **Kontaktadresse:** Sicherheitsrelevante Hinweise bitte an `security@emmatresor.example` senden.
+* **Kontaktadresse:** Sicherheitsrelevante Hinweise bitte an `rujbin@proton.me` senden.
 * **PGP-Key:** Für eine verschlüsselte Kommunikation finden Sie unseren öffentlichen Schlüssel unter `docs/pgp/security.asc`.
 * **Reaktionszeit:** Wir bemühen uns, innerhalb von 3 Werktagen eine erste Rückmeldung zu geben.
 
