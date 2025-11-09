@@ -12,4 +12,3 @@ gunicorn>=23.0.0,<24.0.0
 psycopg[binary]>=3.2.10,<4.0.0
 qrcode[pil]>=8.2,<9.0.0
 bleach>=6.0.0,<7.0.0
- +++++++ REPLACE
