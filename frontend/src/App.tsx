@@ -24,8 +24,8 @@ const App: React.FC = () => (
     {/* Protected routes requiring authentication */}
     <Route
       element={(
-        <ProtectedRoute>                                   // Wrap with authentication guard
-          <AppLayout />                                     // Apply main layout
+        <ProtectedRoute>
+          <AppLayout />
         </ProtectedRoute>
       )}
     >
@@ -40,7 +40,7 @@ const App: React.FC = () => (
     <Route
       path="/login"
       element={(
-        <PublicRoute>                                      // Only accessible when not authenticated
+        <PublicRoute>
           <AuthLayout title="Anmelden">                    {/* German: "Login" */}
             <LoginPage />                                  {/* Login form component */}
           </AuthLayout>
@@ -52,7 +52,7 @@ const App: React.FC = () => (
     <Route
       path="/register"
       element={(
-        <PublicRoute>                                      // Only accessible when not authenticated
+        <PublicRoute>
           <AuthLayout title="Registrieren">                {/* German: "Register" */}
             <RegisterPage />                               {/* Registration form component */}
           </AuthLayout>

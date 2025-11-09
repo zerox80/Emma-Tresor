@@ -30,9 +30,9 @@ if (!rootElement) {
 
 // Create React root and render the application
 ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>                                      // Enable strict mode for development warnings
-    <BrowserRouter>                                       // Enable client-side routing
-      <App />                                              // Render main App component
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
     </BrowserRouter>
   </React.StrictMode>,
 );
