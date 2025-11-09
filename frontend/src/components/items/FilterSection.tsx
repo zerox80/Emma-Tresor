@@ -89,7 +89,6 @@ const FilterSection: React.FC<Props> = ({
   setOrdering,                                                    // Function to update sorting
 }) => {
   return (
-    {/* Main container with card styling, spacing, and shadow */}
     <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       {/* Header section with title, description, and controls */}
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

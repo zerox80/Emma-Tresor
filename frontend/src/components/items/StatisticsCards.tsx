@@ -39,7 +39,6 @@ type Props = {
  */
 const StatisticsCards: React.FC<Props> = ({ totalItemsCount, totalQuantity, totalValue, loading, onAddItem, onReload }) => {
   return (
-    {/* Responsive grid layout: 1 column mobile, 2 columns tablet, 4 columns desktop */}
     <section className="grid gap-4 lg:grid-cols-4">
       {/* Total Items Count Card */}
       <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
