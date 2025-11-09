@@ -424,6 +424,24 @@ class QRGenerateRateThrottle(throttling.UserRateThrottle):
     scope = 'qr_generate'
 
 
+class ItemReadRateThrottle(throttling.UserRateThrottle):
+    """Throttles item read operations for authenticated users.
+
+    This throttle class limits the rate at which authenticated users
+    can list or retrieve items to prevent enumeration attacks.
+    """
+    scope = 'item_read'
+
+
+class ItemExportRateThrottle(throttling.UserRateThrottle):
+    """Throttles item export operations for authenticated users.
+
+    This throttle class limits the rate at which authenticated users
+    can export items to prevent system abuse.
+    """
+    scope = 'item_export'
+
+
 class UserRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """A viewset for user registration.
 
@@ -1005,10 +1023,10 @@ class ItemViewSet(viewsets.ModelViewSet):
             throttles.append(QRGenerateRateThrottle())
         elif self.action in ['list', 'retrieve']:
             # Add read throttles for list/retrieve operations to prevent enumeration attacks
-            throttles.append(throttling.AnonRateThrottle(scope='item_read'))
+            throttles.append(ItemReadRateThrottle())
         elif self.action == 'export_items':
             # Export operations need stricter rate limiting
-            throttles.append(throttling.UserRateThrottle(scope='item_export'))
+            throttles.append(ItemExportRateThrottle())
         
         return throttles
 
