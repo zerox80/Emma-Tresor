@@ -1,68 +1,21 @@
 import apiClient from './client.js';
 import type { Item, ItemChangeLog, ItemImage, ItemList, ItemPayload, Location, PaginatedResponse, Tag } from '../types/inventory.js';
 
-/**
- * Options for fetching items.
- */
 export interface FetchItemsOptions {
-  /** A search query to filter items by. */
+  
   query?: string;
-  /** The page number to fetch. */
+  
   page?: number;
-  /** The number of items to fetch per page. */
+  
   pageSize?: number;
-  /** An array of tag IDs to filter items by. */
+  
   tags?: number[];
-  /** An array of location IDs to filter items by. */
+  
   locations?: number[];
-  /** The field to order the items by. */
+  
   ordering?: string;
 }
 
-/**
- * Fetches a paginated list of items from the API.
- *
- * This function provides flexible item retrieval with comprehensive filtering and
- * pagination capabilities. It handles all query parameters and automatically
- * constructs the appropriate API request.
- *
- * @example
- * ```typescript
- * // Basic usage
- * const items = await fetchItems();
- * 
- * // With search and pagination
- * const searchedItems = await fetchItems({
- *   query: 'camera',
- *   page: 2,
- *   pageSize: 50
- * });
- * 
- * // With filters
- * const filteredItems = await fetchItems({
- *   tags: [1, 2, 3],
- *   locations: [10, 15],
- *   ordering: '-created_at'
- * });
- * ```
- * 
- * @param {FetchItemsOptions} [options={}] - The options for fetching items.
- * @param {string} [options.query] - Search query to filter items by name, description, or tags.
- * @param {number} [options.page] - Page number for pagination (starts from 1).
- * @param {number} [options.pageSize] - Number of items per page (default: API setting).
- * @param {number[]} [options.tags] - Array of tag IDs to filter items by.
- * @param {number[]} [options.locations] - Array of location IDs to filter items by.
- * @param {string} [options.ordering] - Field to sort by (prepend '-' for descending).
- * 
- * @returns {Promise<PaginatedResponse<Item>>} A promise that resolves to a paginated response containing:
- * - `results`: Array of Item objects
- * - `count`: Total number of items matching filters
- * - `next`: URL for next page (null if last page)
- * - `previous`: URL for previous page (null if first page)
- * 
- * @throws {Error} When network request fails or server returns error.
- * @throws {ValidationError} When provided parameters are invalid.
- */
 export const fetchItems = async ({
   query,
   page,
@@ -82,43 +35,21 @@ export const fetchItems = async ({
   return data;
 };
 
-/**
- * Fetches a single item by its ID.
- *
- * @param {number} id - The ID of the item to fetch.
- * @returns {Promise<Item>} A promise that resolves to the fetched item.
- */
 export const fetchItem = async (id: number): Promise<Item> => {
   const { data } = await apiClient.get<Item>(`/items/${id}/`);
   return data;
 };
 
-/**
- * Fetches a single item by its asset tag.
- *
- * @param {string} assetTag - The asset tag of the item to fetch.
- * @returns {Promise<Item>} A promise that resolves to the fetched item.
- */
 export const fetchItemByAssetTag = async (assetTag: string): Promise<Item> => {
   const { data } = await apiClient.get<Item>(`/items/lookup_by_tag/${encodeURIComponent(assetTag)}/`);
   return data;
 };
 
-/**
- * Options for fetching an item's QR code.
- */
 export interface FetchItemQrCodeOptions {
-  /** If true, the QR code will be downloaded as a file. */
+  
   download?: boolean;
 }
 
-/**
- * Fetches the QR code for an item.
- *
- * @param {number} itemId - The ID of the item to fetch the QR code for.
- * @param {FetchItemQrCodeOptions} [options={}] - The options for fetching the QR code.
- * @returns {Promise<Blob>} A promise that resolves to the QR code image as a blob.
- */
 export const fetchItemQrCode = async (itemId: number, options: FetchItemQrCodeOptions = {}): Promise<Blob> => {
   const params = options.download ? { download: '1' } : undefined;
   const { data } = await apiClient.get<Blob>(`/items/${itemId}/generate_qr_code/`, {
@@ -128,12 +59,6 @@ export const fetchItemQrCode = async (itemId: number, options: FetchItemQrCodeOp
   return data;
 };
 
-/**
- * Fetches all items from the API, handling pagination.
- *
- * @param {string} [query] - An optional search query.
- * @returns {Promise<Item[]>} A promise that resolves to a list of all items.
- */
 export const fetchAllItems = async (query?: string): Promise<Item[]> => {
   const collected: Item[] = [];
   let currentPage = 1;
@@ -149,17 +74,8 @@ export const fetchAllItems = async (query?: string): Promise<Item[]> => {
   return collected;
 };
 
-/**
- * Options for exporting items. Extends FetchItemsOptions to allow filtering.
- */
 export interface ExportItemsOptions extends FetchItemsOptions {}
 
-/**
- * Exports the current inventory selection as a CSV file.
- *
- * @param {ExportItemsOptions} [options={}] - Filters to apply before exporting.
- * @returns {Promise<Blob>} A promise that resolves to the CSV blob.
- */
 export const exportItems = async ({
   query,
   tags,
@@ -178,22 +94,11 @@ export const exportItems = async ({
   return response.data;
 };
 
-/**
- * Fetches all lists from the API.
- *
- * @returns {Promise<ItemList[]>} A promise that resolves to a list of all item lists.
- */
 export const fetchLists = async (): Promise<ItemList[]> => {
   const { data } = await apiClient.get<ItemList[]>('/lists/');
   return data;
 };
 
-/**
- * Exports all items belonging to a specific list.
- *
- * @param {number} listId - The list to export.
- * @returns {Promise<Blob>} A promise that resolves to the CSV blob.
- */
 export const exportListItems = async (listId: number): Promise<Blob> => {
   const response = await apiClient.get<Blob>(`/lists/${listId}/export/`, {
     responseType: 'blob',
@@ -201,141 +106,62 @@ export const exportListItems = async (listId: number): Promise<Blob> => {
   return response.data;
 };
 
-/**
- * Fetches all tags from the API.
- *
- * @returns {Promise<Tag[]>} A promise that resolves to a list of all tags.
- */
 export const fetchTags = async (): Promise<Tag[]> => {
   const { data } = await apiClient.get<Tag[]>('/tags/');
   return data;
 };
 
-/**
- * Fetches all locations from the API.
- *
- * @returns {Promise<Location[]>} A promise that resolves to a list of all locations.
- */
 export const fetchLocations = async (): Promise<Location[]> => {
   const { data } = await apiClient.get<Location[]>('/locations/');
   return data;
 };
 
-/**
- * Creates a new tag.
- *
- * @param {string} name - The name of the tag to create.
- * @returns {Promise<Tag>} A promise that resolves to the created tag.
- */
 export const createTag = async (name: string): Promise<Tag> => {
   const { data } = await apiClient.post<Tag>('/tags/', { name });
   return data;
 };
 
-/**
- * Deletes a tag.
- *
- * @param {number} id - The ID of the tag to delete.
- * @returns {Promise<void>} A promise that resolves when the tag is deleted.
- */
 export const deleteTag = async (id: number): Promise<void> => {
   await apiClient.delete(`/tags/${id}/`);
 };
 
-/**
- * Creates a new location.
- *
- * @param {string} name - The name of the location to create.
- * @returns {Promise<Location>} A promise that resolves to the created location.
- */
 export const createLocation = async (name: string): Promise<Location> => {
   const { data } = await apiClient.post<Location>('/locations/', { name });
   return data;
 };
 
-/**
- * Deletes a location.
- *
- * @param {number} id - The ID of the location to delete.
- * @returns {Promise<void>} A promise that resolves when the location is deleted.
- */
 export const deleteLocation = async (id: number): Promise<void> => {
   await apiClient.delete(`/locations/${id}/`);
 };
 
-/**
- * Creates a new item.
- *
- * @param {ItemPayload} itemData - The data for the item to create.
- * @returns {Promise<Item>} A promise that resolves to the created item.
- */
 export const createItem = async (itemData: ItemPayload): Promise<Item> => {
   const { data } = await apiClient.post<Item>('/items/', itemData);
   return data;
 };
 
-/**
- * Creates a new list.
- *
- * @param {string} name - The name of the list to create.
- * @returns {Promise<ItemList>} A promise that resolves to the created list.
- */
 export const createList = async (name: string): Promise<ItemList> => {
   const { data } = await apiClient.post<ItemList>('/lists/', { name });
   return data;
 };
 
-/**
- * Deletes a list.
- *
- * @param {number} id - The ID of the list to delete.
- * @returns {Promise<void>} A promise that resolves when the list is deleted.
- */
 export const deleteList = async (id: number): Promise<void> => {
   await apiClient.delete(`/lists/${id}/`);
 };
 
-/**
- * Updates the items in a list.
- *
- * @param {number} listId - The ID of the list to update.
- * @param {number[]} itemIds - The new list of item IDs.
- * @returns {Promise<ItemList>} A promise that resolves to the updated list.
- */
 export const updateListItems = async (listId: number, itemIds: number[]): Promise<ItemList> => {
   const { data } = await apiClient.patch<ItemList>(`/lists/${listId}/`, { items: itemIds });
   return data;
 };
 
-/**
- * Updates an item.
- *
- * @param {number} id - The ID of the item to update.
- * @param {ItemPayload} itemData - The new data for the item.
- * @returns {Promise<Item>} A promise that resolves to the updated item.
- */
 export const updateItem = async (id: number, itemData: ItemPayload): Promise<Item> => {
   const { data } = await apiClient.put<Item>(`/items/${id}/`, itemData);
   return data;
 };
 
-/**
- * Deletes an item.
- *
- * @param {number} id - The ID of the item to delete.
- * @returns {Promise<void>} A promise that resolves when the item is deleted.
- */
 export const deleteItem = async (id: number): Promise<void> => {
   await apiClient.delete(`/items/${id}/`);
 };
 
-/**
- * Uploads an image for an item.
- *
- * @param {number} itemId - The ID of the item to upload the image for.
- * @param {File} file - The image file to upload.
- * @returns {Promise<ItemImage>} A promise that resolves to the created item image.
- */
 export const uploadItemImage = async (itemId: number, file: File): Promise<ItemImage> => {
   const formData = new FormData();
   formData.append('item', String(itemId));
@@ -346,12 +172,6 @@ export const uploadItemImage = async (itemId: number, file: File): Promise<ItemI
   return data;
 };
 
-/**
- * Fetches the change history for an item.
- *
- * @param {number} itemId - The ID of the item to fetch the change history for.
- * @returns {Promise<ItemChangeLog[]>} A promise that resolves to the change history.
- */
 export const fetchItemChangelog = async (itemId: number): Promise<ItemChangeLog[]> => {
   const { data } = await apiClient.get<ItemChangeLog[]>(`/items/${itemId}/changelog/`);
   return data;

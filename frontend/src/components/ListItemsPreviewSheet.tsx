@@ -3,36 +3,27 @@ import React from 'react';
 import Button from './common/Button';
 import type { Item } from '../types/inventory';
 
-/**
- * Props for the ListItemsPreviewSheet component.
- * @interface ListItemsPreviewSheetProps
- */
 interface ListItemsPreviewSheetProps {
-  /** Whether the sheet is currently open and visible. */
+  
   open: boolean;
-  /** Callback function to close the sheet. */
+  
   onClose: () => void;
-  /** The name of the list being previewed. */
+  
   listName: string;
-  /** An array of item objects to display in the preview. */
+  
   items: Item[];
-  /** A function that returns the name of a location given its ID. */
+  
   getLocationName: (locationId: number | null) => string;
-  /** Callback function to open the detailed view for a specific item. */
+  
   onOpenItemDetails: (item: Item) => void;
-  /** Callback function to initiate the export of the list (e.g., as a CSV). */
+  
   onExportList: () => void;
-  /** A boolean indicating if the export process is currently in progress. */
+  
   exporting: boolean;
-  /** An error message string if the export failed, otherwise null. */
+  
   exportError: string | null;
 }
 
-/**
- * Formats a date string into a localized German date format (DD.MM.YYYY).
- * @param {string | null} date - The ISO date string to format.
- * @returns {string} The formatted date string, or a fallback string if the date is invalid or null.
- */
 const formatDate = (date: string | null): string => {
   if (!date) {
     return 'Datum unbekannt';
@@ -45,13 +36,6 @@ const formatDate = (date: string | null): string => {
   }
 };
 
-/**
- * A sheet component that slides up as a modal to display a preview of the items contained within a specific list.
- * It provides a quick overview of each item and offers actions to view full details or export the entire list.
- *
- * @param {ListItemsPreviewSheetProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered component, or null if the sheet is not `open`.
- */
 const ListItemsPreviewSheet: React.FC<ListItemsPreviewSheetProps> = ({
   open,
   onClose,

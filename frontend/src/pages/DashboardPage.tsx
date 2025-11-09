@@ -7,13 +7,6 @@ import ManageListItemsSheet, { type ManageableItem } from '../components/ManageL
 import { exportListItems, fetchAllItems, fetchLists, fetchLocations, fetchTags, updateListItems } from '../api/inventory';
 import type { Item, ItemList, Location, Tag } from '../types/inventory';
 
-/**
- * Represents the aggregated statistics and data for the dashboard.
- * @property {Item[]} items - All items in the inventory.
- * @property {ItemList[]} lists - All item lists.
- * @property {Tag[]} tags - All available tags.
- * @property {Location[]} locations - All available locations.
- */
 interface DashboardStats {
   items: Item[];
   lists: ItemList[];
@@ -21,29 +14,13 @@ interface DashboardStats {
   locations: Location[];
 }
 
-/**
- * Extends `ItemList` with resolved item details and an expansion state for UI purposes.
- * @property {Item[]} resolvedItems - The actual item objects corresponding to the item IDs in the list.
- * @property {boolean} [isExpanded] - Optional flag indicating if the list is expanded in the UI.
- */
 interface ListWithDetail extends ItemList {
   resolvedItems: Item[];
   isExpanded?: boolean;
 }
 
-/**
- * The maximum number of lists to display in the "Active Lists" section before showing a "more" indicator.
- */
 const MAX_LISTS_DISPLAYED = 4;
 
-/**
- * The main dashboard page component.
- * It displays an overview of the inventory, including statistics, recently added items,
- * and a summary of active lists. It also provides functionality to manage and preview lists,
- * and export list data.
- *
- * @returns {JSX.Element} The rendered dashboard page.
- */
 const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,10 +36,6 @@ const DashboardPage: React.FC = () => {
   const [listExportingId, setListExportingId] = useState<number | null>(null);
   const [listExportError, setListExportError] = useState<string | null>(null);
 
-  /**
-   * Fetches all necessary dashboard statistics (items, lists, tags, locations) from the API.
-   * Handles loading and error states.
-   */
   const loadStats = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -85,13 +58,10 @@ const DashboardPage: React.FC = () => {
     }
   }, []);
 
-  // Effect to load initial dashboard statistics on component mount.
   useEffect(() => {
     void loadStats();
   }, [loadStats]);
 
-  // Effect to process raw stats into `listsWithDetail` for UI rendering,
-  // resolving item IDs to full item objects and managing expansion state.
   useEffect(() => {
     if (!stats) {
       setListsWithDetail([]);
@@ -108,10 +78,6 @@ const DashboardPage: React.FC = () => {
     })));
   }, [stats, expandedLists]);
 
-  /**
-   * Memoized map for quick lookup of location names by their ID.
-   * @type {Map<number, string>}
-   */
   const locationLookup = useMemo(() => {
     if (!stats) {
       return new Map<number, string>();
@@ -119,10 +85,6 @@ const DashboardPage: React.FC = () => {
     return new Map<number, string>(stats.locations.map((location: Location) => [location.id, location.name]));
   }, [stats]);
 
-  /**
-   * Memoized total estimated value of all items in the inventory.
-   * @type {number}
-   */
   const itemsTotalValue = useMemo(() => {
     if (!stats) {
       return 0;
@@ -139,11 +101,6 @@ const DashboardPage: React.FC = () => {
     }, 0);
   }, [stats]);
 
-  /**
-   * Memoized list of all items, augmented with their assignment count to various lists.
-   * Used for the `ManageListItemsSheet`.
-   * @type {ManageableItem[]}
-   */
   const manageableItems = useMemo<ManageableItem[]>(() => {
     if (!stats) {
       return [];
@@ -160,10 +117,6 @@ const DashboardPage: React.FC = () => {
     }));
   }, [stats]);
 
-  /**
-   * Toggles the expanded state of a list in the UI.
-   * @param {number} listId - The ID of the list to toggle.
-   */
   const handleToggleList = useCallback((listId: number) => {
     setExpandedLists((prev: Set<number>) => {
       const next = new Set<number>(prev);
@@ -176,19 +129,12 @@ const DashboardPage: React.FC = () => {
     });
   }, []);
 
-  /**
-   * Opens the `ManageListItemsSheet` for a specific list.
-   * @param {number} listId - The ID of the list to manage.
-   */
   const handleOpenManage = useCallback((listId: number) => {
     const target = listsWithDetail.find((list: ListWithDetail) => list.id === listId) ?? null;
     setManageTarget(target);
     setManageError(null);
   }, [listsWithDetail]);
 
-  /**
-   * Closes the `ManageListItemsSheet`.
-   */
   const handleCloseManage = useCallback(() => {
     if (manageSaving) {
       return;
@@ -197,10 +143,6 @@ const DashboardPage: React.FC = () => {
     setManageError(null);
   }, [manageSaving]);
 
-  /**
-   * Opens the `ListItemsPreviewSheet` for a specific list.
-   * @param {number} listId - The ID of the list to preview.
-   */
   const handleOpenPreview = useCallback((listId: number) => {
     const target = listsWithDetail.find((list: ListWithDetail) => list.id === listId) ?? null;
     setPreviewTarget(target);
@@ -209,18 +151,12 @@ const DashboardPage: React.FC = () => {
     setListExportError(null);
   }, [listsWithDetail]);
 
-  /**
-   * Closes the `ListItemsPreviewSheet`.
-   */
   const handleClosePreview = useCallback(() => {
     setPreviewTarget(null);
     setPreviewExportError(null);
     setPreviewExporting(false);
   }, []);
 
-  /**
-   * Navigates the user to the dedicated lists page, focusing on the currently previewed list.
-   */
   const handleNavigateToList = useCallback(() => {
     if (!previewTarget) {
       return;
@@ -228,11 +164,6 @@ const DashboardPage: React.FC = () => {
     window.location.assign(`/lists#list-${previewTarget.id}`);
   }, [previewTarget]);
 
-  /**
-   * Handles opening the item details view, either by navigating to the scan page (if asset tag exists)
-   * or the general items page with a focus on the item.
-   * @param {Item} item - The item for which to open details.
-   */
   const handlePreviewItemDetails = useCallback((item: Item) => {
     const assetTag = item.asset_tag.trim();
     if (assetTag.length === 0) {
@@ -243,12 +174,6 @@ const DashboardPage: React.FC = () => {
     window.location.assign(`/scan/${encodeURIComponent(assetTag)}`);
   }, []);
 
-  /**
-   * Generates a standardized filename for a list export CSV.
-   * @param {number} listId - The ID of the list.
-   * @param {string} listName - The name of the list.
-   * @returns {string} The generated filename.
-   */
   const createListExportFilename = useCallback((listId: number, listName: string) => {
     const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
     const safeName = listName
@@ -261,11 +186,6 @@ const DashboardPage: React.FC = () => {
     return `inventarliste-${safeName || fallbackName}-${timestamp}.csv`;
   }, []);
 
-  /**
-   * Triggers a file download in the browser using a Blob and a specified filename.
-   * @param {Blob} blob - The Blob containing the file data.
-   * @param {string} filename - The name to use for the downloaded file.
-   */
   const triggerCsvDownload = useCallback((blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -277,21 +197,12 @@ const DashboardPage: React.FC = () => {
     URL.revokeObjectURL(url);
   }, []);
 
-  /**
-   * Exports the items of a given list to a CSV file.
-   * @param {number} listId - The ID of the list to export.
-   * @param {string} listName - The name of the list (used for filename).
-   * @returns {Promise<void>} A promise that resolves when the export is complete.
-   */
   const exportListToCsv = useCallback(async (listId: number, listName: string) => {
     const blob = await exportListItems(listId);
     const filename = createListExportFilename(listId, listName);
     triggerCsvDownload(blob, filename);
   }, [createListExportFilename, triggerCsvDownload]);
 
-  /**
-   * Handles the export action for a list from the preview sheet.
-   */
   const handleExportPreviewList = useCallback(async () => {
     if (!previewTarget) {
       return;
@@ -311,10 +222,6 @@ const DashboardPage: React.FC = () => {
     }
   }, [previewTarget, exportListToCsv]);
 
-  /**
-   * Handles the export action for a list from the overview section.
-   * @param {ListWithDetail} list - The list to export.
-   */
   const handleExportOverviewList = useCallback(async (list: ListWithDetail) => {
     setListExportError(null);
     setListExportingId(list.id);
@@ -331,10 +238,6 @@ const DashboardPage: React.FC = () => {
     }
   }, [exportListToCsv]);
 
-  /**
-   * Handles saving changes made to a list's items via the `ManageListItemsSheet`.
-   * @param {number[]} itemIds - The array of item IDs that should now be in the list.
-   */
   const handleSaveManage = useCallback(async (itemIds: number[]) => {
     if (!manageTarget) {
       return;

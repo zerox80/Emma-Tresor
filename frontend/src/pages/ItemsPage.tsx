@@ -27,25 +27,10 @@ import {
 import type { Item, ItemList, Location, PaginatedResponse, Tag } from '../types/inventory.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 
-/**
- * The number of items to display per page in the inventory list.
- */
 const PAGE_SIZE = 20;
 
-/**
- * Defines the possible view modes for displaying items.
- * - `grid`: Items are shown in a card-based grid layout.
- * - `table`: Items are shown in a tabular format.
- */
 type ViewMode = 'grid' | 'table';
 
-/**
- * Formats a string value as a German currency (EUR).
- * Returns '—' if the value is null, undefined, or not a valid number.
- *
- * @param {string | null | undefined} value The numeric string to format.
- * @returns {string} The formatted currency string.
- */
 const formatCurrency = (value: string | null | undefined) => {
   if (!value) {
     return '—';
@@ -57,13 +42,6 @@ const formatCurrency = (value: string | null | undefined) => {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
 };
 
-/**
- * Extracts a detailed error message from an AxiosError object.
- * It looks for a 'detail' field in the response data, or returns the raw data if it's a string.
- *
- * @param {AxiosError} error - The AxiosError object.
- * @returns {string | null} The extracted detail message, or null if not found.
- */
 const extractDetailMessage = (error: AxiosError): string | null => {
   const data = error.response?.data;
   if (typeof data === 'string') {
@@ -78,42 +56,9 @@ const extractDetailMessage = (error: AxiosError): string | null => {
   return null;
 };
 
-/**
- * Sorts an array of ItemList objects alphabetically by their `name` property (German locale).
- *
- * @param {ItemList[]} entries - The array of ItemList objects to sort.
- * @returns {ItemList[]} A new array with the sorted ItemList objects.
- */
 const sortItemLists = (entries: ItemList[]): ItemList[] =>
   [...entries].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
 
-/**
- * The main page component for viewing and managing inventory items.
- * 
- * This is the core page of the Emma-Tresor application, providing a comprehensive interface for users to:
- * - View item statistics (total count, quantity, value) with real-time calculations
- * - Filter and sort items by search term, tags, locations, and various ordering options
- * - Switch between grid and table view modes for different browsing preferences
- * - Select multiple items for bulk actions (e.g., assigning to a list)
- * - Add new items via a sophisticated multi-step dialog
- * - View detailed information for a single item in a modal, with options to edit, delete, or navigate to adjacent items
- * - Export filtered item data to CSV with proper German formatting
- * - Manage item assignments to lists with drag-and-drop functionality
- *
- * State Management:
- * - Manages complex local state for filters, selections, dialogs, and item details
- * - Implements optimistic updates for better UX
- * - Handles pagination with URL synchronization
- * - Maintains cache for tags and locations to reduce API calls
- * 
- * Performance Optimizations:
- * - Uses useMemo for expensive calculations (tag/location maps, totals)
- * - Implements debounced search to reduce API requests
- * - Caches API responses and handles race conditions
- * - Uses useCallback to prevent unnecessary re-renders
- *
- * @returns {JSX.Element} The rendered inventory items page with full CRUD functionality.
- */
 const ItemsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -166,23 +111,13 @@ const ItemsPage: React.FC = () => {
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
 
-  /**
-   * Memoized map for quick lookup of tag names by their ID.
-   * @type {Record<number, string>}
-   */
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag: Tag) => [tag.id, tag.name])), [tags]);
-  /**
-   * Memoized map for quick lookup of location names by their ID.
-   * @type {Record<number, string>}
-   */
+  
   const locationMap = useMemo(
     () => Object.fromEntries(locations.map((location: Location) => [location.id, location.name])),
     [locations],
   );
 
-  /**
-   * Effect to load initial metadata (tags and locations) on component mount.
-   */
   useEffect(() => {
     let active = true;
 
@@ -216,10 +151,6 @@ const ItemsPage: React.FC = () => {
     };
   }, []);
 
-  /**
-   * Fetches items from the API based on current filters, search term, and pagination.
-   * Updates the `items` and `pagination` state.
-   */
   const loadItems = useCallback(async () => {
     setLoadingItems(true);
     setItemsError(null);
@@ -245,10 +176,6 @@ const ItemsPage: React.FC = () => {
     }
   }, [debouncedSearchTerm, ordering, page, selectedLocationIds, selectedTagIds]);
 
-  /**
-   * Fetches all item lists from the API and sorts them alphabetically.
-   * Updates the `lists` state.
-   */
   const loadLists = useCallback(async () => {
     setListsLoading(true);
     setListsError(null);
@@ -265,41 +192,26 @@ const ItemsPage: React.FC = () => {
     }
   }, [listsInitialized]);
 
-  /**
-   * Effect to reset the current page to 1 whenever filters (search, tags, locations, ordering) change.
-   */
   useEffect(() => {
     setPage(1);
   }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
 
-  /**
-   * Effect to load items whenever the page or filters change.
-   */
   useEffect(() => {
     void loadItems();
   }, [loadItems, page]);
 
-  /**
-   * Effect to load lists when the assign sheet is opened, if they haven't been loaded yet.
-   */
   useEffect(() => {
     if (assignSheetOpen && !listsInitialized && !listsLoading) {
       void loadLists();
     }
   }, [assignSheetOpen, listsInitialized, listsLoading, loadLists]);
 
-  /**
-   * Effect to clear selected item IDs when selection mode is exited.
-   */
   useEffect(() => {
     if (!selectionMode) {
       setSelectedItemIds([]);
     }
   }, [selectionMode]);
 
-  /**
-   * Effect to clear assign sheet errors when it's opened.
-   */
   useEffect(() => {
     if (assignSheetOpen) {
       setAssignError(null);
@@ -309,9 +221,6 @@ const ItemsPage: React.FC = () => {
   const selectedItemsSet = useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
   const areAllSelectedOnPage = items.length > 0 && items.every((item: Item) => selectedItemsSet.has(item.id));
 
-  /**
-   * Toggles the selection mode on or off. Clears selection if exiting selection mode.
-   */
   const handleToggleSelectionMode = useCallback(() => {
     setSelectionMode((prev: boolean) => {
       const next = !prev;
@@ -322,20 +231,12 @@ const ItemsPage: React.FC = () => {
     });
   }, []);
 
-  /**
-   * Toggles the selection state of a single item.
-   * @param {number} itemId - The ID of the item to toggle.
-   */
   const handleToggleItemSelected = useCallback((itemId: number) => {
     setSelectedItemIds((prev: number[]) =>
       prev.includes(itemId) ? prev.filter((id: number) => id !== itemId) : [...prev, itemId],
     );
   }, []);
 
-  /**
-   * Toggles the selection of all items currently displayed on the page.
-   * If all are selected, it deselects them; otherwise, it selects all of them.
-   */
   const handleSelectAllCurrentPage = useCallback(() => {
     if (areAllSelectedOnPage) {
       setSelectedItemIds((prev: number[]) => prev.filter((id: number) => !items.some((item: Item) => item.id === id)));
@@ -345,16 +246,10 @@ const ItemsPage: React.FC = () => {
     setSelectedItemIds((prev: number[]) => Array.from(new Set<number>([...prev, ...currentItemIds])));
   }, [areAllSelectedOnPage, items]);
 
-  /**
-   * Clears all selected items.
-   */
   const handleClearSelection = useCallback(() => {
     setSelectedItemIds([]);
   }, []);
 
-  /**
-   * Opens the `AssignToListSheet` and triggers loading of lists if not already loaded.
-   */
   const handleOpenAssignSheet = useCallback(() => {
     setAssignSheetOpen(true);
     if (!listsInitialized && !listsLoading) {
@@ -362,9 +257,6 @@ const ItemsPage: React.FC = () => {
     }
   }, [listsInitialized, listsLoading, loadLists]);
 
-  /**
-   * Closes the `AssignToListSheet`. Prevents closing if an assignment is in progress.
-   */
   const handleCloseAssignSheet = useCallback(() => {
     if (assignLoading) {
       return;
@@ -373,13 +265,6 @@ const ItemsPage: React.FC = () => {
     setAssignError(null);
   }, [assignLoading]);
 
-  /**
-   * Assigns the currently selected items to a specified list.
-   * Merges selected items with existing list items and updates the list via API.
-   * @param {number} listId - The ID of the list to assign items to.
-   * @returns {Promise<void>} A promise that resolves when the assignment is complete.
-   * @throws {Error} If no items are selected or the API call fails.
-   */
   const handleAssignToList = useCallback(
     async (listId: number) => {
       if (selectedItemIds.length === 0) {
@@ -418,12 +303,6 @@ const ItemsPage: React.FC = () => {
     [lists, listsInitialized, selectedItemIds],
   );
 
-  /**
-   * Creates a new list from the assign sheet.
-   * @param {string} name - The name of the new list.
-   * @returns {Promise<ItemList>} A promise that resolves with the newly created list.
-   * @throws {Error} If the API call fails.
-   */
   const handleCreateListFromAssign = useCallback(
     async (name: string) => {
       try {
@@ -441,29 +320,18 @@ const ItemsPage: React.FC = () => {
     [listsInitialized],
   );
 
-  /**
-   * Toggles the selection state of a tag filter.
-   * @param {number} tagId - The ID of the tag to toggle.
-   */
   const handleToggleTag = (tagId: number) => {
     setSelectedTagIds((prev: number[]) =>
       prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
     );
   };
 
-  /**
-   * Toggles the selection state of a location filter.
-   * @param {number} locationId - The ID of the location to toggle.
-   */
   const handleToggleLocation = (locationId: number) => {
     setSelectedLocationIds((prev: number[]) =>
       prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId],
     );
   };
 
-  /**
-   * Clears all active filters (search term, selected tags, selected locations, and resets ordering).
-   */
   const handleClearFilters = () => {
     setSelectedTagIds([]);
     setSelectedLocationIds([]);
@@ -471,9 +339,6 @@ const ItemsPage: React.FC = () => {
     setSearchTerm('');
   };
 
-  /**
-   * Exports the currently filtered items to a CSV file.
-   */
   const handleExportItems = useCallback(async () => {
     setExportError(null);
     setExportingItems(true);
@@ -502,42 +367,24 @@ const ItemsPage: React.FC = () => {
     }
   }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
 
-  /**
-   * Creates a new tag and adds it to the list of available tags.
-   * @param {string} name - The name of the new tag.
-   * @returns {Promise<Tag>} A promise that resolves with the newly created tag.
-   */
   const handleCreateTag = useCallback(async (name: string) => {
     const newTag = await createTag(name);
     setTags((prev: Tag[]) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
     return newTag;
   }, []);
 
-  /**
-   * Creates a new location and adds it to the list of available locations.
-   * @param {string} name - The name of the new location.
-   * @returns {Promise<Location>} A promise that resolves with the newly created location.
-   */
   const handleCreateLocation = useCallback(async (name: string) => {
     const newLocation = await createLocation(name);
     setLocations((prev: Location[]) => [...prev, newLocation].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
     return newLocation;
   }, []);
 
-  /**
-   * Closes the AddItemDialog and resets its state.
-   */
   const handleDialogClose = () => {
     setDialogOpen(false);
     setDialogMode('create');
     setDialogItem(null);
   };
 
-  /**
-   * Callback function executed after a new item has been successfully created.
-   * Closes the dialog, displays an info message, and reloads the item list.
-   * @param {Item} item - The newly created item.
-   */
   const handleItemCreated = async (item: Item) => {
     setDialogOpen(false);
     setDialogMode('create');
@@ -546,12 +393,6 @@ const ItemsPage: React.FC = () => {
     await loadItems();
   };
 
-  /**
-   * Callback function executed after an item has been successfully updated.
-   * Closes the dialog, displays an info message, reloads the item list, and updates the detail view if open.
-   * @param {Item} item - The updated item.
-   * @param {string | null} [warning] - An optional warning message to display.
-   */
   const handleItemUpdated = async (item: Item, warning?: string | null) => {
     setDialogOpen(false);
     setDialogMode('create');
@@ -564,11 +405,6 @@ const ItemsPage: React.FC = () => {
     }
   };
 
-  /**
-   * Fetches the full details for a specific item from the API.
-   * Updates `detailItem` state and handles loading/error states.
-   * @param {number} itemId - The ID of the item to fetch details for.
-   */
   const loadItemDetails = useCallback(async (itemId: number) => {
     setDetailLoading(true);
     setDetailError(null);
@@ -582,13 +418,6 @@ const ItemsPage: React.FC = () => {
     }
   }, []);
 
-  /**
-   * Opens the `ItemDetailView` for a specified item.
-   * Optionally handles navigation direction if triggered by previous/next buttons.
-   * @param {number} itemId - The ID of the item to display.
-   * @param {object} [options] - Optional settings.
-   * @param {'next' | 'previous'} [options.fromNavigation] - Indicates if the call came from navigation buttons.
-   */
   const handleOpenItemDetails = useCallback(
     (itemId: number, options?: { fromNavigation?: 'next' | 'previous' }) => {
       setDetailItemId(itemId);
@@ -610,10 +439,6 @@ const ItemsPage: React.FC = () => {
     [items, loadItemDetails],
   );
 
-  /**
-   * Effect to check for a `focusItemId` query parameter in the URL on mount.
-   * If found, it opens the detail view for that item and then cleans the URL.
-   */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const focusItemIdParam = params.get('focusItemId');
@@ -629,9 +454,6 @@ const ItemsPage: React.FC = () => {
     navigate({ pathname: location.pathname, search: nextSearch.length > 0 ? `?${nextSearch}` : '' }, { replace: true });
   }, [handleOpenItemDetails, location.pathname, location.search, navigate]);
 
-  /**
-   * Closes the `ItemDetailView` and resets all related state.
-   */
   const handleCloseItemDetails = useCallback(() => {
     setDetailItemId(null);
     setDetailItem(null);
@@ -644,19 +466,12 @@ const ItemsPage: React.FC = () => {
     navStartItemsVersionRef.current = null;
   }, []);
 
-  /**
-   * Retries loading the details for the currently selected item in the `ItemDetailView`.
-   */
   const handleRetryItemDetails = useCallback(() => {
     if (detailItemId != null) {
       void loadItemDetails(detailItemId);
     }
   }, [detailItemId, loadItemDetails]);
 
-  /**
-   * Handles the deletion of the item currently displayed in the `ItemDetailView`.
-   * Displays an info message on success and reloads the item list.
-   */
   const handleDeleteItem = useCallback(async () => {
     if (detailItemId == null) {
       return;
@@ -676,19 +491,12 @@ const ItemsPage: React.FC = () => {
     }
   }, [detailItemId, detailItem, handleCloseItemDetails, loadItems]);
 
-  /**
-   * Opens the `AddItemDialog` in 'create' mode.
-   */
   const handleOpenCreateDialog = useCallback(() => {
     setDialogMode('create');
     setDialogItem(null);
     setDialogOpen(true);
   }, []);
 
-  /**
-   * Opens the `AddItemDialog` in 'edit' mode for the item currently in `ItemDetailView`.
-   * Closes the detail view first.
-   */
   const handleEditFromDetails = useCallback(() => {
     if (!detailItem) {
       return;
@@ -700,23 +508,13 @@ const ItemsPage: React.FC = () => {
     handleCloseItemDetails();
   }, [detailItem, handleCloseItemDetails]);
 
-  /**
-   * Memoized total count of items, either from pagination or current items array.
-   * @type {number}
-   */
   const totalItemsCount = pagination?.count ?? items.length;
-  /**
-   * Memoized sum of quantities of all currently displayed items.
-   * @type {number}
-   */
+  
   const totalQuantity = useMemo(
     () => items.reduce((sum: number, current: Item) => sum + current.quantity, 0),
     [items],
   );
-  /**
-   * Memoized sum of the financial value of all currently displayed items.
-   * @type {number}
-   */
+  
   const totalValue = useMemo(
     () =>
       items.reduce((sum: number, current: Item) => {
@@ -729,10 +527,6 @@ const ItemsPage: React.FC = () => {
     [items],
   );
 
-  /**
-   * Memoized index of the item currently in `ItemDetailView` within the `items` array.
-   * @type {number}
-   */
   const currentDetailIndex = useMemo(() => {
     if (detailItemId == null) {
       return -1;
@@ -740,11 +534,6 @@ const ItemsPage: React.FC = () => {
     return items.findIndex((currentItem: Item) => currentItem.id === detailItemId);
   }, [detailItemId, items]);
 
-  /**
-   * Handles navigation to the next or previous item in the list,
-   * including handling pagination boundaries.
-   * @param {'next' | 'previous'} direction - The direction to navigate.
-   */
   const handleNavigateDetail = useCallback(
     (direction: 'next' | 'previous') => {
       if (detailItemId == null) {
@@ -790,50 +579,24 @@ const ItemsPage: React.FC = () => {
     [detailItemId, handleOpenItemDetails, items, itemsVersion, pagination],
   );
 
-  /**
-   * Navigates to the next item in the detail view.
-   */
   const handleNavigateNext = useCallback(() => {
     handleNavigateDetail('next');
   }, [handleNavigateDetail]);
 
-  /**
-   * Navigates to the previous item in the detail view.
-   */
   const handleNavigatePrevious = useCallback(() => {
     handleNavigateDetail('previous');
   }, [handleNavigateDetail]);
 
-  /**
-   * Boolean indicating if there is a next item on the current page.
-   * @type {boolean}
-   */
   const hasNextOnCurrentPage = currentDetailIndex !== -1 && currentDetailIndex < items.length - 1;
-  /**
-   * Boolean indicating if there is a previous item on the current page.
-   * @type {boolean}
-   */
+  
   const hasPreviousOnCurrentPage = currentDetailIndex > 0;
-  /**
-   * Boolean indicating if navigation to the next item (on current page or next page) is possible.
-   * @type {boolean}
-   */
+  
   const canNavigateNext = hasNextOnCurrentPage || Boolean(pagination?.next);
-  /**
-   * Boolean indicating if navigation to the previous item (on current page or previous page) is possible.
-   * @type {boolean}
-   */
+  
   const canNavigatePrevious = hasPreviousOnCurrentPage || Boolean(pagination?.previous);
 
-  /**
-   * Memoized total count of items for position display, considering current page and pagination.
-   * @type {number}
-   */
   const totalCountForPosition = pagination?.count ?? (page - 1) * PAGE_SIZE + items.length;
-  /**
-   * Memoized object containing current item position and total count for display in detail view.
-   * @type {{current: number, total: number} | null}
-   */
+  
   const detailPosition = currentDetailIndex === -1
     ? null
     : {
@@ -841,14 +604,6 @@ const ItemsPage: React.FC = () => {
         total: totalCountForPosition,
       };
 
-  /**
-   * Effect to handle pending detail navigation after items have been reloaded (e.g., due to page change).
-   * It attempts to find the target item in the new `items` array and open its details.
-   */
-  /**
-   * Effect to handle pending detail navigation after items have been reloaded (e.g., due to page change).
-   * It attempts to find the target item in the new `items` array and open its details.
-   */
   useEffect(() => {
     if (!pendingDetailNavigation) {
       return;
@@ -882,10 +637,6 @@ const ItemsPage: React.FC = () => {
     navStartItemsVersionRef.current = null;
   }, [detailNavigationTarget, handleOpenItemDetails, items, itemsVersion, pendingDetailNavigation]);
 
-  /**
-   * Boolean indicating if any filters are currently active.
-   * @type {boolean}
-   */
   const isFiltered =
     debouncedSearchTerm.length > 0 || selectedTagIds.length > 0 || selectedLocationIds.length > 0 || ordering !== '-purchase_date';
 

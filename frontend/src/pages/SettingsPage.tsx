@@ -12,26 +12,12 @@ import {
 } from '../api/inventory';
 import type { Location, Tag } from '../types/inventory';
 
-/**
- * Zod schema for validating names of tags and locations.
- * - Minimum 2 characters.
- * - Maximum 60 characters.
- * - Allows letters (including Unicode), numbers, spaces, hyphens, underscores, and periods.
- */
 const nameSchema = z
   .string()
   .min(2, 'Mindestens 2 Zeichen erforderlich')
   .max(60, 'Maximal 60 Zeichen erlaubt')
   .regex(/^[\p{L}0-9\s\-_.]+$/u, 'Nur Buchstaben, Zahlen und - _ . erlaubt');
 
-/**
- * Extracts a user-friendly error message from an API error response (e.g., AxiosError).
- * It attempts to find a 'detail' field, or the first string/array of strings in the response data.
- *
- * @param {unknown} error - The raw error object, potentially an AxiosError.
- * @param {string} fallback - A fallback message to return if no specific error detail can be extracted.
- * @returns {string} The extracted error message or the fallback message.
- */
 const extractApiError = (error: unknown, fallback: string): string => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
     const response = (error as { response?: { data?: unknown } }).response;
@@ -66,13 +52,6 @@ const extractApiError = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
-/**
- * The settings page component, allowing users to manage their custom tags and locations.
- * Users can create new tags and locations, and delete existing ones.
- * The component handles input validation, API interactions, and displays feedback messages.
- *
- * @returns {JSX.Element} The rendered settings page.
- */
 const SettingsPage: React.FC = () => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -86,10 +65,6 @@ const SettingsPage: React.FC = () => {
   const [tagInfo, setTagInfo] = useState<string | null>(null);
   const [locationInfo, setLocationInfo] = useState<string | null>(null);
 
-  /**
-   * Effect hook to load initial tags and locations data from the API on component mount.
-   * Handles loading and error states for the initial fetch.
-   */
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
@@ -114,9 +89,6 @@ const SettingsPage: React.FC = () => {
     };
   }, []);
 
-  /**
-   * Effect hook to automatically clear the `tagInfo` message after a delay.
-   */
   useEffect(() => {
     if (!tagInfo) {
       return;
@@ -125,9 +97,6 @@ const SettingsPage: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [tagInfo]);
 
-  /**
-   * Effect hook to automatically clear the `locationInfo` message after a delay.
-   */
   useEffect(() => {
     if (!locationInfo) {
       return;
@@ -136,10 +105,6 @@ const SettingsPage: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [locationInfo]);
 
-  /**
-   * Handles the creation of a new tag.
-   * Validates the tag name, calls the API, and updates the tags state.
-   */
   const handleCreateTag = async () => {
     setTagError(null);
     const validation = nameSchema.safeParse(tagName.trim());
@@ -160,11 +125,6 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  /**
-   * Handles the deletion of a tag.
-   * Calls the API to delete the tag and updates the tags state.
-   * @param {number} id - The ID of the tag to delete.
-   */
   const handleDeleteTag = async (id: number) => {
     try {
       setLoadingTags(true);
@@ -179,10 +139,6 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  /**
-   * Handles the creation of a new location.
-   * Validates the location name, calls the API, and updates the locations state.
-   */
   const handleCreateLocation = async () => {
     setLocationError(null);
     const validation = nameSchema.safeParse(locationName.trim());
@@ -205,11 +161,6 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  /**
-   * Handles the deletion of a location.
-   * Calls the API to delete the location and updates the locations state.
-   * @param {number} id - The ID of the location to delete.
-   */
   const handleDeleteLocation = async (id: number) => {
     try {
       setLoadingLocations(true);

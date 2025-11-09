@@ -5,65 +5,37 @@ import clsx from 'clsx';
 import Button from './common/Button';
 import type { Item } from '../types/inventory';
 
-/**
- * Extends the base `Item` type with information about its assignments.
- * @property {number} assignmentCount - The number of lists this item is currently assigned to.
- */
 export interface ManageableItem extends Item {
   assignmentCount: number;
 }
 
-/**
- * Defines the available filter modes for the item list.
- * - `all`: Show all items.
- * - `unassigned`: Show only items not assigned to any list.
- * - `inList`: Show only items currently selected for this list.
- */
 type FilterMode = 'all' | 'unassigned' | 'inList';
 
-/**
- * An array of filter options for display in the UI.
- */
 const filterOptions: Array<{ value: FilterMode; label: string }> = [
   { value: 'all', label: 'Alle' },
   { value: 'unassigned', label: 'Nicht zugewiesen' },
   { value: 'inList', label: 'In dieser Liste' },
 ];
 
-/**
- * Props for the ManageListItemsSheet component.
- */
 export interface ManageListItemsSheetProps {
-  /** Whether the sheet is currently open and visible. */
+  
   open: boolean;
-  /** Callback function to close the sheet. */
+  
   onClose: () => void;
-  /** The name of the list being managed. */
+  
   listName: string;
-  /** The complete list of all manageable items in the inventory. */
+  
   items: ManageableItem[];
-  /** An array of IDs for items that are initially selected (i.e., already in the list). */
+  
   initialSelectedIds: number[];
-  /** A boolean indicating if the save operation is in progress. */
+  
   saving: boolean;
-  /** An error message string if a save operation fails, otherwise null. */
+  
   error: string | null;
-  /**
-   * Callback function to save the changes.
-   * @param {number[]} itemIds - An array of the final selected item IDs.
-   * @returns {Promise<void>} A promise that resolves when the save is complete.
-   */
+  
   onSave: (itemIds: number[]) => Promise<void>;
 }
 
-/**
- * A full-screen modal sheet for managing the items within a specific list.
- * It allows users to search, filter, and select/deselect items to be included in the list,
- * tracks changes (additions/removals), and handles saving those changes.
- *
- * @param {ManageListItemsSheetProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered component, or null if the sheet is not `open`.
- */
 const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
   open,
   onClose,
@@ -81,7 +53,6 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
 
   const initialSelectedSet = useMemo(() => new Set<number>(initialSelectedIds), [initialSelectedIds]);
 
-  // Effect to reset internal state when the sheet is opened.
   useEffect(() => {
     if (open) {
       setSearchTerm('');
@@ -91,17 +62,12 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
     }
   }, [open, initialSelectedIds]);
 
-  // Effect to sync external error prop to local state.
   useEffect(() => {
     if (error) {
       setLocalError(error);
     }
   }, [error]);
 
-  /**
-   * Memoized array of items filtered by the current search term and filter mode.
-   * @type {ManageableItem[]}
-   */
   const filteredItems = useMemo<ManageableItem[]>(() => {
     const term = searchTerm.trim().toLowerCase();
     const base: ManageableItem[] = term.length === 0
@@ -123,10 +89,6 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
   const filteredCount = filteredItems.length;
   const allFilteredSelected = filteredCount > 0 && filteredItems.every((item) => localSelectedIds.has(item.id));
 
-  /**
-   * Memoized counts for each filter category.
-   * @type {Record<FilterMode, number>}
-   */
   const filterCounts = useMemo<Record<FilterMode, number>>(() => {
     const unassignedCount = items.reduce((count: number, item: ManageableItem) => (item.assignmentCount === 0 ? count + 1 : count), 0);
     return {
@@ -136,10 +98,6 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
     };
   }, [items, selectedCount]);
 
-  /**
-   * Memoized summary of changes made (items added or removed) compared to the initial state.
-   * @type {{addedCount: number, removedCount: number, hasChanges: boolean}}
-   */
   const changeSummary = useMemo(() => {
     let addedCount = 0;
     localSelectedIds.forEach((id: number) => {
@@ -164,10 +122,6 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
 
   const { addedCount, removedCount, hasChanges } = changeSummary;
 
-  /**
-   * Toggles the selection state of a single item.
-   * @param {number} itemId The ID of the item to toggle.
-   */
   const handleToggleItem = (itemId: number) => {
     setLocalSelectedIds((prev: Set<number>) => {
       const next = new Set<number>(prev);
@@ -180,9 +134,6 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
     });
   };
 
-  /**
-   * Toggles the selection state for all items currently visible in the filtered list.
-   */
   const handleToggleFiltered = () => {
     if (filteredCount === 0) {
       return;
@@ -199,24 +150,14 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
     });
   };
 
-  /**
-   * Clears the entire selection, deselecting all items.
-   */
   const handleClearSelection = () => {
     setLocalSelectedIds(new Set<number>());
   };
 
-  /**
-   * Handles changes to the search input field.
-   * @param {ChangeEvent<HTMLInputElement>} event The input change event.
-   */
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
-  /**
-   * Handles the save action, calling the onSave prop with the final list of selected item IDs.
-   */
   const handleSave = async () => {
     if (!hasChanges) {
       return;

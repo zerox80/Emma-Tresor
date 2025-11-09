@@ -1,24 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-/**
- * Props for the AuthLayout component.
- */
 interface AuthLayoutProps {
-  /** The title to be displayed at the top of the authentication form card (e.g., "Anmelden"). */
+  
   title: string;
-  /** The child elements to be rendered inside the form card, typically the form fields and buttons. */
+  
   children: React.ReactNode;
 }
 
-/**
- * A layout component specifically designed for authentication pages like login and registration.
- * It provides a consistent two-column structure with a marketing/welcome message on one side
- * and a card for the authentication form content on the other.
- *
- * @param {AuthLayoutProps} props The props for the component.
- * @returns {JSX.Element} The rendered authentication page layout.
- */
 const AuthLayout: React.FC<AuthLayoutProps> = ({ title, children }) => (
   <div className="relative min-h-screen overflow-hidden bg-slate-50 px-4 py-12 text-slate-900">
     <div className="pointer-events-none absolute inset-x-0 top-[-20rem] flex justify-center blur-3xl">

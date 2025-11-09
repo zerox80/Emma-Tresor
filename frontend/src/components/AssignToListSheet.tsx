@@ -4,67 +4,31 @@ import clsx from 'clsx';
 import Button from './common/Button';
 import type { ItemList } from '../types/inventory';
 
-/**
- * Props for the AssignToListSheet component.
- */
 interface AssignToListSheetProps {
-  /**
-   * Whether the sheet is open.
-   */
+  
   open: boolean;
-  /**
-   * Callback to close the sheet.
-   */
+  
   onClose: () => void;
-  /**
-   * The lists to display.
-   */
+  
   lists: ItemList[];
-  /**
-   * Whether the lists are loading.
-   */
+  
   loading: boolean;
-  /**
-   * An error message if loading failed.
-   */
+  
   error: string | null;
-  /**
-   * Callback to reload the lists.
-   */
+  
   onReload: () => void;
-  /**
-   * Callback to assign items to a list.
-   * @param listId The ID of the list to assign items to.
-   * @returns A promise that resolves when the assignment is complete.
-   */
+  
   onAssign: (listId: number) => Promise<void>;
-  /**
-   * Whether the assignment is in progress.
-   */
+  
   assignLoading: boolean;
-  /**
-   * An error message if assignment failed.
-   */
+  
   assignError: string | null;
-  /**
-   * The number of items selected for assignment.
-   */
+  
   selectedCount: number;
-  /**
-   * Callback to create a new list.
-   * @param name The name of the new list.
-   * @returns A promise that resolves with the new list.
-   */
+  
   onCreateList: (name: string) => Promise<ItemList>;
 }
 
-/**
- * A sheet component that slides in from the side to allow users to assign selected items to an existing or new list.
- * It includes functionality for searching lists, creating new lists, and handling loading and error states.
- *
- * @param {AssignToListSheetProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered component, or null if the sheet is not open.
- */
 const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
   open,
   onClose,

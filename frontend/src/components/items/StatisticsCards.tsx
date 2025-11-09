@@ -1,32 +1,21 @@
 import React from 'react';
 import Button from '../common/Button';
 
-/**
- * Props for the StatisticsCards component.
- */
 type Props = {
-  /** The total number of unique items. */
+  
   totalItemsCount: number;
-  /** The sum of quantities of all items. */
+  
   totalQuantity: number;
-  /** The sum of the financial value of all items. */
+  
   totalValue: number;
-  /** A boolean indicating if the statistics are currently being loaded. */
+  
   loading: boolean;
-  /** Callback function to open the dialog for adding a new item. */
+  
   onAddItem: () => void;
-  /** Callback function to trigger a reload of the statistics and item data. */
+  
   onReload: () => void;
 };
 
-/**
- * A component that displays a set of cards with key statistics about the inventory,
- * such as total item count, total quantity, and estimated total value. It also includes
- * a card with quick actions like adding a new item or refreshing the data.
- *
- * @param {Props} props The props for the component.
- * @returns {JSX.Element} The rendered section containing the statistics cards.
- */
 const StatisticsCards: React.FC<Props> = ({ totalItemsCount, totalQuantity, totalValue, loading, onAddItem, onReload }) => {
   return (
     <section className="grid gap-4 lg:grid-cols-4">

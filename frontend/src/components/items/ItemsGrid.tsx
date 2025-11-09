@@ -2,27 +2,17 @@ import React from 'react';
 import Button from '../common/Button';
 import type { Item } from '../../types/inventory';
 
-/**
- * Props for the ItemsGrid component.
- */
 type Props = {
-  /** The array of item objects to display in the grid. */
+  
   items: Item[];
-  /** A key-value map of location IDs to location names for display. */
+  
   locationMap: Record<number, string>;
-  /** A key-value map of tag IDs to tag names for display. */
+  
   tagMap: Record<number, string>;
-  /** Callback function invoked when a user clicks to see an item's details. */
+  
   onOpenDetails: (itemId: number) => void;
 };
 
-/**
- * Formats a string value as a German currency (EUR).
- * Returns '—' if the value is null, undefined, or not a valid number.
- *
- * @param {string | null | undefined} value The numeric string to format.
- * @returns {string} The formatted currency string.
- */
 const formatCurrency = (value: string | null | undefined) => {
   if (!value) return '—';
   const numeric = Number.parseFloat(value);
@@ -30,14 +20,6 @@ const formatCurrency = (value: string | null | undefined) => {
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
 };
 
-/**
- * A component that displays a collection of inventory items in a responsive grid of cards.
- * Each card provides a summary of the item's details, including its name, quantity,
- * location, value, and tags, with a button to view more details.
- *
- * @param {Props} props The props for the component.
- * @returns {JSX.Element} The rendered grid of item cards.
- */
 const ItemsGrid: React.FC<Props> = ({ items, locationMap, tagMap, onOpenDetails }) => {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

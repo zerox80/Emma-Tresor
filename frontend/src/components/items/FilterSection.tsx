@@ -3,57 +3,41 @@ import clsx from 'clsx';
 
 import type { Tag, Location } from '../../types/inventory';
 
-/**
- * Defines the possible view modes for the items list.
- * - `grid`: Displays items as a grid of cards.
- * - `table`: Displays items in a data table.
- */
 type ViewMode = 'grid' | 'table';
 
-/**
- * Props for the FilterSection component.
- */
 type Props = {
-  /** The current view mode ('grid' or 'table'). */
+  
   viewMode: ViewMode;
-  /** Callback to set the view mode. */
+  
   setViewMode: (mode: ViewMode) => void;
-  /** Whether any filters (search, tags, locations) are currently active. */
+  
   isFiltered: boolean;
-  /** Callback to clear all active filters and reset the view. */
+  
   onClearFilters: () => void;
-  /** The current search term entered by the user. */
+  
   searchTerm: string;
-  /** Callback to update the search term. */
+  
   onSearchChange: (value: string) => void;
-  /** The list of all available tags to display as filter options. */
+  
   tags: Tag[];
-  /** The list of all available locations to display as filter options. */
+  
   locations: Location[];
-  /** Whether the tags and locations metadata is currently being loaded. */
+  
   metaLoading: boolean;
-  /** A list of IDs of the currently selected tags for filtering. */
+  
   selectedTagIds: number[];
-  /** Callback to toggle the selection status of a tag filter. */
+  
   onToggleTag: (tagId: number) => void;
-  /** A list of IDs of the currently selected locations for filtering. */
+  
   selectedLocationIds: number[];
-  /** Callback to toggle the selection status of a location filter. */
+  
   onToggleLocation: (locationId: number) => void;
-  /** The current ordering string (e.g., '-purchase_date'). */
+  
   ordering: string;
-  /** Callback to set the ordering for the item list. */
+  
   setOrdering: (ordering: string) => void;
 };
 
-/**
- * A UI component that provides a comprehensive set of controls for filtering, sorting,
- * and changing the display of the main inventory list. It includes a search bar,
- * tag and location filters, sorting options, and a view mode switcher (grid/table).
- *
- * @param {Props} props The props for the component.
- * @returns {JSX.Element} The rendered filter section element.
- */
 const FilterSection: React.FC<Props> = ({
   viewMode,
   setViewMode,

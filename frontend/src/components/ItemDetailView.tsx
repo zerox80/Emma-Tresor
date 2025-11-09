@@ -6,93 +6,53 @@ import { fetchItemQrCode, fetchItemChangelog } from '../api/inventory.js';
 import Button from './common/Button.js';
 import ItemChangeHistory from './ItemChangeHistory.js';
 
-/**
- * Represents the position of the currently viewed item within a larger list.
- * @interface DetailPositionInfo
- */
 interface DetailPositionInfo {
-  /** The 1-based index of the current item. */
+  
   current: number;
-  /** The total number of items in the list. */
+  
   total: number;
 }
 
-/**
- * Props for the ItemDetailView component.
- * @interface ItemDetailViewProps
- */
 interface ItemDetailViewProps {
-  /** The item object to display. Null if no item is selected or if it's loading. */
+  
   item: Item | null;
-  /** Indicates if the item data is currently being loaded. */
+  
   loading: boolean;
-  /** An error message if loading the item failed, otherwise null. */
+  
   error: string | null;
-  /** Callback function to close the detail view. */
+  
   onClose: () => void;
-  /** Callback function to switch to the edit mode for the current item. */
+  
   onEdit: () => void;
-  /** Optional callback to retry loading the item data. */
+  
   onRetry?: () => void;
-  /** Optional callback to initiate the deletion of the item. */
+  
   onDelete?: () => void;
-  /** Indicates if the item is currently being deleted. Defaults to `false`. */
+  
   deleteLoading?: boolean;
-  /** An error message if deleting the item failed. Defaults to `null`. */
+  
   deleteError?: string | null;
-  /** A key-value map of tag IDs to tag names for display purposes. */
+  
   tagMap: Record<number, string>;
-  /** A key-value map of location IDs to location names for display purposes. */
+  
   locationMap: Record<number, string>;
-  /** Optional callback to navigate to the previous item in the list. */
+  
   onNavigatePrevious?: () => void;
-  /** Optional callback to navigate to the next item in the list. */
+  
   onNavigateNext?: () => void;
-  /** Indicates if navigation to a previous item is possible. Defaults to `false`. */
+  
   canNavigatePrevious?: boolean;
-  /** Indicates if navigation to a next item is possible. Defaults to `false`. */
+  
   canNavigateNext?: boolean;
-  /** The current direction of navigation, used for showing loading states on navigation buttons. */
+  
   navigationDirection?: 'next' | 'previous' | null;
-  /** Information about the item's position in a list, if applicable. */
+  
   positionInfo?: DetailPositionInfo | null;
 }
 
-/**
- * A CSS selector for identifying all focusable elements within the dialog.
- * Used for focus trapping to ensure accessibility.
- * @type {string}
- */
 const FOCUSABLE_SELECTOR =
   'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/**
- * A comprehensive modal dialog component that displays complete details for a single inventory item.
- * 
- * This component serves as the central hub for item information and management, providing:
- * - Complete item attribute display with German localization and proper formatting
- * - Advanced attachment handling with preview, download, and error management
- * - Dynamic QR code generation with server fallback and client-side generation
- * - Full change history tracking with detailed diff display
- * - Accessibility-compliant focus management and keyboard navigation
- * - Responsive design with mobile-optimized layouts
- * - Security considerations for file handling and URL generation
- *
- * State Management Strategy:
- * - Complex async state handling for QR codes, attachments, and change logs
- * - Proper cleanup of object URLs to prevent memory leaks
- * - Focus trapping for accessibility compliance
- * - Error boundaries with user-friendly error messages
- * 
- * Performance Features:
- * - Memoized calculations for expensive operations
- * - Optimized image loading with lazy loading and error boundaries
- * - Efficient QR code generation with caching mechanisms
- * - Proper debouncing for user interactions
- *
- * @param {ItemDetailViewProps} props The props for the component including item data, callbacks, and UI state.
- * @returns {JSX.Element} A fully accessible, responsive detail view modal with comprehensive functionality.
- */
 const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   item,
   loading,
@@ -112,11 +72,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   navigationDirection = null,
   positionInfo = null,
 }) => {
-  /**
-   * Represents the state of the QR code preview.
-   * @property {string} url - The URL of the QR code image (can be a data URL or object URL).
-   * @property {boolean} revokable - True if the URL is an object URL that needs to be revoked later to prevent memory leaks.
-   */
+  
   type QrPreview = {
     url: string;
     revokable: boolean;
@@ -149,10 +105,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   const previousDisabled = !onNavigatePrevious || !canNavigatePrevious || loading || isNavigatingPrevious;
   const nextDisabled = !onNavigateNext || !canNavigateNext || loading || isNavigatingNext;
 
-  /**
-   * Retrieves all currently focusable elements within the dialog, filtering out those that are disabled or hidden.
-   * @returns {HTMLElement[]} An array of focusable HTML elements.
-   */
   const getFocusableElements = useCallback(() => {
     const dialog = dialogRef.current;
     if (!dialog) {
@@ -160,23 +112,20 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
     return Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
       (element) => {
-        // Check if element is disabled via attribute
+
         if (element.hasAttribute('disabled')) {
           return false;
         }
 
-        // Check if element is disabled via CSS (pointer-events: none)
         const computedStyle = window.getComputedStyle(element);
         if (computedStyle.pointerEvents === 'none') {
           return false;
         }
 
-        // Check if element has aria-hidden
         if (element.getAttribute('aria-hidden') === 'true') {
           return false;
         }
 
-        // Check if element is hidden via CSS
         if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
           return false;
         }
@@ -186,10 +135,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     );
   }, []);
 
-  /**
-   * Computes the base URL for media files, attempting to derive it from the API base URL or window location.
-   * @type {string}
-   */
   const apiMediaBase = useMemo(() => {
     try {
       const base = apiBaseUrl.replace(/\/@?api(?:\/)?$/i, '/');
@@ -204,15 +149,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
   }, []);
 
-  /**
-   * A structured view of an item's attachment for rendering.
-   * @property {string|number} key - A unique key for the attachment.
-   * @property {string} previewUrl - URL for previewing the attachment.
-   * @property {string} downloadUrl - URL for downloading the attachment.
-   * @property {string} name - The filename of the attachment.
-   * @property {string} extension - The file extension.
-   * @property {'image'|'pdf'|'file'} type - The type of the attachment.
-   */
   type AttachmentView = {
     key: string | number;
     previewUrl: string;
@@ -222,10 +158,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     type: 'image' | 'pdf' | 'file';
   };
 
-  /**
-   * Memoized list of processed attachments for the current item, ready for rendering.
-   * @type {AttachmentView[]}
-   */
   const attachments = useMemo<AttachmentView[]>(() => {
     if (!item?.images) {
       return [];
@@ -258,37 +190,22 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     });
   }, [item]);
 
-  /**
-   * Memoized, unique ID for the delete confirmation dialog's title.
-   * @type {string}
-   */
   const deleteConfirmTitleId = useMemo(
     () => (item ? `item-delete-confirm-${item.id}` : 'item-delete-confirm'),
     [item],
   );
 
-  /**
-   * Memoized, unique ID for the delete confirmation dialog's description.
-   * @type {string}
-   */
   const deleteConfirmDescriptionId = useMemo(
     () => `${deleteConfirmTitleId}-description`,
     [deleteConfirmTitleId],
   );
 
-  /**
-   * Safely releases a revocable object URL to prevent memory leaks.
-   * @param {QrPreview | null} preview - The QR code preview object.
-   */
   const releaseQrPreview = useCallback((preview: QrPreview | null) => {
     if (preview?.revokable) {
       URL.revokeObjectURL(preview.url);
     }
   }, []);
 
-  /**
-   * Clears the current QR code preview, releasing its object URL if necessary.
-   */
   const clearQrPreview = useCallback(() => {
     setQrPreview((previous) => {
       releaseQrPreview(previous);
@@ -296,10 +213,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     });
   }, [releaseQrPreview]);
 
-  /**
-   * Sets a new QR code preview, ensuring the previous one is released.
-   * @param {QrPreview} preview - The new QR code preview object.
-   */
   const setQrPreviewValue = useCallback(
     (preview: QrPreview) => {
       setQrPreview((previous) => {
@@ -310,11 +223,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     [releaseQrPreview],
   );
 
-  /**
-   * Formats a string value as a German currency (EUR).
-   * @param {string | null} value - The numeric string to format.
-   * @returns {string} The formatted currency string, or '—' if invalid.
-   */
   const formatCurrency = (value: string | null) => {
     const numeric = Number(value ?? 0);
     if (!Number.isFinite(numeric)) {
@@ -323,11 +231,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
   };
 
-  /**
-   * Formats a date string into a German date format (DD.MM.YYYY).
-   * @param {string | null} value - The date string to format.
-   * @returns {string} The formatted date string, or '—' if invalid.
-   */
   const formatDate = (value: string | null) => {
     if (!value) {
       return '—';
@@ -343,10 +246,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }).format(date);
   };
 
-  /**
-   * Memoized public-facing link to the item's scan page.
-   * @type {string}
-   */
   const shareLink = useMemo(() => {
     if (!item?.asset_tag) {
       return '';
@@ -359,7 +258,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
         return new URL(`scan/${encodedAssetTag}`, `${window.location.origin}/`).toString();
       }
     } catch (error) {
-      // Ignore and try fallback below
+
     }
 
     try {
@@ -369,10 +268,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
   }, [item, apiMediaBase]);
 
-  /**
-   * Generates a QR code on the client-side as a fallback if the server-side generation fails.
-   * @returns {Promise<boolean>} A promise that resolves to true if the fallback was generated successfully.
-   */
   const generateFallbackQr = useCallback(async () => {
     if (!shareLink) {
       return false;
@@ -390,9 +285,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
   }, [shareLink, setQrPreviewValue]);
 
-  /**
-   * Effect to clean up the copy success message timeout on unmount.
-   */
   useEffect(() => (
     () => {
       if (copyTimeoutRef.current !== null) {
@@ -402,9 +294,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
   ), []);
 
-  /**
-   * Effect to reset component state when the item prop changes.
-   */
   useEffect(() => {
     if (!item) {
       if (copyTimeoutRef.current !== null) {
@@ -418,16 +307,10 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
   }, [item]);
 
-  /**
-   * Effect to hide the delete confirmation when the item changes.
-   */
   useEffect(() => {
     setConfirmingDelete(false);
   }, [item, canDelete]);
 
-  /**
-   * Effect to focus the delete confirmation dialog when it becomes visible.
-   */
   useEffect(() => {
     if (!confirmingDelete) {
       return;
@@ -440,16 +323,10 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     };
   }, [confirmingDelete]);
 
-  /**
-   * Effect to keep a ref to the current QR preview to prevent stale closures in cleanup.
-   */
   useEffect(() => {
     qrPreviewRef.current = qrPreview;
   }, [qrPreview]);
 
-  /**
-   * Effect to release the QR code's object URL on unmount.
-   */
   useEffect(
     () => () => {
       releaseQrPreview(qrPreviewRef.current);
@@ -457,9 +334,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     [releaseQrPreview],
   );
 
-  /**
-   * Effect to fetch the item's changelog whenever the item changes.
-   */
   useEffect(() => {
     let active = true;
 
@@ -496,10 +370,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     };
   }, [item]);
 
-  /**
-   * Effect to fetch the item's QR code from the server.
-   * It handles loading states, errors, and triggers a client-side fallback if necessary.
-   */
   useEffect(() => {
     let active = true;
 
@@ -545,18 +415,10 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     };
   }, [item, qrReloadToken, clearQrPreview, setQrPreviewValue, generateFallbackQr]);
 
-  /**
-   * Triggers a refresh of the server-generated QR code.
-   */
   const handleRefreshQr = useCallback(() => {
     setQrReloadToken((prev) => prev + 1);
   }, []);
 
-  /**
-   * Handles downloading the QR code as a PNG file.
-   * It attempts to fetch a high-quality version from the server first,
-   * then falls back to converting the currently displayed preview.
-   */
   const handleDownloadQr = useCallback(async () => {
     if (!item) {
       return;
@@ -605,10 +467,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
   }, [item, generateFallbackQr]);
 
-  /**
-   * Opens an attachment's preview URL in a new browser tab.
-   * @param {string} url - The URL of the attachment to open.
-   */
   const handleOpenAttachment = useCallback((url: string) => {
     if (!url) {
       return;
@@ -616,10 +474,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     window.open(url, '_blank', 'noopener,noreferrer');
   }, []);
 
-  /**
-   * Initiates the download of an attachment file.
-   * @param {AttachmentView} attachment - The attachment to download.
-   */
   const handleDownloadAttachment = useCallback(
     async (attachment: AttachmentView) => {
       setDownloadingAttachmentId(attachment.key);
@@ -650,10 +504,6 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     [],
   );
 
-  /**
-   * Copies the item's share link to the user's clipboard.
-   * Shows a success message on completion.
-   */
   const handleCopyShareLink = useCallback(async () => {
     if (!shareLink) {
       return;
@@ -662,7 +512,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(shareLink);
       } else {
-        // Fallback for non-secure contexts or older browsers
+
         const textArea = document.createElement('textarea');
         textArea.value = shareLink;
         textArea.style.position = 'fixed';
@@ -691,17 +541,12 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     }
   }, [shareLink]);
 
-  /**
-   * Effect to manage focus trapping, keyboard shortcuts (Escape, Arrow keys), and restoring focus on close.
-   * This is critical for accessibility.
-   */
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog || !item) {
       return;
     }
 
-    // Store the previously focused element only once
     previouslyFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     const focusables = getFocusableElements();
@@ -767,7 +612,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     return () => {
       window.clearTimeout(focusTimer);
       dialog.removeEventListener('keydown', handleKeyDown);
-      // Restore focus to previously focused element
+
       if (previouslyFocusedElementRef.current) {
         previouslyFocusedElementRef.current.focus({ preventScroll: true });
       }
@@ -795,7 +640,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
               className="relative z-10 w-full max-w-4xl rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
               ref={dialogRef}
             >
-              {/* Header */}
+              {}
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h3 id="item-detail-heading" className="text-2xl font-semibold text-slate-900">
@@ -849,7 +694,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </div>
               </div>
 
-              {/* Loading State */}
+              {}
               {loading && (
                 <div className="flex h-64 items-center justify-center">
                   <div className="text-center">
@@ -859,7 +704,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </div>
               )}
 
-              {/* Error State */}
+              {}
               {error && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
                   <p className="mb-4 text-red-700">{error}</p>
@@ -871,7 +716,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </div>
               )}
 
-              {/* Content */}
+              {}
               {!loading && !error && item && (
                 <div className="space-y-8">
                   <section className="rounded-xl border border-slate-200 bg-white p-6">
@@ -963,7 +808,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
                   </section>
 
-                  {/* Images Section */}
+                  {}
                   {attachments.length > 0 ? (
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
                       <h4 className="mb-4 text-lg font-semibold text-slate-900">Anhänge</h4>
@@ -1057,9 +902,9 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
                   )}
 
-                  {/* Details Grid */}
+                  {}
                   <div className="grid gap-8 lg:grid-cols-2">
-                    {/* Basic Information */}
+                    {}
                     <div className="rounded-xl border border-slate-200 bg-white p-6">
                       <h4 className="mb-4 text-lg font-semibold text-slate-900">Grundinformationen</h4>
                       <dl className="space-y-4">
@@ -1102,7 +947,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                       </dl>
                     </div>
 
-                    {/* Location and Tags */}
+                    {}
                     <div className="rounded-xl border border-slate-200 bg-white p-6">
                       <h4 className="mb-4 text-lg font-semibold text-slate-900">Zuordnung</h4>
                       <dl className="space-y-4">
@@ -1137,7 +982,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Change History Section */}
+                  {}
                   <div className="rounded-xl border border-slate-200 bg-white p-6">
                     <h4 className="mb-4 text-lg font-semibold text-slate-900">Änderungshistorie</h4>
                     <ItemChangeHistory changelog={changelog} loading={changelogLoading} error={changelogError} />
@@ -1145,7 +990,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </div>
               )}
 
-              {/* Actions */}
+              {}
               {!loading && !error && item && (
                 <div className="mt-8 space-y-4">
                   {deleteError && (

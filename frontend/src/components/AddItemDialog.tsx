@@ -14,19 +14,6 @@ import {
 import { FILE_UPLOAD_CONSTANTS } from '../utils/constants';
 import type { Item, ItemImage, ItemPayload, Location, Tag } from '../types/inventory';
 
-/**
- * @interface AddItemDialogProps
- * @property {boolean} open - Whether the dialog is open.
- * @property {() => void} onClose - Callback for when the dialog is closed.
- * @property {(item: Item) => void} onCreated - Callback for when an item is created.
- * @property {Tag[]} tags - The list of available tags.
- * @property {Location[]} locations - The list of available locations.
- * @property {(name: string) => Promise<Tag>} onCreateTag - Callback for creating a new tag.
- * @property {(name: string) => Promise<Location>} onCreateLocation - Callback for creating a new location.
- * @property {'create' | 'edit'} [mode='create'] - The mode of the dialog.
- * @property {Item | null} [item=null] - The item to edit in edit mode.
- * @property {(item: Item, warning?: string | null) => void} [onUpdated] - Callback for when an item is updated.
- */
 interface AddItemDialogProps {
   open: boolean;
   onClose: () => void;
@@ -44,10 +31,6 @@ const MAX_FILES = FILE_UPLOAD_CONSTANTS.MAX_FILES;
 const MAX_FILE_SIZE_MB = FILE_UPLOAD_CONSTANTS.MAX_FILE_SIZE_MB;
 const ALLOWED_EXTENSIONS = FILE_UPLOAD_CONSTANTS.ALLOWED_EXTENSIONS;
 
-/**
- * The schema for the item form.
- * @type {z.ZodObject}
- */
 const itemSchema = z.object({
   name: z
     .string()
@@ -92,10 +75,6 @@ type ItemFormSchema = z.infer<typeof itemSchema>;
 
 type StepIndex = 0 | 1 | 2;
 
-/**
- * The default values for the item form.
- * @type {ItemFormSchema}
- */
 const DEFAULT_VALUES: ItemFormSchema = {
   name: '',
   description: '',
@@ -107,21 +86,12 @@ const DEFAULT_VALUES: ItemFormSchema = {
   tags: [],
 };
 
-/**
- * A map of form fields to steps.
- * @type {Array<Array<keyof ItemFormSchema>>}
- */
 const stepFieldMap: (keyof ItemFormSchema)[][] = [
   ['name', 'wodis_inventory_number', 'quantity', 'purchase_date', 'value'],
   ['location', 'tags'],
   [],
 ];
 
-/**
- * A dialog for adding or editing an item.
- * @param {AddItemDialogProps} props The props for the component.
- * @returns {JSX.Element | null} The rendered component.
- */
 const AddItemDialog: React.FC<AddItemDialogProps> = ({
   open,
   onClose,
@@ -166,12 +136,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
   const watchedValues = watch();
   const reviewSectionRef = useRef<HTMLDivElement | null>(null);
 
-  /**
-   * Sorts and sets the tag and location options when the dialog is opened.
-   * @param {boolean} open - Whether the dialog is open.
-   * @param {Tag[]} tags - The list of available tags.
-   * @param {Location[]} locations - The list of available locations.
-   */
   useEffect(() => {
     if (open) {
       const sortedTags = [...tags].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
@@ -180,10 +144,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     }
   }, [open, tags, locations]);
 
-  /**
-   * Resets the state of the form.
-   * @param {Item | null} sourceItem - The item to use as the source for the form values.
-   */
   const resetState = useCallback(
     (sourceItem: Item | null = null) => {
       const initialValues: ItemFormSchema = sourceItem
@@ -214,13 +174,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     [reset],
   );
 
-  /**
-   * Resets the state and focuses the name input when the dialog is opened.
-   * @param {boolean} open - Whether the dialog is open.
-   * @param {Function} resetState - The function to reset the state.
-   * @param {'create' | 'edit'} mode - The mode of the dialog.
-   * @param {Item | null} item - The item to edit in edit mode.
-   */
   useEffect(() => {
     if (!open) {
       return;
@@ -239,11 +192,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, [open, resetState, mode, item]);
 
-  /**
-   * Focuses the correct element when the step changes.
-   * @param {StepIndex} currentStep - The current step.
-   * @param {boolean} open - Whether the dialog is open.
-   */
   useEffect(() => {
     if (!open || typeof document === 'undefined' || typeof window === 'undefined') {
       return;
@@ -269,11 +217,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, [currentStep, open]);
 
-  /**
-   * Determines the kind of a file.
-   * @param {File} file - The file to determine the kind of.
-   * @returns {'image' | 'pdf' | 'file'} The kind of the file.
-   */
   const determineFileKind = useCallback((file: File): 'image' | 'pdf' | 'file' => {
     const lowerName = file.name.toLowerCase();
     if (file.type.startsWith('image/')) {
@@ -285,12 +228,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     return 'file';
   }, []);
 
-  /**
-   * Creates a preview of the selected files.
-   * @param {File[]} files - The selected files.
-   * @param {Function} determineFileKind - The function to determine the kind of a file.
-   * @returns {Array<{name: string, url: string, size: number, type: string, kind: 'image' | 'pdf' | 'file'}>} The file previews.
-   */
   const filePreviews = useMemo(
     () =>
       files.map((file) => ({
@@ -303,12 +240,8 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     [determineFileKind, files],
   );
 
-  /**
-   * Cleans up the object URLs when the component unmounts or when the files change.
-   * @param {Array<{url: string}>} filePreviews - The file previews.
-   */
   useEffect(() => {
-    // Clean up URLs when component unmounts or when files change
+
     return () => {
       filePreviews.forEach((preview) => {
         if (preview.url.startsWith('blob:')) {
@@ -318,9 +251,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, [filePreviews]);
 
-  /**
-   * Closes the dialog.
-   */
   const closeDialog = useCallback(() => {
     if (isSubmitting) {
       return;
@@ -330,9 +260,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     onClose();
   }, [isSubmitting, resetState, mode, item, onClose]);
 
-  /**
-   * Handles the request to close the dialog, confirming with the user if there are unsaved changes.
-   */
   const handleRequestClose = useCallback(() => {
     if (isSubmitting) {
       return;
@@ -353,11 +280,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     closeDialog();
   }, [closeDialog, files.length, isDirty, isSubmitting, newLocationName]);
 
-  /**
-   * Handles the keydown event, closing the dialog when the escape key is pressed.
-   * @param {boolean} open - Whether the dialog is open.
-   * @param {Function} handleRequestClose - The function to handle the request to close the dialog.
-   */
   useEffect(() => {
     if (!open || typeof window === 'undefined') {
       return;
@@ -377,9 +299,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, [handleRequestClose, open]);
 
-  /**
-   * Handles the next step button click, validating the current step's fields before proceeding.
-   */
   const handleNextStep = useCallback(async () => {
     const fields = stepFieldMap[currentStep];
     if (fields.length > 0) {
@@ -391,17 +310,10 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     setCurrentStep((prev) => (prev < 2 ? ((prev + 1) as StepIndex) : prev));
   }, [currentStep, trigger]);
 
-  /**
-   * Handles the previous step button click.
-   */
   const handlePreviousStep = useCallback(() => {
     setCurrentStep((prev) => (prev > 0 ? ((prev - 1) as StepIndex) : prev));
   }, []);
 
-  /**
-   * Handles the selection of files, filtering out invalid files.
-   * @param {FileList | null} selectedFiles - The selected files.
-   */
   const handleSelectFiles = useCallback(
     (selectedFiles: FileList | null) => {
       if (!selectedFiles) {
@@ -435,7 +347,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         return;
       }
 
-      // Use functional update to prevent race conditions
       setFiles((prev) => {
         const existingNames = new Set(prev.map(f => f.name));
         const newFiles = accepted.filter(f => !existingNames.has(f.name));
@@ -457,19 +368,10 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     [],
   );
 
-  /**
-   * Handles the removal of a file.
-   * @param {string} name - The name of the file to remove.
-   */
   const handleRemoveFile = useCallback((name: string) => {
     setFiles((prev) => prev.filter((file) => file.name !== name));
   }, []);
 
-  /**
-   * Normalises the form values into a payload for the API.
-   * @param {ItemFormSchema} values - The form values.
-   * @returns {ItemPayload} The normalised payload.
-   */
   const normalisePayload = useCallback((values: ItemFormSchema): ItemPayload => {
     const trimmedName = values.name.trim();
     const trimmedDescription = values.description?.trim() ?? '';
@@ -489,11 +391,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     };
   }, []);
 
-  /**
-   * Handles the creation of a new tag.
-   * @param {string} name - The name of the tag to create.
-   * @returns {Promise<TagSelectorOption | null>} The new tag option, or null if creation failed.
-   */
   const handleCreateTag = useCallback(
     async (name: string): Promise<TagSelectorOption | null> => {
       const trimmed = name.trim();
@@ -520,9 +417,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     [onCreateTag],
   );
 
-  /**
-   * Handles the creation of a new location.
-   */
   const handleCreateLocation = useCallback(async () => {
     const trimmed = newLocationName.trim();
     if (trimmed.length === 0) {
@@ -549,10 +443,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     }
   }, [newLocationName, onCreateLocation, reset, watch]);
 
-  /**
-   * Handles the submission of the form, creating or updating an item.
-   * @param {ItemFormSchema} values - The form values.
-   */
   const submitHandler = useCallback(
     async (values: ItemFormSchema) => {
       setFormError(null);
@@ -629,9 +519,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   const onSubmit = handleSubmit(submitHandler);
 
-  /**
-   * Handles the "add another" button click, resetting the form.
-   */
   const handleAddAnother = useCallback(() => {
     resetState(null);
     const nameInput = document.getElementById('add-item-name');
@@ -703,11 +590,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     .map((tagId) => tagOptions.find((option) => option.value === tagId)?.label)
     .filter((label): label is string => Boolean(label));
 
-  /**
-   * Formats a currency value.
-   * @param {string | undefined} value - The value to format.
-   * @returns {string} The formatted currency value.
-   */
   const formatCurrency = (value: string | undefined) => {
     if (!value || value.trim().length === 0) {
       return '—';
@@ -719,11 +601,6 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
   };
 
-  /**
-   * Formats a date value.
-   * @param {string | undefined} value - The value to format.
-   * @returns {string} The formatted date value.
-   */
   const formatDate = (value: string | undefined) => {
     if (!value || value.trim().length === 0) {
       return '—';

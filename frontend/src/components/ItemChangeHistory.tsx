@@ -1,33 +1,17 @@
 import React from 'react';
 import type { ItemChangeLog } from '../types/inventory';
 
-/**
- * Props for the ItemChangeHistory component.
- * @interface ItemChangeHistoryProps
- */
 interface ItemChangeHistoryProps {
-  /** The list of change log entries for the item. */
+  
   changelog: ItemChangeLog[];
-  /** A boolean indicating if the changelog data is currently being loaded. */
+  
   loading: boolean;
-  /** An error message string if loading the changelog failed, otherwise null. */
+  
   error: string | null;
 }
 
-/**
- * A component that displays the historical log of changes for a specific item.
- * It shows a timeline of creations, updates, and deletions, including the user responsible and the specific fields that were changed.
- *
- * @param {ItemChangeHistoryProps} props The props for the component.
- * @returns {JSX.Element} The rendered component displaying the item's history, a loading state, an error message, or a message indicating no history is available.
- */
 const ItemChangeHistory: React.FC<ItemChangeHistoryProps> = ({ changelog, loading, error }) => {
-  /**
-   * Formats a date string into a localized German date and time format (DD.MM.YYYY, HH:MM).
-   *
-   * @param {string} dateString - The ISO date string to format.
-   * @returns {string} The formatted date string. Returns the original string on error.
-   */
+  
   const formatDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
@@ -43,13 +27,6 @@ const ItemChangeHistory: React.FC<ItemChangeHistoryProps> = ({ changelog, loadin
     }
   };
 
-  /**
-   * Formats a date string into a user-friendly relative time string (e.g., "vor 5 Min.", "vor 2 Std.").
-   * Falls back to the absolute date format for older dates.
-   *
-   * @param {string} dateString - The ISO date string to format.
-   * @returns {string} The formatted relative time string.
-   */
   const formatRelativeTime = (dateString: string): string => {
     try {
       const date = new Date(dateString);
@@ -69,12 +46,6 @@ const ItemChangeHistory: React.FC<ItemChangeHistoryProps> = ({ changelog, loadin
     }
   };
 
-  /**
-   * Returns an emoji icon corresponding to a specific log action.
-   *
-   * @param {string} action - The action type (e.g., 'create', 'update', 'delete').
-   * @returns {string} An emoji representing the action.
-   */
   const getActionIcon = (action: string): string => {
     switch (action) {
       case 'create':
@@ -88,12 +59,6 @@ const ItemChangeHistory: React.FC<ItemChangeHistoryProps> = ({ changelog, loadin
     }
   };
 
-  /**
-   * Returns Tailwind CSS classes for styling a log entry based on the action type.
-   *
-   * @param {string} action - The action type (e.g., 'create', 'update', 'delete').
-   * @returns {string} A string of Tailwind CSS classes for background, border, and text color.
-   */
   const getActionColor = (action: string): string => {
     switch (action) {
       case 'create':
@@ -107,12 +72,6 @@ const ItemChangeHistory: React.FC<ItemChangeHistoryProps> = ({ changelog, loadin
     }
   };
 
-  /**
-   * Translates a snake_case field name from the database into a human-readable format.
-   *
-   * @param {string} field - The raw field name (e.g., 'purchase_date').
-   * @returns {string} The formatted, human-readable field name (e.g., 'Kaufdatum').
-   */
   const formatFieldName = (field: string): string => {
     const fieldNames: Record<string, string> = {
       name: 'Name',
@@ -126,12 +85,6 @@ const ItemChangeHistory: React.FC<ItemChangeHistoryProps> = ({ changelog, loadin
     return fieldNames[field] || field;
   };
 
-  /**
-   * Formats a value for display, handling null, undefined, and boolean cases gracefully.
-   *
-   * @param {any} value - The value to format.
-   * @returns {string} The formatted string representation of the value. Returns '—' for null/undefined.
-   */
   const formatValue = (value: any): string => {
     if (value === null || value === undefined) return '—';
     if (typeof value === 'boolean') return value ? 'Ja' : 'Nein';
@@ -139,15 +92,6 @@ const ItemChangeHistory: React.FC<ItemChangeHistoryProps> = ({ changelog, loadin
     return String(value);
   };
 
-  /**
-   * Renders the details of the changes recorded in a log entry.
-   * For 'create' or 'delete' actions, it shows a simple message.
-   * For 'update' actions, it displays a "before" and "after" view of the changed fields.
-   *
-   * @param {Record<string, any>} changes - An object where keys are field names and values describe the change.
-   * @param {string} action - The action type associated with the log entry.
-   * @returns {React.ReactNode} The JSX element(s) detailing the changes.
-   */
   const renderChanges = (changes: Record<string, any>, action: string): React.ReactNode => {
     if (action === 'create') {
       return (
