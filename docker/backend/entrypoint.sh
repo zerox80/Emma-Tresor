@@ -43,6 +43,9 @@ python manage.py migrate --noinput --verbosity=2
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
+# Ensure logs directory is owned by appuser after management commands
+chown -R appuser:appuser /app/logs
+
 if [ "${AUTO_CREATE_SUPERUSER:-false}" = "true" ]; then
     python manage.py shell <<'PY'
 import os
