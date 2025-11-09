@@ -261,7 +261,7 @@ class ItemImage(TimeStampedModel):
 
     def clean(self):
         """
-        Validates the uploaded image file.
+        Validates the uploaded image file with enhanced decompression bomb protection.
 
         Raises:
             ValidationError: If the file is too large, has an invalid extension,
@@ -283,38 +283,90 @@ class ItemImage(TimeStampedModel):
 
             file_obj = self.image.file
             pos = file_obj.tell()
+            
+            # Enhanced security limits for decompression bomb protection
+            MAX_PIXELS = 16777216  # 16MP (4096x4096) - more conservative than PIL default
+            MAX_DIMENSION = 8192  # Maximum width or height
+            MEMORY_LIMIT = 100 * 1024 * 1024  # 100MB memory limit for processing
+            
             try:
                 file_obj.seek(0)
-                header = file_obj.read(4)
+                header = file_obj.read(16)  # Read more header bytes for better format detection
                 file_obj.seek(0)
 
                 if ext == '.pdf':
-                    if header != b'%PDF':
+                    if not header.startswith(b'%PDF'):
                         raise ValidationError('Die Datei ist kein gültiges PDF-Dokument.')
                 else:
                     try:
-                        # Step 1: Basic header validation
-                        with Image.open(file_obj) as img:
-                            img.verify()
-                        
-                        # Step 2: Reset file pointer (verify() consumes the stream)
+                        # Step 1: Pre-validate image dimensions from header if possible
+                        # This helps reject obvious oversized images early
                         file_obj.seek(0)
                         
-                        # Step 3: CRITICAL SECURITY FIX - Load and validate all pixel data
-                        # This protects against:
-                        # - Decompression bombs (malformed compressed data)
-                        # - Corrupted/malicious pixel payloads
-                        # - CVEs in image decoding libraries
+                        # Step 2: Enhanced validation with memory limits
                         with Image.open(file_obj) as img:
-                            img.load()  # Decodes all pixel data - will raise exception if corrupted
-                            
-                            # Additional protection: Prevent decompression bombs
-                            MAX_PIXELS = 89478485  # PIL's MAX_IMAGE_PIXELS default (~8K x 8K)
-                            if img.width * img.height > MAX_PIXELS:
+                            # Quick dimension check before full processing
+                            if img.width > MAX_DIMENSION or img.height > MAX_DIMENSION:
                                 raise ValidationError(
-                                    f'Bild ist zu groß: {img.width}x{img.height} Pixel. '
-                                    f'Maximum: {MAX_PIXELS} Pixel gesamt (ca. 9500x9500).'
+                                    f'Bildabmessungen zu groß: {img.width}x{img.height}. '
+                                    f'Maximum: {MAX_DIMENSION}x{MAX_DIMENSION} Pixel.'
                                 )
+                            
+                            # Check pixel count before processing
+                            pixel_count = img.width * img.height
+                            if pixel_count > MAX_PIXELS:
+                                raise ValidationError(
+                                    f'Bild hat zu viele Pixel: {pixel_count}. '
+                                    f'Maximum: {MAX_PIXELS} Pixel (ca. 4096x4096).'
+                                )
+                            
+                            # Verify image format integrity
+                            img.verify()
+                            
+                            # Step 3: Reset file pointer and process with memory limits
+                            file_obj.seek(0)
+                            
+                            # Memory-efficient processing with explicit limits
+                            import resource
+                            try:
+                                # Set memory limit for image processing (Unix systems)
+                                resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
+                            except (ImportError, OSError, ValueError):
+                                # resource module not available or limit setting failed
+                                pass
+                            
+                            try:
+                                with Image.open(file_obj) as img:
+                                    # Load with explicit size check as final safeguard
+                                    img.load()
+                                    
+                                    # Final validation after loading
+                                    if img.width * img.height > MAX_PIXELS:
+                                        raise ValidationError(
+                                            f'Bild verarbeitet zu viele Pixel: {img.width}x{img.height}. '
+                                            f'Limit überschritten.'
+                                        )
+                                    
+                                    # Validate color mode and depth
+                                    if img.mode in ('LA', 'RGBA', 'RGBX'):
+                                        # Reject potentially problematic color modes
+                                        if ext.lower() not in ['.png', '.webp']:
+                                            raise ValidationError(
+                                                f'Farbmodus {img.mode} für dieses Format nicht unterstützt.'
+                                            )
+                                            
+                            except MemoryError:
+                                raise ValidationError(
+                                    'Bild zu groß für Verarbeitung. '
+                                    f'Maximum: {MAX_DIMENSION}x{MAX_DIMENSION} Pixel.'
+                                )
+                            except Exception as processing_error:
+                                # Log the error but don't expose details
+                                import logging
+                                logger = logging.getLogger(__name__)
+                                logger.warning(f'Image processing error: {processing_error}')
+                                raise ValidationError('Bildverarbeitung fehlgeschlagen.') from processing_error
+                                
                     except (UnidentifiedImageError, OSError) as exc:
                         raise ValidationError('Die Datei ist kein gültiges Bild.') from exc
                     finally:

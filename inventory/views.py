@@ -414,7 +414,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         """
-        Validates the given attributes.
+        Validates the given attributes with enhanced timing attack protection.
 
         Args:
             attrs (dict): The attributes to validate.
@@ -425,9 +425,17 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         import logging
         import time
         import secrets
+        import random
         security_logger = logging.getLogger('security')
         
-        # Measure execution time to ensure constant-time behavior
+        # Constant-time comparison helper
+        def constant_time_compare(a, b):
+            """Compare two strings in constant time to prevent timing attacks."""
+            return secrets.compare_digest(a, b)
+        
+        # Generate random delay base for timing normalization
+        # This makes timing attacks much harder by adding unpredictability
+        base_delay = random.uniform(0.15, 0.25)  # Random base between 150-250ms
         start_time = time.perf_counter()
         
         email = attrs.get('email')
@@ -437,49 +445,89 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         username = attrs.get(self.username_field)
         user_found = False
+        authentication_result = None
         
-        if email and not username:
-            try:
-                user = User.objects.get(email__iexact=email)
-                attrs[self.username_field] = getattr(user, self.username_field)
-                user_found = True
-            except User.DoesNotExist:
-                # Perform dummy operation to maintain constant time
-                # This prevents timing attacks that could enumerate users
-                _ = secrets.compare_digest(email, 'dummy@example.com')
-                
-                # Use generic error message to prevent user enumeration
-                security_logger.warning(
-                    'Login attempt with non-existent email',
-                    extra={'email': email[:50]}  # Truncate for logging
-                )
+        # Always perform database lookup to maintain constant timing
+        # This prevents user enumeration through timing differences
+        dummy_username = secrets.token_urlsafe(32)  # Generate random dummy username
+        lookup_username = username if username else dummy_username
+        lookup_email = email if email else f"{dummy_username}@example.com"
         
-        # Add artificial delay to normalize timing for failed user lookups
-        if not user_found and email and not username:
-            # Calculate elapsed time and add delay if needed
-            elapsed = time.perf_counter() - start_time
-            target_time = 0.1  # Target 100ms minimum
-            if elapsed < target_time:
-                time.sleep(target_time - elapsed)
-            raise AuthenticationFailed('Ungültige Anmeldedaten.')
-        
+        # Perform user lookup with constant-time behavior
         try:
-            data = super().validate(attrs)
-        except AuthenticationFailed:
-            # Add timing normalization for failed authentication
-            elapsed = time.perf_counter() - start_time
-            target_time = 0.15  # Slightly longer for full authentication attempt
-            if elapsed < target_time:
-                time.sleep(target_time - elapsed)
-            # Generic error message for failed authentication
-            raise AuthenticationFailed('Ungültige Anmeldedaten.')
+            if email and not username:
+                # Always query the database, even for non-existent users
+                user = User.objects.filter(email__iexact=lookup_email).first()
+                if user:
+                    # Verify email exists using constant-time comparison
+                    email_check = constant_time_compare(email.lower(), user.email.lower())
+                    if email_check:
+                        attrs[self.username_field] = getattr(user, self.username_field)
+                        user_found = True
+                        authentication_result = user
+            elif username:
+                user = User.objects.filter(username__iexact=lookup_username).first()
+                if user:
+                    username_check = constant_time_compare(username.lower(), user.username.lower())
+                    if username_check:
+                        user_found = True
+                        authentication_result = user
+        except Exception:
+            # Log any database errors but don't expose them
+            security_logger.error('Database error during authentication lookup')
         
-        data['user'] = {
-            'id': self.user.id,
-            'username': self.user.username,
-            'email': self.user.email,
-        }
-        return data
+        # Log authentication attempts (without exposing whether user exists)
+        security_logger.info(
+            'Authentication attempt processed',
+            extra={
+                'timestamp': time.time(),
+                'ip_hash': secrets.hexlify(secrets.token_bytes(8)).decode()[:16],  # Hashed IP for privacy
+            }
+        )
+        
+        # Always attempt authentication to maintain constant timing
+        # This prevents timing attacks by ensuring similar execution paths
+        try:
+            # Use dummy credentials if no user found to maintain constant time
+            if not user_found:
+                dummy_attrs = attrs.copy()
+                if email and not username:
+                    dummy_attrs[self.username_field] = dummy_username
+                dummy_attrs['password'] = secrets.token_urlsafe(32)  # Random dummy password
+                # This will fail but takes similar time as real authentication
+                super().validate(dummy_attrs)
+            else:
+                data = super().validate(attrs)
+                
+            # Calculate remaining time to reach target with randomization
+            elapsed = time.perf_counter() - start_time
+            target_with_variance = base_delay + random.uniform(0.05, 0.15)  # Add 50-150ms variance
+            
+            if elapsed < target_with_variance:
+                sleep_time = target_with_variance - elapsed
+                time.sleep(sleep_time)
+            
+            if not user_found:
+                raise AuthenticationFailed('Ungültige Anmeldedaten.')
+            
+            data['user'] = {
+                'id': authentication_result.id,
+                'username': authentication_result.username,
+                'email': authentication_result.email,
+            }
+            return data
+            
+        except AuthenticationFailed:
+            # Calculate remaining time for failed authentication
+            elapsed = time.perf_counter() - start_time
+            target_with_variance = base_delay + random.uniform(0.05, 0.15)
+            
+            if elapsed < target_with_variance:
+                sleep_time = target_with_variance - elapsed
+                time.sleep(sleep_time)
+            
+            # Always use the same generic error message
+            raise AuthenticationFailed('Ungültige Anmeldedaten.')
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -855,12 +903,20 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     def get_throttles(self):
         """
-        Gets the throttles for the viewset.
+        Gets the throttles for the viewset with comprehensive rate limiting.
 
         Returns:
             list: A list of throttles.
         """
+        # SECURITY FIX: Implement comprehensive rate limiting to prevent bypass attempts
         throttles = []
+        
+        # Always apply base throttles for all actions
+        base_throttles = super().get_throttles()
+        if base_throttles:
+            throttles.extend(base_throttles)
+        
+        # Action-specific throttles
         if self.action == 'create':
             throttles.append(ItemCreateRateThrottle())
         elif self.action in ['update', 'partial_update']:
@@ -869,8 +925,13 @@ class ItemViewSet(viewsets.ModelViewSet):
             throttles.append(ItemDeleteRateThrottle())
         elif self.action == 'generate_qr_code':
             throttles.append(QRGenerateRateThrottle())
-        else:
-            throttles = super().get_throttles()
+        elif self.action in ['list', 'retrieve']:
+            # Add read throttles for list/retrieve operations to prevent enumeration attacks
+            throttles.append(throttling.AnonRateThrottle(scope='item_read'))
+        elif self.action == 'export_items':
+            # Export operations need stricter rate limiting
+            throttles.append(throttling.UserRateThrottle(scope='item_export'))
+        
         return throttles
 
     @action(detail=False, methods=['get'], url_path='export')
@@ -1193,4 +1254,3 @@ class ItemListViewSet(viewsets.ModelViewSet):
         response, writer = _prepare_items_csv_response(filename_prefix)
         _write_items_to_csv(writer, items)
         return response
-

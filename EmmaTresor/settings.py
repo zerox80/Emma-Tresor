@@ -361,6 +361,8 @@ REST_FRAMEWORK = {
         'item_update': '100/hour',
         'item_delete': '20/hour',
         'qr_generate': '30/minute',
+        'item_read': '200/hour',  # Add rate limiting for read operations
+        'item_export': '10/hour',  # Stricter rate limiting for export operations
     },
 }
 
@@ -443,7 +445,9 @@ CSRF_COOKIE_NAME = 'csrftoken'  # Standard Django CSRF cookie name
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header name for CSRF token
 # Only use 'None' for SameSite when both FORCE_SSL is enabled AND CSRF_COOKIE_SECURE is explicitly True
 CSRF_COOKIE_SECURE = FORCE_SSL  # Ensure CSRF cookie is secure when SSL is forced
-CSRF_COOKIE_SAMESITE = 'None' if (FORCE_SSL and CSRF_COOKIE_SECURE) else 'Lax'
+# Enhanced CSRF SameSite configuration with stricter defaults
+# Use 'Strict' for maximum security when SSL is enforced, 'Lax' as fallback
+CSRF_COOKIE_SAMESITE = 'Strict' if (FORCE_SSL and CSRF_COOKIE_SECURE) else 'Lax'
 CSRF_USE_SESSIONS = False  # Use cookie-based CSRF tokens
 CSRF_COOKIE_AGE = 31449600  # 1 year (same as Django default)
 
@@ -462,7 +466,7 @@ _csp_script_sources = ["'self'"]
 if DEBUG and _env_bool(os.environ.get('DJANGO_DEBUG_UNSAFE_EVAL'), default=False):
     _csp_script_sources.append("'unsafe-eval'")
 
-# Content Security Policy - django-csp 4.0 format
+# Enhanced Content Security Policy with additional security headers
 CONTENT_SECURITY_POLICY = {
     'DIRECTIVES': {
         'default-src': ["'self'"],
@@ -478,6 +482,8 @@ CONTENT_SECURITY_POLICY = {
         'frame-src': ["'none'"],
         'worker-src': ["'self'", 'blob:'],
         'media-src': ["'self'", 'blob:'],
+        # Additional security directives
+        'require-trusted-types-for': ["'script'"],
     },
 }
 

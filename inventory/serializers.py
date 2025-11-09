@@ -6,6 +6,8 @@ from rest_framework.validators import UniqueValidator
 from rest_framework.reverse import reverse
 import mimetypes
 import os
+import bleach  # For HTML sanitization
+from django.utils.html import strip_tags  # For basic HTML sanitization
 
 from .models import Item, ItemImage, ItemChangeLog, ItemList, Location, Tag, MAX_PURCHASE_AGE_YEARS
 
@@ -633,7 +635,7 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def _normalise_payload(self, data: dict) -> dict:
         """
-        Normalises the payload data.
+        Normalises the payload data with XSS protection.
 
         Args:
             data (dict): The payload data.
@@ -644,6 +646,30 @@ class ItemSerializer(serializers.ModelSerializer):
         # Convert empty strings to None for nullable fields
         if 'description' in data and (data['description'] is None or data['description'] == ''):
             data['description'] = None
+        else:
+            # SECURITY FIX: Sanitize HTML content to prevent stored XSS
+            if data.get('description'):
+                # Use bleach for HTML sanitization with strict policy
+                allowed_tags = ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li']
+                allowed_attributes = {
+                    '*': ['class', 'id'],
+                    'a': ['href', 'title'],
+                    'p': ['class'],
+                    'br': ['class'],
+                    'strong': ['class'],
+                    'em': ['class'],
+                    'ul': ['class'],
+                    'ol': ['class'],
+                    'li': ['class'],
+                }
+                # Clean the description while preserving basic formatting
+                data['description'] = bleach.clean(
+                    data['description'],
+                    tags=allowed_tags,
+                    attributes=allowed_attributes,
+                    strip=True
+                )
+        
         if 'purchase_date' in data and (data['purchase_date'] is None or data['purchase_date'] == ''):
             data['purchase_date'] = None
         if 'value' in data and (data['value'] is None or data['value'] == ''):
