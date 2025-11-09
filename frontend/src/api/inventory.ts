@@ -22,8 +22,46 @@ export interface FetchItemsOptions {
 /**
  * Fetches a paginated list of items from the API.
  *
+ * This function provides flexible item retrieval with comprehensive filtering and
+ * pagination capabilities. It handles all query parameters and automatically
+ * constructs the appropriate API request.
+ *
+ * @example
+ * ```typescript
+ * // Basic usage
+ * const items = await fetchItems();
+ * 
+ * // With search and pagination
+ * const searchedItems = await fetchItems({
+ *   query: 'camera',
+ *   page: 2,
+ *   pageSize: 50
+ * });
+ * 
+ * // With filters
+ * const filteredItems = await fetchItems({
+ *   tags: [1, 2, 3],
+ *   locations: [10, 15],
+ *   ordering: '-created_at'
+ * });
+ * ```
+ * 
  * @param {FetchItemsOptions} [options={}] - The options for fetching items.
- * @returns {Promise<PaginatedResponse<Item>>} A promise that resolves to a paginated response of items.
+ * @param {string} [options.query] - Search query to filter items by name, description, or tags.
+ * @param {number} [options.page] - Page number for pagination (starts from 1).
+ * @param {number} [options.pageSize] - Number of items per page (default: API setting).
+ * @param {number[]} [options.tags] - Array of tag IDs to filter items by.
+ * @param {number[]} [options.locations] - Array of location IDs to filter items by.
+ * @param {string} [options.ordering] - Field to sort by (prepend '-' for descending).
+ * 
+ * @returns {Promise<PaginatedResponse<Item>>} A promise that resolves to a paginated response containing:
+ * - `results`: Array of Item objects
+ * - `count`: Total number of items matching filters
+ * - `next`: URL for next page (null if last page)
+ * - `previous`: URL for previous page (null if first page)
+ * 
+ * @throws {Error} When network request fails or server returns error.
+ * @throws {ValidationError} When provided parameters are invalid.
  */
 export const fetchItems = async ({
   query,

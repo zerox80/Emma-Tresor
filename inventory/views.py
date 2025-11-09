@@ -73,6 +73,22 @@ def _coerce_bool(value):
         True
         >>> _coerce_bool(None)
         False
+        
+    Edge Cases:
+        - Empty strings return False
+        - Whitespace-only strings return False
+        - Mixed case strings (True, TRUE, true) all return True
+        - Numeric types (int, float) return False unless explicitly boolean
+        
+    Performance:
+        - O(1) time complexity for string operations
+        - No memory allocation for boolean inputs
+        - Minimal branching for common cases
+        
+    Security:
+        - No code execution potential
+        - Type-safe conversion prevents injection
+        - Predictable behavior across all input types
     """
     if isinstance(value, bool):
         return value
