@@ -554,7 +554,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'Authentication attempt processed',
             extra={
                 'timestamp': time.time(),
-                'ip_hash': secrets.hexlify(secrets.token_bytes(8)).decode()[:16],  # Hashed IP for privacy
+                'ip_hash': secrets.token_hex(8)[:16],  # Hashed IP for privacy
             }
         )
         
