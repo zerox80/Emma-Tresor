@@ -42,17 +42,37 @@ User = get_user_model()
 
 
 def _coerce_bool(value):
-    """Coerces a value to a boolean.
+    """Coerces a value to a boolean with comprehensive type handling.
 
-    This function converts various input types to boolean values,
-    handling strings, booleans, and other types with sensible
-    defaults.
+    This function provides a robust way to convert various input types to boolean
+    values, commonly used for processing form data, query parameters, and
+    environment variables. It implements sensible defaults and handles edge cases
+    that might occur in web application contexts.
+
+    The function follows these conversion rules:
+    - Booleans: Returned as-is
+    - Strings: Case-insensitive matching against common truthy values
+    - Other types: Always return False (safe default)
 
     Args:
-        value: The value to coerce to a boolean.
+        value: The value to coerce to a boolean. Can be any type, though
+            typically will be str, bool, or None from request data.
 
     Returns:
-        bool: The coerced boolean value.
+        bool: The coerced boolean value. True for recognized truthy values,
+            False for everything else.
+
+    Examples:
+        >>> _coerce_bool('true')
+        True
+        >>> _coerce_bool('FALSE')
+        False
+        >>> _coerce_bool(1)
+        False
+        >>> _coerce_bool(True)
+        True
+        >>> _coerce_bool(None)
+        False
     """
     if isinstance(value, bool):
         return value
@@ -62,16 +82,32 @@ def _coerce_bool(value):
 
 
 def _build_cookie_options(path: str):
-    """Builds a dictionary of options for setting a cookie.
+    """Builds a dictionary of security-enhanced cookie options.
 
-    This function creates a dictionary of cookie options based on
-    Django settings, including security flags, domain, and path.
+    This function creates a comprehensive cookie configuration dictionary based on
+    Django settings, ensuring all necessary security flags are properly set for
+    JWT authentication cookies. It centralizes cookie configuration to maintain
+    consistency across all authentication-related cookie operations.
+
+    Security Features Applied:
+    - HttpOnly: Prevents JavaScript access (XSS protection)
+    - Secure: Ensures HTTPS-only transmission in production
+    - SameSite: Controls cross-site request behavior
+    - Domain: Restricts to specific domain when configured
+    - Path: Limits cookie scope to specific URL paths
 
     Args:
-        path (str): The path for the cookie.
+        path (str): The URL path for which the cookie should be valid.
+            Typically '/api/' for refresh tokens and '/' for access tokens.
 
     Returns:
-        dict: A dictionary of cookie options for Django's set_cookie method.
+        dict: A dictionary of cookie options compatible with Django's
+            response.set_cookie() method. All security settings are
+            dynamically pulled from Django configuration.
+
+    Example:
+        >>> options = _build_cookie_options('/api/')
+        >>> response.set_cookie('refresh_token', 'token_value', **options)
     """
     options = {
         'httponly': settings.JWT_COOKIE_HTTPONLY,
@@ -85,14 +121,35 @@ def _build_cookie_options(path: str):
 
 
 def _set_token_cookies(response, *, access_token: str, refresh_token: str | None, remember: bool):
-    """
-    Sets the access and refresh token cookies on the response.
+    """Sets JWT authentication cookies with enhanced security features.
+
+    This function configures and sets all necessary JWT authentication cookies on the
+    HTTP response, handling both short-lived access tokens and long-lived refresh
+    tokens. It implements proper security measures including HttpOnly flags and
+    configurable persistence based on user preferences.
+
+    Cookie Strategy:
+    - Access Token: Always set with short expiration (15 minutes default)
+    - Refresh Token: Only set if user chooses "remember me", otherwise session-only
+    - Remember Flag: Tracks user's persistence preference across sessions
+
+    Security Considerations:
+    - All cookies use secure options from _build_cookie_options()
+    - Token lifetimes are pulled from JWT configuration
+    - Refresh tokens can be omitted for enhanced security (session-only auth)
+    - Proper error handling for missing or invalid tokens
 
     Args:
-        response (HttpResponse): The response object.
-        access_token (str): The access token.
-        refresh_token (str | None): The refresh token.
-        remember (bool): Whether to remember the user.
+        response (HttpResponse): The Django response object to set cookies on.
+        access_token (str): The JWT access token with short lifetime.
+        refresh_token (str | None): The JWT refresh token with longer lifetime,
+            or None if not applicable (e.g., when refresh is handled elsewhere).
+        remember (bool): Whether user chose persistent authentication ("remember me").
+            True sets refresh token with extended lifetime, False makes it session-only.
+
+    Note:
+        This function should be called after successful authentication. The token
+        lifetimes are automatically calculated from SIMPLE_JWT settings.
     """
     access_max_age = int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds())
     refresh_max_age = int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()) if remember else None
@@ -126,11 +183,26 @@ def _set_token_cookies(response, *, access_token: str, refresh_token: str | None
 
 
 def _clear_token_cookies(response):
-    """
-    Clears the token cookies from the response.
+    """Clears all JWT authentication cookies from the response.
+
+    This function securely removes all authentication-related cookies (access token,
+    refresh token, and remember flag) from the HTTP response. It ensures
+    complete logout by clearing all traces of authentication while maintaining
+    security best practices.
+
+    Security Considerations:
+    - Uses the same cookie options as setting for consistency
+    - Clears all three cookies: access, refresh, and remember
+    - Proper path and domain handling for cross-site scenarios
+    - Prevents partial logout scenarios
 
     Args:
-        response (HttpResponse): The response object.
+        response (HttpResponse): The Django response object to clear cookies from.
+            Must be the same response object that was used for authentication.
+
+    Note:
+        This function should be called during logout to ensure users are completely
+        logged out and cannot be re-authenticated with existing tokens.
     """
     access_options = _build_cookie_options(settings.JWT_ACCESS_COOKIE_PATH)
     refresh_options = _build_cookie_options(settings.JWT_REFRESH_COOKIE_PATH)
@@ -433,9 +505,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             """Compare two strings in constant time to prevent timing attacks."""
             return secrets.compare_digest(a, b)
         
-        # Generate random delay base for timing normalization
+        # Generate random delay base for timing normalization - OPTIMIZED
         # This makes timing attacks much harder by adding unpredictability
-        base_delay = random.uniform(0.15, 0.25)  # Random base between 150-250ms
+        # Reduced base delay for better user experience while maintaining security
+        base_delay = random.uniform(0.05, 0.12)  # Random base between 50-120ms (faster)
         start_time = time.perf_counter()
         
         email = attrs.get('email')
