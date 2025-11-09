@@ -67,7 +67,6 @@ const ItemsTable: React.FC<Props> = ({
   onToggleSelectAllCurrentPage,                                  // Toggle all selection callback
 }) => {
   return (
-    {/* Table container with rounded corners and border */}
     <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
       {/* Table element with responsive width and styling */}
       <table className="min-w-full divide-y divide-slate-200 text-sm">
