@@ -1,5 +1,16 @@
 """
 URL configuration for the inventory app.
+
+This module defines the URL patterns for the inventory Django REST Framework API.
+It includes endpoints for authentication, item management, image handling,
+and user-defined features like tags and locations.
+
+URL patterns are organized into logical groups:
+- Authentication: CSRF tokens, JWT tokens, user management
+- Core resources: Items, images, tags, locations, lists
+- File handling: Image downloads with proper access control
+
+All API endpoints are prefixed with '/api/' from the main project URLs.
 """
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
