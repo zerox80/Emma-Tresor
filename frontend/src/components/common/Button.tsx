@@ -106,9 +106,8 @@ const Button: React.FC<ButtonProps> = ({
     {/* Show loading spinner when in loading state */}
     {loading && (
       <span className="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-slate-100 border-t-transparent" />
-      // Spinner: rotating circle with transparent top border for animation effect
     )}
-    {children}                                                  // Render button content text/icons
+    {children}
   </button>
 );
 
