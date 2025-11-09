@@ -3,9 +3,9 @@
 // This component displays inventory items in a table format with sortable columns,
 // selection capabilities, and responsive design. Each row shows comprehensive item data.
 
-import React from 'react';                                       // Import React library for JSX
-import Button from '../common/Button';                           // Import reusable Button component
-import type { Item } from '../../types/inventory';              // Import Item type definition
+import React from 'react';
+import Button from '../common/Button';
+import type { Item } from '../../types/inventory';
 
 /**
  * Props interface for ItemsTable component.
@@ -42,11 +42,9 @@ type Props = {
  * @returns {string} Formatted currency string (e.g., "1.234,56 €") or "—" for invalid values
  */
 const formatCurrency = (value: string | null | undefined) => {
-  if (!value) return '—';                                          // Return em dash for null/undefined/empty values
-  const numeric = Number.parseFloat(value);                        // Convert string to number
-  if (!Number.isFinite(numeric) || numeric < 0) return '—';        // Return em dash for invalid or negative numbers
-
-  // Format using German locale (comma decimal separator, dot thousands separator)
+  if (!value) return '—';
+  const numeric = Number.parseFloat(value);
+  if (!Number.isFinite(numeric) || numeric < 0) return '—';
   return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
 };
 
@@ -58,125 +56,84 @@ const formatCurrency = (value: string | null | undefined) => {
  * selection mode for bulk operations and responsive design.
  */
 const ItemsTable: React.FC<Props> = ({
-  items,                                                         // Array of items to display
-  locationMap,                                                   // Location ID to name mapping
-  tagMap,                                                        // Tag ID to name mapping
-  onOpenDetails,                                                 // Details modal callback
-  selectionMode,                                                 // Whether to show selection checkboxes
-  areAllSelectedOnPage,                                          // Whether all items are selected
-  onToggleSelectAllCurrentPage,                                  // Toggle all selection callback
+  items,
+  locationMap,
+  tagMap,
+  onOpenDetails,
+  selectionMode,
+  areAllSelectedOnPage,
+  onToggleSelectAllCurrentPage,
 }) => {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
-      {/* Table element with responsive width and styling */}
       <table className="min-w-full divide-y divide-slate-200 text-sm">
-        {/* Table header with column titles */}
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
-            {/* Selection checkbox column - only shown in selection mode */}
             {selectionMode && (
               <th scope="col" className="px-4 py-3 text-left">
                 <input
-                  type="checkbox"                                       // Checkbox for selecting all items
+                  type="checkbox"
                   className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                  checked={areAllSelectedOnPage}                       // Reflect current selection state
-                  onChange={onToggleSelectAllCurrentPage}              // Toggle selection on change
-                  aria-label="Alle Gegenstände auf dieser Seite auswählen" // Accessibility label (German)
+                  checked={areAllSelectedOnPage}
+                  onChange={onToggleSelectAllCurrentPage}
+                  aria-label="Alle Gegenstände auf dieser Seite auswählen"
                 />
               </th>
             )}
-
-            {/* Column headers */}
             <th scope="col" className="px-4 py-3 text-left font-semibold">Name</th>
-            {/* German: "Location" */}
             <th scope="col" className="px-4 py-3 text-left font-semibold">Standort</th>
             <th scope="col" className="px-4 py-3 text-left font-semibold">Tags</th>
-            {/* German: "Quantity" */}
             <th scope="col" className="px-4 py-3 text-right font-semibold">Menge</th>
-            {/* German: "Value" */}
             <th scope="col" className="px-4 py-3 text-right font-semibold">Wert</th>
-            {/* German: "Purchase Date" */}
             <th scope="col" className="px-4 py-3 text-right font-semibold">Kaufdatum</th>
-            {/* German: "Actions" */}
             <th scope="col" className="px-4 py-3 text-right font-semibold">Aktionen</th>
           </tr>
         </thead>
-
-        {/* Table body with item rows */}
         <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
-          {/* Map over items to create a table row for each */}
           {items.map((item) => (
             <tr key={item.id} className="transition hover:bg-slate-50">
-              {/* Name column with item details */}
               <td className="px-4 py-3">
-                {/* Primary item name */}
                 <div className="font-semibold text-slate-900">{item.name}</div>
-
-                {/* WODIS inventory number - conditional rendering */}
                 {item.wodis_inventory_number && (
                   <p className="mt-1 text-xs font-semibold text-indigo-600">
                     WODIS • {item.wodis_inventory_number}
                   </p>
                 )}
-
-                {/* Item description - truncated to 1 line */}
                 {item.description && (
                   <p className="mt-1 text-xs text-slate-500 line-clamp-1">{item.description}</p>
-                  // line-clamp-1: Limit to 1 line with ellipsis
                 )}
               </td>
-
-              {/* Location column */}
               <td className="px-4 py-3 text-sm">
-                {item.location
-                  ? locationMap[item.location] ?? 'Unbekannt'          // Show location name or "Unknown"
-                  : 'Kein Standort'                                      // German: "No location"
-                }
+                {item.location ? locationMap[item.location] ?? 'Unbekannt' : 'Kein Standort'}
               </td>
-
-              {/* Tags column */}
               <td className="px-4 py-3 text-sm">
                 {item.tags.length > 0 ? (
-                  // Render tag pills if tags exist
                   <div className="flex flex-wrap gap-2">
                     {item.tags.map((tagId) => (
                       <span
-                        key={tagId}                                      // Unique key for React reconciliation
+                        key={tagId}
                         className="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700"
                       >
-                        {tagMap[tagId] ?? `Tag ${tagId}`}                // Show tag name or fallback
+                        {tagMap[tagId] ?? `Tag ${tagId}`}
                       </span>
                     ))}
                   </div>
                 ) : (
                   <span className="text-xs text-slate-400">Keine Tags</span>
-                  // German: "No tags"
                 )}
               </td>
-
-              {/* Quantity column - right aligned */}
               <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{item.quantity}</td>
-
-              {/* Value column - right aligned, formatted as currency */}
               <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{formatCurrency(item.value)}</td>
-
-              {/* Purchase date column - right aligned */}
               <td className="px-4 py-3 text-right text-sm">
-                {item.purchase_date
-                  ? new Date(item.purchase_date).toLocaleDateString('de-DE') // German date format
-                  : '—'                                                      // Em dash for unknown dates
-                }
+                {item.purchase_date ? new Date(item.purchase_date).toLocaleDateString('de-DE') : '—'}
               </td>
-
-              {/* Actions column - right aligned */}
               <td className="px-4 py-3 text-right text-sm">
                 <Button
-                  type="button"                                       // Prevent form submission
-                  variant="secondary"                                   // Gray button style
-                  size="sm"                                           // Small button size
-                  onClick={() => onOpenDetails(item.id)}              // Open details modal
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onOpenDetails(item.id)}
                 >
-                  {/* German: "Show" */}
                   Anzeigen
                 </Button>
               </td>
@@ -184,8 +141,8 @@ const ItemsTable: React.FC<Props> = ({
           ))}
         </tbody>
       </table>
-    </div>                                                          // Close table container
-  );                                                               // Close return statement
+    </div>
+  );
 };
 
-export default ItemsTable;                                         // Export as default component
+export default ItemsTable;
