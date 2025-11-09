@@ -13,7 +13,7 @@ Emma-Tresor ist eine Inventarverwaltungslösung mit einem Django REST Backend (`
 - **Konfiguration**: `.env.production`, `env.example` und `requirements.txt` beschreiben harte Sicherheitsvorgaben (TLS, Secret-Rotation, Cookie Flags).
 
 ## 3. Security Intake & Responsible Disclosure
-- **Kontaktadresse**: Sicherheitsrelevante Hinweise bitte an `security@emmatresor.example` senden (Postfach wird werktäglich geprüft).
+- **Kontaktadresse**: Sicherheitsrelevante Hinweise bitte an `rujbin@proton.me` senden (Postfach wird werktäglich geprüft).
 - **PGP-Key**: Öffentlicher Schlüssel unter `docs/pgp/security.asc` (Fingerprint in `docs/pgp/README.md`).
 - **Erwartete Reaktionszeiten**: Erste Rückmeldung innerhalb von 3 Werktagen, vollständige Antwort oder Zwischenstand binnen 10 Werktagen.
 - **Coordinated Disclosure**: Wir bevorzugen koordiniertes Vorgehen und bitten um angemessene Zeitspanne zur Behebung gemeldeter Schwachstellen.
