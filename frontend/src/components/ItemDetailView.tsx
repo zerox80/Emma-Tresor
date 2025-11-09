@@ -1,5 +1,10 @@
-import type { Item, ItemChangeLog } from '../types/inventory';
-import { apiBaseUrl } from '../api/client';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import QRCode from 'qrcode';
+import type { Item, ItemChangeLog } from '../types/inventory.js';
+import { apiBaseUrl } from '../api/client.js';
+import { fetchItemQrCode, fetchItemChangelog } from '../api/inventory.js';
+import Button from './common/Button.js';
+import ItemChangeHistory from './ItemChangeHistory.js';
 
 /**
  * Represents the position of the currently viewed item within a larger list.
