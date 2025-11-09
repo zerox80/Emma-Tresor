@@ -2,7 +2,7 @@
 // =========================
 // This component displays dashboard statistics cards showing item counts, quantities,
 // total value, and quick action buttons. It provides an overview of the inventory
- * and quick access to common operations.
+// and quick access to common operations.
 
 import React from 'react';                                       // Import React library for JSX
 import Button from '../common/Button';                           // Import reusable Button component
