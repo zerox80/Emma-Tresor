@@ -38,6 +38,10 @@ IS_WINDOWS = os.name == "nt"
 def get_venv_python() -> Path:
     """Return the interpreter path inside the local virtual environment.
 
+    This function locates the Python executable within the project's virtual
+    environment directory, supporting different naming conventions across
+    platforms and Python versions.
+
     Returns:
         Path: Absolute path to the `.venv` Python executable.
     """
@@ -73,8 +77,13 @@ ENV_FILES = [BASE_DIR / ".env", BASE_DIR / ".env.local"]
 def load_env_file() -> dict[str, str]:
     """Load key/value pairs from known dotenv files on disk.
 
+    This function reads environment configuration from .env and .env.local files,
+    parsing key=value pairs while ignoring comments and empty lines. The loaded
+    environment variables are returned as a dictionary for later use.
+
     Returns:
-        dict[str, str]: Parsed environment variable overrides.
+        dict[str, str]: Parsed environment variable overrides with keys and
+            values stripped of whitespace and quotes.
     """
     env_vars: dict[str, str] = {}
     for env_path in ENV_FILES:
@@ -166,7 +175,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def ensure_frontend_dependencies() -> None:
-    """Install npm packages when `node_modules` is absent or empty."""
+    """Install npm packages when `node_modules` is absent or empty.
+
+    This function checks if the frontend dependencies are already installed by
+    looking for the node_modules directory and its contents. If missing or
+    empty, it runs npm install to install the required packages.
+    """
     node_modules = FRONTEND_DIR / "node_modules"
     if node_modules.exists() and any(node_modules.iterdir()):
         print("[runner] Frontend dependencies already installed.")
@@ -176,10 +190,15 @@ def ensure_frontend_dependencies() -> None:
 
 
 def start_frontend_server() -> subprocess.Popen[str]:
-    """Launch the Vite server and return its running process handle.
+    """Launch the Vite development server and return its process handle.
+
+    This function starts the frontend development server using Vite with
+    predefined configuration (host 127.0.0.1, port 5173). It sets
+    the BROWSER environment variable to 'none' to prevent automatic
+    browser opening.
 
     Returns:
-        subprocess.Popen[str]: The spawned Vite process.
+        subprocess.Popen[str]: The spawned Vite development server process.
     """
     print("[runner] Starting Vite dev server (frontend)...")
     env = os.environ.copy()
@@ -191,6 +210,10 @@ def start_frontend_server() -> subprocess.Popen[str]:
 
 def ensure_setup(skip_tests: bool) -> None:
     """Execute the setup script to provision backend prerequisites.
+
+    This function calls the setup_backend.py script with appropriate
+    arguments to prepare the Django backend environment. It handles
+    both virtual environment and test execution configuration.
 
     Args:
         skip_tests (bool): Whether to omit test execution in the setup step.
@@ -204,7 +227,12 @@ def ensure_setup(skip_tests: bool) -> None:
 
 
 def python_env() -> dict[str, str] | None:
-    """Build environment variables for Django commands when using a venv.
+    """Build environment variables for Django commands when using a virtual environment.
+
+    This function constructs the appropriate environment variables for Django
+    management commands when using a virtual environment. It sets the
+    VIRTUAL_ENV variable and updates the PATH to include the virtual
+    environment's binary directory.
 
     Returns:
         dict[str, str] | None: Updated environment including PATH when the virtual
@@ -225,12 +253,23 @@ def python_env() -> dict[str, str] | None:
 
 
 def run_tests() -> None:
-    """Invoke Django's test suite using the configured interpreter."""
+    """Invoke Django's test suite using the configured interpreter.
+
+    This function runs the Django test suite using the Python interpreter
+    specified in RUNTIME_PYTHON, with the appropriate environment
+    variables for virtual environments if enabled.
+    """
     run([str(RUNTIME_PYTHON), "manage.py", "test"], env=python_env())
 
 
 def create_superuser_if_configured() -> None:
-    """Create or update the default superuser when env flags demand it."""
+    """Create or update the default superuser when environment flags demand it.
+
+    This function checks for the AUTO_CREATE_SUPERUSER environment variable and
+    if enabled, creates or updates a Django superuser with credentials
+    from environment variables. It handles both creation and updates of
+    existing users.
+    """
     flag = os.environ.get("AUTO_CREATE_SUPERUSER", "false").lower()
     if flag not in {"1", "true", "yes"}:
         return
@@ -291,7 +330,17 @@ def create_superuser_if_configured() -> None:
 
 
 def main() -> None:
-    """Entry point that wires together setup, tests, and dev servers."""
+    """Entry point that orchestrates setup, tests, and development servers.
+
+    This function serves as the main entry point for the development runner.
+    It parses command-line arguments, configures the runtime environment,
+    handles virtual environment setup, runs tests if requested, and
+    starts the Django development server and optionally the frontend
+    Vite development server.
+
+    The function gracefully handles keyboard interrupts to ensure proper
+    cleanup of spawned processes.
+    """
     args = parse_args()
     global USE_VENV
     USE_VENV = args.use_venv

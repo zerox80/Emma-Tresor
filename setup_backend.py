@@ -34,6 +34,10 @@ IS_WINDOWS = os.name == "nt"
 def get_venv_python() -> Path:
     """Return the interpreter path within the managed virtual environment.
 
+    This function locates the Python executable within the project's virtual
+    environment directory, supporting different naming conventions across
+    platforms and Python versions.
+
     Returns:
         Path: Absolute path to the `.venv` Python executable.
     """
@@ -65,6 +69,10 @@ FRONTEND_PKG_MANAGER = "npm.cmd" if os.name == "nt" else "npm"
 def run(command: list[str], *, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
     """Execute a subprocess while streaming its output.
 
+    This function executes a command with proper error handling and
+    status reporting. It displays the command being executed
+    and terminates with appropriate error messages if the command fails.
+
     Args:
         command (list[str]): Command and arguments to run.
         cwd (Path | None): Working directory for the subprocess.
@@ -83,6 +91,10 @@ def run(command: list[str], *, cwd: Path | None = None, env: dict[str, str] | No
 
 def ensure_python_version() -> None:
     """Validate the interpreter version meets the minimum requirement.
+
+    This function checks if the current Python interpreter version
+    meets the minimum requirement of Python 3.12 for the
+    EmmaTresor project.
 
     Raises:
         SystemExit: If Python is older than 3.12.

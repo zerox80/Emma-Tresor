@@ -56,7 +56,12 @@ class Tag(TimeStampedModel):
         verbose_name_plural = 'Schlagwörter'
 
     def __str__(self) -> str:
-        """Returns the string representation of the tag."""
+        """Return the string representation of the tag.
+
+        Returns:
+            str: The name of the tag, which serves as its human-readable
+                identifier.
+        """
         return self.name
 
 
@@ -87,7 +92,12 @@ class Location(TimeStampedModel):
         verbose_name_plural = 'Standorte'
 
     def __str__(self) -> str:
-        """Returns the string representation of the location."""
+        """Return the string representation of the location.
+
+        Returns:
+            str: The name of the location, which serves as its human-readable
+                identifier.
+        """
         return self.name
 
 
@@ -217,7 +227,12 @@ class Item(TimeStampedModel):
                 self.asset_tag = uuid.uuid4()
 
     def __str__(self) -> str:
-        """Returns the string representation of the item."""
+        """Return the string representation of the item.
+
+        Returns:
+            str: The name of the item, which serves as its primary
+                human-readable identifier.
+        """
         return self.name
 
 
@@ -237,7 +252,11 @@ class ItemImage(TimeStampedModel):
         verbose_name_plural = 'Gegenstandsbilder'
 
     def __str__(self) -> str:
-        """Returns a string representation of the item image."""
+        """Return a string representation of the item image.
+
+        Returns:
+            str: A descriptive string indicating which item this image belongs to.
+        """
         return f"Bild für {self.item.name}"
 
     def clean(self):
@@ -408,5 +427,10 @@ class ItemList(TimeStampedModel):
         verbose_name_plural = 'Inventarlisten'
 
     def __str__(self) -> str:
-        """Returns the string representation of the item list."""
+        """Return the string representation of the item list.
+
+        Returns:
+            str: The name of the item list, which serves as its
+                human-readable identifier.
+        """
         return self.name

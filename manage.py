@@ -5,7 +5,20 @@ import sys
 
 
 def main():
-    """Run administrative tasks."""
+    """Run Django administrative tasks.
+
+    This function serves as the main entry point for Django's command-line
+    management utility. It sets up the Django environment and delegates
+    command execution to Django's built-in management system.
+
+    The function handles Django import errors gracefully and provides helpful
+    error messages if Django is not properly installed or the virtual
+    environment is not activated.
+
+    Raises:
+        ImportError: If Django cannot be imported, indicating that Django
+            is not installed or not available in the Python path.
+    """
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'EmmaTresor.settings')
     try:
         from django.core.management import execute_from_command_line
