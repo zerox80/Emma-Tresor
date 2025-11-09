@@ -29,7 +29,9 @@ RUN chmod +x /entrypoint.sh && \
 COPY --chown=appuser:appuser . .
 
 # Create logs directory for security logging
-RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
+RUN mkdir -p /app/logs && \
+    chown -R appuser:appuser /app/logs && \
+    chmod -R 755 /app/logs
 
 ENV DJANGO_SETTINGS_MODULE=EmmaTresor.settings
 
