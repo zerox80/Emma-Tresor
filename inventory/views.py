@@ -424,6 +424,15 @@ class QRGenerateRateThrottle(throttling.UserRateThrottle):
     scope = 'qr_generate'
 
 
+class ItemImageDownloadRateThrottle(throttling.UserRateThrottle):
+    """Throttles item image download operations for authenticated users.
+
+    This throttle class limits the rate at which authenticated users
+    can download item images to prevent resource exhaustion and bandwidth abuse.
+    """
+    scope = 'image_download'
+
+
 class ItemReadRateThrottle(throttling.UserRateThrottle):
     """Throttles item read operations for authenticated users.
 
@@ -523,10 +532,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             """Compare two strings in constant time to prevent timing attacks."""
             return secrets.compare_digest(a, b)
         
-        # Generate random delay base for timing normalization - OPTIMIZED
-        # This makes timing attacks much harder by adding unpredictability
-        # Reduced base delay for better user experience while maintaining security
-        base_delay = random.uniform(0.05, 0.12)  # Random base between 50-120ms (faster)
+        # SECURITY: Generate random delay for timing attack protection
+        # This makes timing attacks significantly harder by adding unpredictability
+        # Higher delays (200-300ms base) prevent statistical analysis of authentication timing
+        # to enumerate valid users, even on very fast networks
+        base_delay = random.uniform(0.20, 0.30)  # Random base between 200-300ms (secure)
         start_time = time.perf_counter()
         
         email = attrs.get('email')
@@ -595,7 +605,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             if not user_found:
                 # Calculate remaining time to reach target with randomization for FAILED auth
                 elapsed = time.perf_counter() - start_time
-                target_with_variance = base_delay + random.uniform(0.05, 0.15)  # Add 50-150ms variance
+                target_with_variance = base_delay + random.uniform(0.10, 0.20)  # Add 100-200ms variance (300-500ms total)
                 
                 if elapsed < target_with_variance:
                     sleep_time = target_with_variance - elapsed
@@ -616,7 +626,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             # This handles actual authentication failures from super().validate()
             # Calculate remaining time for failed authentication
             elapsed = time.perf_counter() - start_time
-            target_with_variance = base_delay + random.uniform(0.05, 0.15)
+            target_with_variance = base_delay + random.uniform(0.10, 0.20)  # Add 100-200ms variance (300-500ms total)
             
             if elapsed < target_with_variance:
                 sleep_time = target_with_variance - elapsed
@@ -1221,10 +1231,10 @@ class ItemImageDownloadView(APIView):
 
     This view allows authenticated users to download images for their own
     items. It sets the appropriate headers to ensure that the browser
-
-    handles the download correctly.
+    handles the download correctly. Includes rate limiting to prevent abuse.
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ItemImageDownloadRateThrottle]
 
     def get(self, request, pk: int, *args, **kwargs):
         """
@@ -1258,10 +1268,30 @@ class ItemImageDownloadView(APIView):
             filename = f"attachment-{attachment.pk}"
 
         ascii_filename = filename.encode('ascii', 'ignore').decode('ascii') or filename
-        content_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        
+        # SECURITY: Whitelist allowed content types to prevent XSS via crafted files
+        # Only serve known-safe media types that can't execute scripts
+        ALLOWED_CONTENT_TYPES = {
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+            'image/bmp', 'image/avif', 'image/heic', 'image/heif',
+            'application/pdf',
+        }
+        
+        guessed_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        
+        # Validate content type against whitelist
+        if guessed_type not in ALLOWED_CONTENT_TYPES:
+            # Force download as generic binary for unknown types (prevents browser execution)
+            content_type = 'application/octet-stream'
+        else:
+            content_type = guessed_type
 
         disposition_param = request.query_params.get('disposition', '').lower()
-        disposition = 'inline' if disposition_param == 'inline' else 'attachment'
+        # SECURITY: Force attachment for PDF files to prevent inline execution in some browsers
+        if content_type == 'application/pdf':
+            disposition = 'attachment'
+        else:
+            disposition = 'inline' if disposition_param == 'inline' else 'attachment'
 
         response = FileResponse(file_handle, content_type=content_type)
         filename_utf8 = quote(filename)

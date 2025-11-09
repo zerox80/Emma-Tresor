@@ -102,7 +102,9 @@ export const apiBaseUrl = resolveBaseURL();
 const apiClient = axios.create({
   baseURL: apiBaseUrl,
   withCredentials: true,
-  timeout: 45000,
+  // SECURITY: Reduced timeout from 45s to 30s to prevent resource exhaustion
+  // from slow attacks. Export operations may take longer but are rate-limited.
+  timeout: 30000,  // 30 seconds
   headers: {
     Accept: 'application/json',
   },

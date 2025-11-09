@@ -361,8 +361,9 @@ REST_FRAMEWORK = {
         'item_update': '100/hour',
         'item_delete': '20/hour',
         'qr_generate': '30/minute',
-        'item_read': '200/hour',  # Add rate limiting for read operations
+        'item_read': '200/hour',  # Rate limiting for read operations
         'item_export': '10/hour',  # Stricter rate limiting for export operations
+        'image_download': '100/hour',  # Rate limiting for image downloads to prevent resource exhaustion
     },
 }
 
@@ -383,7 +384,19 @@ JWT_REFRESH_COOKIE_NAME = os.environ.get('JWT_REFRESH_COOKIE_NAME', 'emmatresor_
 JWT_REMEMBER_COOKIE_NAME = os.environ.get('JWT_REMEMBER_COOKIE_NAME', 'emmatresor_remember_me')
 JWT_COOKIE_SECURE = FORCE_SSL
 JWT_COOKIE_HTTPONLY = True
-JWT_COOKIE_SAMESITE = 'None' if FORCE_SSL else 'Lax'
+
+# SECURITY: SameSite Cookie Policy Configuration
+# - 'Strict': Maximum security, blocks all cross-site requests (recommended for same-domain deployments)
+# - 'Lax': Good security, allows safe cross-site requests (GET only, good for most use cases)
+# - 'None': Least secure, requires HTTPS, only for cross-domain deployments with CORS
+# Default: 'Strict' for HTTPS, 'Lax' for development. Override with JWT_COOKIE_SAMESITE env var.
+_samesite_override = os.environ.get('JWT_COOKIE_SAMESITE', '').strip()
+if _samesite_override in {'Strict', 'Lax', 'None'}:
+    JWT_COOKIE_SAMESITE = _samesite_override
+else:
+    # Default to Strict for production HTTPS, Lax for development
+    JWT_COOKIE_SAMESITE = 'Strict' if FORCE_SSL else 'Lax'
+
 JWT_COOKIE_DOMAIN = os.environ.get('JWT_COOKIE_DOMAIN') or None
 JWT_ACCESS_COOKIE_PATH = '/'
 JWT_REFRESH_COOKIE_PATH = '/api/'
@@ -443,11 +456,19 @@ AXES_USE_USER_AGENT = True
 CSRF_COOKIE_HTTPONLY = False  # Must be False so JavaScript can read it for X-CSRFToken header
 CSRF_COOKIE_NAME = 'csrftoken'  # Standard Django CSRF cookie name
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header name for CSRF token
-# Only use 'None' for SameSite when both FORCE_SSL is enabled AND CSRF_COOKIE_SECURE is explicitly True
 CSRF_COOKIE_SECURE = FORCE_SSL  # Ensure CSRF cookie is secure when SSL is forced
-# Enhanced CSRF SameSite configuration with stricter defaults
-# Use 'Strict' for maximum security when SSL is enforced, 'Lax' as fallback
-CSRF_COOKIE_SAMESITE = 'Strict' if (FORCE_SSL and CSRF_COOKIE_SECURE) else 'Lax'
+
+# SECURITY: Enhanced CSRF SameSite configuration with stricter defaults
+# Aligned with JWT cookie policy for consistency
+# - 'Strict': Maximum security (default for HTTPS production)
+# - 'Lax': Good security (default for development)
+# Override with CSRF_COOKIE_SAMESITE env var if needed (e.g., for cross-domain scenarios)
+_csrf_samesite_override = os.environ.get('CSRF_COOKIE_SAMESITE', '').strip()
+if _csrf_samesite_override in {'Strict', 'Lax', 'None'}:
+    CSRF_COOKIE_SAMESITE = _csrf_samesite_override
+else:
+    CSRF_COOKIE_SAMESITE = 'Strict' if FORCE_SSL else 'Lax'
+
 CSRF_USE_SESSIONS = False  # Use cookie-based CSRF tokens
 CSRF_COOKIE_AGE = 31449600  # 1 year (same as Django default)
 
@@ -513,8 +534,8 @@ LOGGING = {
             'level': 'WARNING',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs' / 'security.log',
-            'maxBytes': 10485760,  # 10MB
-            'backupCount': 10,
+            'maxBytes': 10485760,  # 10MB per file
+            'backupCount': 100,  # Keep 100 backup files = 1GB total for incident investigation
             'formatter': 'verbose',
         },
         'console': {

@@ -7,6 +7,10 @@ from PIL import Image, UnidentifiedImageError
 import os
 import uuid
 
+# SECURITY: Set global decompression bomb protection limit (16MP = 4096x4096)
+# This prevents ZIP bomb attacks where compressed images expand to massive sizes
+Image.MAX_IMAGE_PIXELS = 16777216  # 16 Megapixels
+
 try:
     from .storage import private_item_storage
 except ImportError as exc:
@@ -285,9 +289,10 @@ class ItemImage(TimeStampedModel):
             pos = file_obj.tell()
             
             # Enhanced security limits for decompression bomb protection
-            MAX_PIXELS = 16777216  # 16MP (4096x4096) - more conservative than PIL default
-            MAX_DIMENSION = 8192  # Maximum width or height
-            MEMORY_LIMIT = 100 * 1024 * 1024  # 100MB memory limit for processing
+            # These limits work on both Windows and Unix systems
+            MAX_PIXELS = 16777216  # 16MP (4096x4096) - aligned with global PIL setting
+            MAX_DIMENSION = 8192  # Maximum width or height (8K resolution)
+            MAX_FILE_SIZE_MB = 8  # Maximum file size already checked above
             
             try:
                 file_obj.seek(0)
@@ -312,7 +317,7 @@ class ItemImage(TimeStampedModel):
                                     f'Maximum: {MAX_DIMENSION}x{MAX_DIMENSION} Pixel.'
                                 )
                             
-                            # Check pixel count before processing
+                            # Check pixel count before processing (decompression bomb protection)
                             pixel_count = img.width * img.height
                             if pixel_count > MAX_PIXELS:
                                 raise ValidationError(
@@ -320,52 +325,52 @@ class ItemImage(TimeStampedModel):
                                     f'Maximum: {MAX_PIXELS} Pixel (ca. 4096x4096).'
                                 )
                             
-                            # Verify image format integrity
+                            # Verify image format integrity (fast check)
                             img.verify()
                             
-                            # Step 3: Reset file pointer and process with memory limits
+                            # Step 3: Reset file pointer and process with memory-safe loading
                             file_obj.seek(0)
                             
-                            # Memory-efficient processing with explicit limits
-                            import resource
+                            # SECURITY: Windows-compatible memory protection
+                            # PIL's global MAX_IMAGE_PIXELS setting (set at module level) protects
+                            # against decompression bombs on ALL platforms including Windows
                             try:
-                                # Set memory limit for image processing (Unix systems)
-                                resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
-                            except (ImportError, OSError, ValueError):
-                                # resource module not available or limit setting failed
-                                pass
-                            
-                            try:
-                                with Image.open(file_obj) as img:
-                                    # Load with explicit size check as final safeguard
-                                    img.load()
+                                with Image.open(file_obj) as img_final:
+                                    # Load image data with PIL's built-in protection
+                                    # This will raise DecompressionBombError if exceeded
+                                    img_final.load()
                                     
                                     # Final validation after loading
-                                    if img.width * img.height > MAX_PIXELS:
+                                    if img_final.width * img_final.height > MAX_PIXELS:
                                         raise ValidationError(
-                                            f'Bild verarbeitet zu viele Pixel: {img.width}x{img.height}. '
+                                            f'Bild verarbeitet zu viele Pixel: {img_final.width}x{img_final.height}. '
                                             f'Limit überschritten.'
                                         )
                                     
-                                    # Validate color mode and depth
-                                    if img.mode in ('LA', 'RGBA', 'RGBX'):
-                                        # Reject potentially problematic color modes
-                                        if ext.lower() not in ['.png', '.webp']:
+                                    # Validate color mode compatibility
+                                    if img_final.mode in ('LA', 'RGBA', 'RGBX', 'RGBa'):
+                                        # Accept transparency modes only for appropriate formats
+                                        if ext.lower() not in ['.png', '.webp', '.gif']:
                                             raise ValidationError(
-                                                f'Farbmodus {img.mode} für dieses Format nicht unterstützt.'
+                                                f'Farbmodus {img_final.mode} für Format {ext} nicht unterstützt.'
                                             )
                                             
                             except MemoryError:
                                 raise ValidationError(
-                                    'Bild zu groß für Verarbeitung. '
+                                    'Bild zu groß für Verarbeitung (Speicherlimit überschritten). '
                                     f'Maximum: {MAX_DIMENSION}x{MAX_DIMENSION} Pixel.'
                                 )
+                            except Image.DecompressionBombError:
+                                raise ValidationError(
+                                    'Potenzieller Decompression-Bomb-Angriff erkannt. '
+                                    f'Bild überschreitet Sicherheitslimit von {MAX_PIXELS} Pixeln.'
+                                )
                             except Exception as processing_error:
-                                # Log the error but don't expose details
+                                # Log the error but don't expose internal details to user
                                 import logging
                                 logger = logging.getLogger(__name__)
-                                logger.warning(f'Image processing error: {processing_error}')
-                                raise ValidationError('Bildverarbeitung fehlgeschlagen.') from processing_error
+                                logger.warning(f'Image processing error: {type(processing_error).__name__}')
+                                raise ValidationError('Bildverarbeitung fehlgeschlagen. Bitte verwende ein anderes Bild.') from processing_error
                                 
                     except (UnidentifiedImageError, OSError) as exc:
                         raise ValidationError('Die Datei ist kein gültiges Bild.') from exc
