@@ -774,6 +774,9 @@ const ItemsPage: React.FC = () => {
             locationMap={locationMap}
             tagMap={tagMap}
             onOpenDetails={handleOpenItemDetails}
+            selectionMode={selectionMode}
+            selectedItemIds={selectedItemIds}
+            onToggleItemSelected={handleToggleItemSelected}
           />
         )}
 
@@ -786,6 +789,8 @@ const ItemsPage: React.FC = () => {
             selectionMode={selectionMode}
             areAllSelectedOnPage={areAllSelectedOnPage}
             onToggleSelectAllCurrentPage={handleSelectAllCurrentPage}
+            selectedItemIds={selectedItemIds}
+            onToggleItemSelected={handleToggleItemSelected}
           />
         )}
 

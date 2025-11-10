@@ -178,7 +178,17 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
               Listen durchsuchen
             </label>
             <div className="mt-1 flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-200/60">
-              <span className="mr-2 text-slate-400">🔍</span>
+              <svg
+                aria-hidden="true"
+                className="mr-2 h-4 w-4 text-slate-400"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M12.5 12.5 17 17" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="8.5" cy="8.5" r="4.5" />
+              </svg>
               <input
                 id="assign-search"
                 type="search"

@@ -4,8 +4,10 @@
 // selection capabilities, and responsive design. Each row shows comprehensive item data.
 
 import React from 'react';
-import Button from '../common/Button';
-import type { Item } from '../../types/inventory';
+import clsx from 'clsx';
+
+import Button from '../common/Button.js';
+import type { Item } from '../../types/inventory.js';
 
 /**
  * Props interface for ItemsTable component.
@@ -32,6 +34,12 @@ type Props = {
 
   /** Function to toggle selection of all items on current page */
   onToggleSelectAllCurrentPage: () => void;
+
+  /** IDs of currently selected items */
+  selectedItemIds: number[];
+
+  /** Toggle selection of a single item */
+  onToggleItemSelected: (itemId: number) => void;
 };
 
 /**
@@ -63,7 +71,11 @@ const ItemsTable: React.FC<Props> = ({
   selectionMode,
   areAllSelectedOnPage,
   onToggleSelectAllCurrentPage,
+  selectedItemIds,
+  onToggleItemSelected,
 }) => {
+  const selectedSet = React.useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
+
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
       <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -90,55 +102,72 @@ const ItemsTable: React.FC<Props> = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
-          {items.map((item) => (
-            <tr key={item.id} className="transition hover:bg-slate-50">
-              <td className="px-4 py-3">
-                <div className="font-semibold text-slate-900">{item.name}</div>
-                {item.wodis_inventory_number && (
-                  <p className="mt-1 text-xs font-semibold text-indigo-600">
-                    WODIS • {item.wodis_inventory_number}
-                  </p>
+          {items.map((item: Item) => {
+            const isSelected = selectedSet.has(item.id);
+            return (
+              <tr
+                key={item.id}
+                className={clsx('transition hover:bg-slate-50', isSelected && 'bg-brand-50/60')}
+              >
+                {selectionMode && (
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                      checked={isSelected}
+                      onChange={() => onToggleItemSelected(item.id)}
+                      aria-label={isSelected ? `${item.name} abwählen` : `${item.name} auswählen`}
+                    />
+                  </td>
                 )}
-                {item.description && (
-                  <p className="mt-1 text-xs text-slate-500 line-clamp-1">{item.description}</p>
-                )}
-              </td>
-              <td className="px-4 py-3 text-sm">
-                {item.location ? locationMap[item.location] ?? 'Unbekannt' : 'Kein Standort'}
-              </td>
-              <td className="px-4 py-3 text-sm">
-                {item.tags.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {item.tags.map((tagId) => (
-                      <span
-                        key={tagId}
-                        className="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700"
-                      >
-                        {tagMap[tagId] ?? `Tag ${tagId}`}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-xs text-slate-400">Keine Tags</span>
-                )}
-              </td>
-              <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{item.quantity}</td>
-              <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{formatCurrency(item.value)}</td>
-              <td className="px-4 py-3 text-right text-sm">
-                {item.purchase_date ? new Date(item.purchase_date).toLocaleDateString('de-DE') : '—'}
-              </td>
-              <td className="px-4 py-3 text-right text-sm">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onOpenDetails(item.id)}
-                >
-                  Anzeigen
-                </Button>
-              </td>
-            </tr>
-          ))}
+                <td className="px-4 py-3">
+                  <div className="font-semibold text-slate-900">{item.name}</div>
+                  {item.wodis_inventory_number && (
+                    <p className="mt-1 text-xs font-semibold text-indigo-600">
+                      WODIS • {item.wodis_inventory_number}
+                    </p>
+                  )}
+                  {item.description && (
+                    <p className="mt-1 text-xs text-slate-500 line-clamp-1">{item.description}</p>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-sm">
+                  {item.location ? locationMap[item.location] ?? 'Unbekannt' : 'Kein Standort'}
+                </td>
+                <td className="px-4 py-3 text-sm">
+                  {item.tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {item.tags.map((tagId) => (
+                        <span
+                          key={tagId}
+                          className="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700"
+                        >
+                          {tagMap[tagId] ?? `Tag ${tagId}`}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-400">Keine Tags</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{item.quantity}</td>
+                <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{formatCurrency(item.value)}</td>
+                <td className="px-4 py-3 text-right text-sm">
+                  {item.purchase_date ? new Date(item.purchase_date).toLocaleDateString('de-DE') : '—'}
+                </td>
+                <td className="px-4 py-3 text-right text-sm">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onOpenDetails(item.id)}
+                  >
+                    Anzeigen
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

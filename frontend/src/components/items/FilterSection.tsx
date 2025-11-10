@@ -92,7 +92,17 @@ const FilterSection: React.FC<Props> = ({
             Suche
           </label>
           <div className="mt-1 flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-200/60">
-            <span className="mr-2 text-slate-400">🔍</span>
+            <svg
+              aria-hidden="true"
+              className="mr-2 h-4 w-4 text-slate-400"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path d="M12.5 12.5 17 17" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="8.5" cy="8.5" r="4.5" />
+            </svg>
             <input
               id="items-search"
               type="search"
@@ -144,7 +154,7 @@ const FilterSection: React.FC<Props> = ({
                   className={clsx(
                     'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold transition',
                     selectedLocationIds.includes(location.id)
-                      ? 'bg-blue-500 text-white shadow'
+                      ? 'bg-brand-500 text-white shadow'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
                   )}
                   onClick={() => onToggleLocation(location.id)}
