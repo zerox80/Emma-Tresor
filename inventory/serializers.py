@@ -1,110 +1,282 @@
-from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
-from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
-from rest_framework.reverse import reverse
-import mimetypes
-import os
-import bleach
-from django.utils.html import strip_tags
+# Django REST Framework Serializers for Inventory API
+# ====================================================
+# This module defines all serializers that convert between Python objects and JSON
+# for the REST API. Serializers handle:
+# - Data validation (ensuring input meets requirements)
+# - Data transformation (Python objects <-> JSON)
+# - Security controls (user isolation, permission checks)
+# - Field-level access control (read-only, write-only fields)
+#
+# Each serializer corresponds to a model and includes comprehensive validation
+# to ensure data integrity and security.
 
+from django.contrib.auth import get_user_model                      # Get configured User model
+from django.contrib.auth.password_validation import validate_password  # Django password validators
+from django.core.exceptions import ValidationError                  # Django validation errors
+from rest_framework import serializers                              # DRF serializers
+from rest_framework.validators import UniqueValidator               # Unique field validators
+from rest_framework.reverse import reverse                          # URL generation
+import mimetypes                                                    # MIME type detection
+import os                                                           # File path operations
+import bleach                                                       # HTML sanitization
+from django.utils.html import strip_tags                            # HTML tag removal
+
+# Import models and constants
 from .models import Item, ItemImage, ItemChangeLog, ItemList, Location, Tag, MAX_PURCHASE_AGE_YEARS
 
+# Get the User model (either Django's default or custom model)
 User = get_user_model()
 
+# =========================
+# USER REGISTRATION SERIALIZER
+# =========================
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    
+    """
+    Serializer for user registration endpoint.
+
+    Handles new user account creation with comprehensive validation:
+    - Email uniqueness checking (case-insensitive)
+    - Password strength validation using Django's validators
+    - Password confirmation matching
+    - Secure password storage using hashing
+
+    Security features:
+    - Passwords are write-only (never returned in API responses)
+    - Email normalization (lowercase, trimmed)
+    - Comprehensive error messages in German
+    """
+
+    # Email field with unique validation (case-insensitive)
     email = serializers.EmailField(
         required=True,
         validators=[UniqueValidator(
-            queryset=User.objects.all(), 
-            lookup='iexact',
+            queryset=User.objects.all(),
+            lookup='iexact',  # Case-insensitive uniqueness check
             message='Ein Konto mit dieser E-Mail-Adresse existiert bereits. Bitte verwende eine andere E-Mail-Adresse oder melde dich mit deinem bestehenden Konto an.'
         )],
     )
+
+    # Password field (write-only for security)
     password = serializers.CharField(write_only=True)
+
+    # Password confirmation field (write-only, not stored in database)
     password_confirm = serializers.CharField(write_only=True)
 
     class Meta:
-        
         model = User
+        # Fields exposed in the API
         fields = ['id', 'username', 'email', 'password', 'password_confirm']
+        # ID is auto-generated, cannot be set by client
         read_only_fields = ['id']
 
     def validate(self, attrs):
-        
+        """
+        Validate user registration data.
+
+        Performs several validation checks:
+        1. Password and password_confirm must match
+        2. Email is normalized (lowercase, trimmed)
+        3. Password meets Django's security requirements
+
+        Args:
+            attrs: Dictionary of field values from the request
+
+        Returns:
+            dict: Validated and normalized attributes
+
+        Raises:
+            serializers.ValidationError: If validation fails
+        """
+        # Extract passwords for validation
         password = attrs.get('password')
         password_confirm = attrs.pop('password_confirm', None)
+
+        # Ensure passwords match
         if password != password_confirm:
             raise serializers.ValidationError({'password_confirm': 'Die Passwörter stimmen nicht überein.'})
+
+        # Normalize email (lowercase and trim whitespace)
         email = attrs.get('email')
         if email:
             attrs['email'] = email.strip().lower()
+
+        # Validate password strength using Django's validators
+        # This checks for: minimum length, common passwords, numeric-only, similarity to user attributes
         try:
             validate_password(password)
         except ValidationError as e:
+            # Django validation errors - convert to DRF format
             raise serializers.ValidationError({'password': list(e.messages)})
         except Exception as e:
+            # Unexpected errors - return generic message
             raise serializers.ValidationError({'password': 'Passwort entspricht nicht den Sicherheitsstandards.'})
+
         return attrs
 
     def create(self, validated_data):
-        
+        """
+        Create a new user account.
+
+        Extracts the password, creates the user object, and properly hashes
+        the password using Django's secure password hashing.
+
+        Args:
+            validated_data: Validated data from validate() method
+
+        Returns:
+            User: The newly created user instance
+
+        Raises:
+            Exception: If user creation fails (re-raised after cleanup)
+        """
+        # Extract password from validated data
         password = validated_data.pop('password')
+
+        # Create user object (without password yet)
         user = User(**validated_data)
+
+        # Hash and set the password securely
+        # Django uses Argon2 by default (configured in settings.py)
         user.set_password(password)
+
         try:
+            # Save user to database
             user.save()
         except Exception:
-
+            # If save fails, clean up sensitive data from memory
             user = None
             password = None
-            raise
+            raise  # Re-raise the exception
+
         return user
 
+# =========================
+# TAG SERIALIZER
+# =========================
+
 class TagSerializer(serializers.ModelSerializer):
-    
+    """
+    Serializer for Tag model.
+
+    Handles creation, updating, and retrieval of user-defined tags for categorizing items.
+
+    Security features:
+    - User isolation: Users can only see/modify their own tags
+    - Duplicate prevention: Case-insensitive uniqueness check per user
+    - Name normalization: Trim whitespace from tag names
+
+    Validation:
+    - Tag names must be unique per user (case-insensitive)
+    - Empty or whitespace-only names are rejected
+    - Tags are automatically associated with the authenticated user
+    """
+
     class Meta:
-        
         model = Tag
+        # Fields exposed in the API
         fields = ['id', 'name', 'created_at', 'updated_at']
+        # These fields cannot be set by clients
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def validate_name(self, value):
-        
+        """
+        Validate tag name for uniqueness and format.
+
+        Ensures tag names are unique per user (case-insensitive) and properly formatted.
+
+        Args:
+            value: The tag name to validate
+
+        Returns:
+            str: Normalized tag name (trimmed whitespace)
+
+        Raises:
+            serializers.ValidationError: If tag name already exists for this user
+        """
+        # Get the current user from request context
         request = self.context.get('request')
         user = getattr(request, 'user', None)
+
+        # Normalize the tag name (remove leading/trailing whitespace)
         normalised = value.strip()
+
+        # If user is not authenticated, just return normalized value
+        # (will fail at create/update due to permission checks)
         if not user or not user.is_authenticated:
             return normalised
 
+        # Check if user already has a tag with this name (case-insensitive)
         queryset = Tag.objects.filter(user=user, name__iexact=normalised)
+
+        # If updating an existing tag, exclude it from the uniqueness check
         if self.instance is not None:
             queryset = queryset.exclude(pk=self.instance.pk)
 
+        # Raise error if duplicate found
         if queryset.exists():
             raise serializers.ValidationError('Ein Schlagwort mit diesem Namen existiert bereits.')
 
         return normalised
 
     def create(self, validated_data):
-        
+        """
+        Create a new tag for the authenticated user.
+
+        Automatically associates the tag with the current user.
+
+        Args:
+            validated_data: Validated data from the serializer
+
+        Returns:
+            Tag: The newly created tag instance
+
+        Raises:
+            serializers.ValidationError: If user is not authenticated
+        """
+        # Get the current user from request context
         request = self.context.get('request')
         user = getattr(request, 'user', None)
+
+        # Ensure user is authenticated
         if not user or not user.is_authenticated:
             raise serializers.ValidationError('Authentifizierung erforderlich.')
+
+        # Associate tag with the current user
         validated_data['user'] = user
+
+        # Create the tag
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        
+        """
+        Update an existing tag.
+
+        Ensures users can only update their own tags.
+
+        Args:
+            instance: The existing Tag instance to update
+            validated_data: Validated data from the serializer
+
+        Returns:
+            Tag: The updated tag instance
+
+        Raises:
+            serializers.ValidationError: If user doesn't own this tag
+        """
+        # Get the current user from request context
         request = self.context.get('request')
         user = getattr(request, 'user', None)
+
+        # Ensure the tag belongs to the current user
         if not user or instance.user_id != user.id:
             raise serializers.ValidationError('Dieses Schlagwort gehört nicht zu deinem Konto.')
+
+        # Normalize name if being updated
         if 'name' in validated_data:
             validated_data['name'] = validated_data['name'].strip()
+
+        # Update the tag
         return super().update(instance, validated_data)
 
 class LocationSerializer(serializers.ModelSerializer):
