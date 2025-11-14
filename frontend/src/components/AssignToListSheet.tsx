@@ -127,7 +127,7 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-slate-900/40"
         aria-hidden="true"
@@ -140,7 +140,7 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
       <aside
         role="dialog"
         aria-modal="true"
-        className="relative h-auto max-h-[85vh] w-full max-w-lg overflow-y-auto bg-white shadow-2xl"
+        className="relative h-auto max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white shadow-2xl"
       >
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
           <div>

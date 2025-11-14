@@ -723,6 +723,16 @@ const ItemsPage: React.FC = () => {
           </div>
         </header>
 
+        {selectionMode && (
+          <SelectionToolbar
+            selectedCount={selectedItemIds.length}
+            areAllSelectedOnPage={areAllSelectedOnPage}
+            onToggleSelectAllCurrentPage={handleSelectAllCurrentPage}
+            onClearSelection={handleClearSelection}
+            onOpenAssignSheet={handleOpenAssignSheet}
+          />
+        )}
+
         {itemsError && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             <div className="flex items-start justify-between gap-3">
@@ -827,14 +837,6 @@ const ItemsPage: React.FC = () => {
           </div>
         )}
       </section>
-
-      <SelectionToolbar
-        selectedCount={selectedItemIds.length}
-        areAllSelectedOnPage={areAllSelectedOnPage}
-        onToggleSelectAllCurrentPage={handleSelectAllCurrentPage}
-        onClearSelection={handleClearSelection}
-        onOpenAssignSheet={handleOpenAssignSheet}
-      />
 
       <AddItemDialog
         open={dialogOpen}
