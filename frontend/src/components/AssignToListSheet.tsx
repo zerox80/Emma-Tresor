@@ -140,7 +140,7 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
       <aside
         role="dialog"
         aria-modal="true"
-        className="relative h-full w-full max-w-lg overflow-y-auto bg-white shadow-2xl"
+        className="relative h-auto max-h-[85vh] w-full max-w-lg overflow-y-auto bg-white shadow-2xl"
       >
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
           <div>

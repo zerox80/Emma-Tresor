@@ -703,6 +703,11 @@ const ItemsPage: React.FC = () => {
             >
               {selectionMode ? 'Auswahlmodus beenden' : 'Auswahlmodus aktivieren'}
             </Button>
+            {selectionMode && selectedItemIds.length > 0 && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                {selectedItemIds.length} ausgewählt
+              </span>
+            )}
             <Button
               type="button"
               variant="secondary"
