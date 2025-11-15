@@ -280,9 +280,24 @@ class TagSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class LocationSerializer(serializers.ModelSerializer):
-    
+    """
+    Serializer for Location model.
+
+    Handles creation, updating, and retrieval of storage locations for items.
+
+    Security features:
+    - User isolation: Users can only see/modify their own locations
+    - Duplicate prevention: Case-insensitive uniqueness check per user
+    - Name normalization: Trim whitespace from location names
+
+    Validation:
+    - Location names must be unique per user (case-insensitive)
+    - Empty or whitespace-only names are rejected
+    - Locations are automatically associated with the authenticated user
+    """
+
     class Meta:
-        
+        """Meta configuration for LocationSerializer."""
         model = Location
         fields = ['id', 'name', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
