@@ -2,27 +2,22 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 
-import Button from '../components/common/Button.js';
 import AddItemDialog from '../components/AddItemDialog.js';
 import ItemDetailView from '../components/ItemDetailView.js';
 import AssignToListSheet from '../components/AssignToListSheet.js';
 import StatisticsCards from '../components/items/StatisticsCards.js';
 import FilterSection from '../components/items/FilterSection.js';
-import ItemsGrid from '../components/items/ItemsGrid.js';
-import ItemsTable from '../components/items/ItemsTable.js';
-import SelectionToolbar from '../components/items/SelectionToolbar.js';
-import { deleteItem, exportItems, fetchItem, updateListItems } from '../api/inventory.js';
+import { deleteItem, fetchItem, updateListItems } from '../api/inventory.js';
 import type { Item } from '../types/inventory.js';
-import ItemsEmptyState from '../features/items/components/ItemsEmptyState.js';
 import ItemsInfoBanner from '../features/items/components/ItemsInfoBanner.js';
-import ItemsLoadingGrid from '../features/items/components/ItemsLoadingGrid.js';
 import ItemsPageHeader from '../features/items/components/ItemsPageHeader.js';
-import ItemsPaginationControls from '../features/items/components/ItemsPaginationControls.js';
 import { ITEMS_PAGE_SIZE } from '../features/items/constants.js';
+import ItemsListSection from '../features/items/components/ItemsListSection.js';
 import { useItemLists } from '../features/items/hooks/useItemLists.js';
 import { useItemSelection } from '../features/items/hooks/useItemSelection.js';
 import { useItemsData } from '../features/items/hooks/useItemsData.js';
 import { useItemsFilters } from '../features/items/hooks/useItemsFilters.js';
+import { useItemsExport } from '../features/items/hooks/useItemsExport.js';
 import { useItemsMetadata } from '../features/items/hooks/useItemsMetadata.js';
 import { extractDetailMessage } from '../features/items/utils/itemHelpers.js';
 
@@ -71,8 +66,12 @@ const ItemsPage: React.FC = () => {
     clearSelection,
   } = useItemSelection(items);
 
-  const [exportingItems, setExportingItems] = useState(false);
-  const [exportError, setExportError] = useState<string | null>(null);
+  const { exportingItems, exportError, handleExportItems, dismissExportError } = useItemsExport({
+    debouncedSearchTerm,
+    ordering,
+    selectedTagIds,
+    selectedLocationIds,
+  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
@@ -154,34 +153,6 @@ const ItemsPage: React.FC = () => {
   );
 
   const handleCreateListFromAssign = useCallback(async (name: string) => createNewList(name), [createNewList]);
-
-  const handleExportItems = useCallback(async () => {
-    setExportError(null);
-    setExportingItems(true);
-    try {
-      const blob = await exportItems({
-        query: debouncedSearchTerm || undefined,
-        tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
-        locations: selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
-        ordering: ordering.trim().length > 0 ? ordering : undefined,
-      });
-      const url = URL.createObjectURL(blob);
-      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `inventar-export-${timestamp}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      const message = extractDetailMessage(axiosError) ?? 'Export fehlgeschlagen. Bitte versuche es erneut.';
-      setExportError(message);
-    } finally {
-      setExportingItems(false);
-    }
-  }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
 
   const handleDialogClose = () => {
     setDialogOpen(false);
@@ -480,74 +451,30 @@ const ItemsPage: React.FC = () => {
           onCreateItem={handleOpenCreateDialog}
         />
 
-        {selectionMode && (
-          <SelectionToolbar
-            selectedCount={selectedItemIds.length}
-            areAllSelectedOnPage={areAllSelectedOnPage}
-            onToggleSelectAllCurrentPage={selectAllCurrentPage}
-            onClearSelection={clearSelection}
-            onOpenAssignSheet={handleOpenAssignSheet}
-          />
-        )}
-
-        {itemsError && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            <div className="flex items-start justify-between gap-3">
-              <span>{itemsError}</span>
-              <Button variant="ghost" size="sm" onClick={() => void loadItems()}>
-                Erneut laden
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {exportError && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            <div className="flex items-start justify-between gap-3">
-              <span>{exportError}</span>
-              <Button variant="ghost" size="sm" onClick={() => setExportError(null)}>
-                Schließen
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {loadingItems && <ItemsLoadingGrid />}
-
-        {!loadingItems && items.length === 0 && !itemsError && <ItemsEmptyState onCreateItem={handleOpenCreateDialog} />}
-
-        {!loadingItems && items.length > 0 && viewMode === 'grid' && (
-          <ItemsGrid
-            items={items}
-            locationMap={locationMap}
-            tagMap={tagMap}
-            onOpenDetails={handleOpenItemDetails}
-            selectionMode={selectionMode}
-            selectedItemIds={selectedItemIds}
-            onToggleItemSelected={toggleItemSelected}
-          />
-        )}
-
-        {!loadingItems && items.length > 0 && viewMode === 'table' && (
-          <ItemsTable
-            items={items}
-            locationMap={locationMap}
-            tagMap={tagMap}
-            onOpenDetails={handleOpenItemDetails}
-            selectionMode={selectionMode}
-            areAllSelectedOnPage={areAllSelectedOnPage}
-            onToggleSelectAllCurrentPage={selectAllCurrentPage}
-            selectedItemIds={selectedItemIds}
-            onToggleItemSelected={toggleItemSelected}
-          />
-        )}
-
-        <ItemsPaginationControls
-          page={page}
+        <ItemsListSection
+          selectionMode={selectionMode}
+          selectedCount={selectedItemIds.length}
+          selectedItemIds={selectedItemIds}
+          areAllSelectedOnPage={areAllSelectedOnPage}
+          onToggleSelectAllCurrentPage={selectAllCurrentPage}
+          onClearSelection={clearSelection}
+          onOpenAssignSheet={handleOpenAssignSheet}
+          itemsError={itemsError}
+          onRetryLoadItems={() => void loadItems()}
+          exportError={exportError}
+          onDismissExportError={dismissExportError}
+          loadingItems={loadingItems}
+          items={items}
+          viewMode={viewMode}
+          locationMap={locationMap}
+          tagMap={tagMap}
+          onOpenItemDetails={handleOpenItemDetails}
+          onToggleItemSelected={toggleItemSelected}
+          onCreateItem={handleOpenCreateDialog}
           pagination={pagination}
-          loading={loadingItems}
-          onPrevious={() => setPage((prev) => Math.max(prev - 1, 1))}
-          onNext={() => setPage((prev) => prev + 1)}
+          page={page}
+          onPreviousPage={() => setPage((prev) => Math.max(prev - 1, 1))}
+          onNextPage={() => setPage((prev) => prev + 1)}
         />
       </section>
 
