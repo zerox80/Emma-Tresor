@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 
@@ -11,77 +11,68 @@ import FilterSection from '../components/items/FilterSection.js';
 import ItemsGrid from '../components/items/ItemsGrid.js';
 import ItemsTable from '../components/items/ItemsTable.js';
 import SelectionToolbar from '../components/items/SelectionToolbar.js';
-import {
-  createList,
-  createLocation,
-  createTag,
-  fetchItem,
-  fetchItems,
-  fetchLists,
-  fetchLocations,
-  fetchTags,
-  deleteItem,
-  exportItems,
-  updateListItems,
-} from '../api/inventory.js';
-import type { Item, ItemList, Location, PaginatedResponse, Tag } from '../types/inventory.js';
-import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
-
-const PAGE_SIZE = 20;
-
-type ViewMode = 'grid' | 'table';
-
-const formatCurrency = (value: string | null | undefined) => {
-  if (!value) {
-    return '—';
-  }
-  const numeric = Number.parseFloat(value);
-  if (!Number.isFinite(numeric) || numeric < 0) {
-    return '—';
-  }
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
-};
-
-const extractDetailMessage = (error: AxiosError): string | null => {
-  const data = error.response?.data;
-  if (typeof data === 'string') {
-    return data;
-  }
-  if (data && typeof data === 'object' && 'detail' in data) {
-    const detail = (data as { detail?: unknown }).detail;
-    if (typeof detail === 'string') {
-      return detail;
-    }
-  }
-  return null;
-};
-
-const sortItemLists = (entries: ItemList[]): ItemList[] =>
-  [...entries].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
+import { deleteItem, exportItems, fetchItem, updateListItems } from '../api/inventory.js';
+import type { Item } from '../types/inventory.js';
+import ItemsEmptyState from '../features/items/components/ItemsEmptyState.js';
+import ItemsInfoBanner from '../features/items/components/ItemsInfoBanner.js';
+import ItemsLoadingGrid from '../features/items/components/ItemsLoadingGrid.js';
+import ItemsPageHeader from '../features/items/components/ItemsPageHeader.js';
+import ItemsPaginationControls from '../features/items/components/ItemsPaginationControls.js';
+import { ITEMS_PAGE_SIZE } from '../features/items/constants.js';
+import { useItemLists } from '../features/items/hooks/useItemLists.js';
+import { useItemSelection } from '../features/items/hooks/useItemSelection.js';
+import { useItemsData } from '../features/items/hooks/useItemsData.js';
+import { useItemsFilters } from '../features/items/hooks/useItemsFilters.js';
+import { useItemsMetadata } from '../features/items/hooks/useItemsMetadata.js';
+import { extractDetailMessage } from '../features/items/utils/itemHelpers.js';
 
 const ItemsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [items, setItems] = useState<Item[]>([]);
-  const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(null);
-  const [loadingItems, setLoadingItems] = useState(true);
-  const [itemsError, setItemsError] = useState<string | null>(null);
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    debouncedSearchTerm,
+    selectedTagIds,
+    toggleTag,
+    selectedLocationIds,
+    toggleLocation,
+    ordering,
+    setOrdering,
+    viewMode,
+    setViewMode,
+    page,
+    setPage,
+    isFiltered,
+    clearFilters,
+  } = useItemsFilters();
+
+  const { items, pagination, loadingItems, itemsError, loadItems, itemsVersion } = useItemsData({
+    debouncedSearchTerm,
+    ordering,
+    page,
+    selectedLocationIds,
+    selectedTagIds,
+  });
+
+  const { tags, locations, metaLoading, handleCreateTag, handleCreateLocation } = useItemsMetadata();
+
+  const { lists, listsLoading, listsError, loadLists, maybeLoadLists, upsertList, createNewList } = useItemLists();
+
+  const {
+    selectionMode,
+    setSelectionMode,
+    selectedItemIds,
+    areAllSelectedOnPage,
+    toggleSelectionMode,
+    toggleItemSelected,
+    selectAllCurrentPage,
+    clearSelection,
+  } = useItemSelection(items);
+
   const [exportingItems, setExportingItems] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [metaLoading, setMetaLoading] = useState(true);
-  const [metaError, setMetaError] = useState<string | null>(null);
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebouncedValue(searchTerm);
-
-  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
-  const [selectedLocationIds, setSelectedLocationIds] = useState<number[]>([]);
-  const [ordering, setOrdering] = useState<string>('-purchase_date');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [page, setPage] = useState(1);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
@@ -96,166 +87,33 @@ const ItemsPage: React.FC = () => {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [detailNavigationDirection, setDetailNavigationDirection] = useState<'next' | 'previous' | null>(null);
   const [pendingDetailNavigation, setPendingDetailNavigation] = useState<'next' | 'previous' | null>(null);
-  const [itemsVersion, setItemsVersion] = useState(0);
   const navStartItemsVersionRef = useRef<number | null>(null);
   const [detailNavigationTarget, setDetailNavigationTarget] = useState<number | null>(null);
 
-  const [lists, setLists] = useState<ItemList[]>([]);
-  const [listsLoading, setListsLoading] = useState(false);
-  const [listsError, setListsError] = useState<string | null>(null);
-  const [listsInitialized, setListsInitialized] = useState(false);
-
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
   const [assignSheetOpen, setAssignSheetOpen] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
 
-  const tagMap = useMemo(() => Object.fromEntries(tags.map((tag: Tag) => [tag.id, tag.name])), [tags]);
-  
-  const locationMap = useMemo(
-    () => Object.fromEntries(locations.map((location: Location) => [location.id, location.name])),
-    [locations],
-  );
-
-  useEffect(() => {
-    let active = true;
-
-    const loadMeta = async () => {
-      setMetaLoading(true);
-      setMetaError(null);
-      try {
-        const [fetchedTags, fetchedLocations] = await Promise.all([fetchTags(), fetchLocations()]);
-        if (!active) {
-          return;
-        }
-        const sortedTags = [...fetchedTags].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
-        const sortedLocations = [...fetchedLocations].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
-        setTags(sortedTags);
-        setLocations(sortedLocations);
-      } catch (error) {
-        if (active) {
-          setMetaError('Tags und Standorte konnten nicht geladen werden. Bitte versuche es erneut.');
-        }
-      } finally {
-        if (active) {
-          setMetaLoading(false);
-        }
-      }
-    };
-
-    void loadMeta();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const loadItems = useCallback(async () => {
-    setLoadingItems(true);
-    setItemsError(null);
-    try {
-      const response = await fetchItems({
-        query: debouncedSearchTerm || undefined,
-        page,
-        pageSize: PAGE_SIZE,
-        tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
-        locations: selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
-        ordering: ordering.trim().length > 0 ? ordering : undefined,
-      });
-      setItems(response.results);
-      setPagination(response);
-      setItemsVersion((prev: number) => prev + 1);
-    } catch (error) {
-      setItemsError('Deine Gegenstände konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.');
-      setPendingDetailNavigation(null);
-      setDetailNavigationDirection(null);
-      navStartItemsVersionRef.current = null;
-    } finally {
-      setLoadingItems(false);
-    }
-  }, [debouncedSearchTerm, ordering, page, selectedLocationIds, selectedTagIds]);
-
-  const loadLists = useCallback(async () => {
-    setListsLoading(true);
-    setListsError(null);
-    try {
-      const fetchedLists = await fetchLists();
-      setLists(sortItemLists(fetchedLists));
-      if (!listsInitialized) {
-        setListsInitialized(true);
-      }
-    } catch (error) {
-      setListsError('Deine Listen konnten nicht geladen werden. Bitte versuche es erneut.');
-    } finally {
-      setListsLoading(false);
-    }
-  }, [listsInitialized]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
+  const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
+  const locationMap = useMemo(() => Object.fromEntries(locations.map((location) => [location.id, location.name])), [
+    locations,
+  ]);
 
   useEffect(() => {
     void loadItems();
-  }, [loadItems, page]);
-
-  useEffect(() => {
-    if (assignSheetOpen && !listsInitialized && !listsLoading) {
-      void loadLists();
-    }
-  }, [assignSheetOpen, listsInitialized, listsLoading, loadLists]);
-
-  useEffect(() => {
-    if (!selectionMode) {
-      setSelectedItemIds([]);
-    }
-  }, [selectionMode]);
+  }, [loadItems]);
 
   useEffect(() => {
     if (assignSheetOpen) {
       setAssignError(null);
+      void maybeLoadLists();
     }
-  }, [assignSheetOpen]);
-
-  const selectedItemsSet = useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
-  const areAllSelectedOnPage = items.length > 0 && items.every((item: Item) => selectedItemsSet.has(item.id));
-
-  const handleToggleSelectionMode = useCallback(() => {
-    setSelectionMode((prev: boolean) => {
-      const next = !prev;
-      if (!next) {
-        setSelectedItemIds([]);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleToggleItemSelected = useCallback((itemId: number) => {
-    setSelectedItemIds((prev: number[]) =>
-      prev.includes(itemId) ? prev.filter((id: number) => id !== itemId) : [...prev, itemId],
-    );
-  }, []);
-
-  const handleSelectAllCurrentPage = useCallback(() => {
-    if (areAllSelectedOnPage) {
-      setSelectedItemIds((prev: number[]) => prev.filter((id: number) => !items.some((item: Item) => item.id === id)));
-      return;
-    }
-    const currentItemIds = items.map((item: Item) => item.id);
-    setSelectedItemIds((prev: number[]) => Array.from(new Set<number>([...prev, ...currentItemIds])));
-  }, [areAllSelectedOnPage, items]);
-
-  const handleClearSelection = useCallback(() => {
-    setSelectedItemIds([]);
-  }, []);
+  }, [assignSheetOpen, maybeLoadLists]);
 
   const handleOpenAssignSheet = useCallback(() => {
     setAssignSheetOpen(true);
-    if (!listsInitialized && !listsLoading) {
-      void loadLists();
-    }
-  }, [listsInitialized, listsLoading, loadLists]);
+    void maybeLoadLists();
+  }, [maybeLoadLists]);
 
   const handleCloseAssignSheet = useCallback(() => {
     if (assignLoading) {
@@ -274,23 +132,15 @@ const ItemsPage: React.FC = () => {
       setAssignLoading(true);
       setAssignError(null);
       try {
-        const targetList = lists.find((list: ItemList) => list.id === listId) ?? null;
+        const targetList = lists.find((list) => list.id === listId) ?? null;
         const mergedIds = new Set<number>(targetList ? targetList.items : []);
         selectedItemIds.forEach((id) => mergedIds.add(id));
         const updated = await updateListItems(listId, Array.from(mergedIds));
-        setLists((prevLists: ItemList[]) => {
-          const next = prevLists.some((list: ItemList) => list.id === updated.id)
-            ? prevLists.map((list: ItemList) => (list.id === updated.id ? updated : list))
-            : [...prevLists, updated];
-          return sortItemLists(next);
-        });
-        setInfoMessage(`${selectedItemIds.length} Gegenstände wurden zu „${updated.name}“ hinzugefügt.`);
+        upsertList(updated);
+        setInfoMessage(`${selectedItemIds.length} Gegenstände wurden zu "${updated.name}" hinzugefügt.`);
         setAssignSheetOpen(false);
         setSelectionMode(false);
-        setSelectedItemIds([]);
-        if (!listsInitialized) {
-          setListsInitialized(true);
-        }
+        clearSelection();
       } catch (error) {
         const axiosError = error as AxiosError;
         const message = extractDetailMessage(axiosError) ?? 'Zuweisung fehlgeschlagen. Bitte versuche es erneut.';
@@ -300,44 +150,10 @@ const ItemsPage: React.FC = () => {
         setAssignLoading(false);
       }
     },
-    [lists, listsInitialized, selectedItemIds],
+    [clearSelection, lists, selectedItemIds, setSelectionMode, upsertList],
   );
 
-  const handleCreateListFromAssign = useCallback(
-    async (name: string) => {
-      try {
-        const newList = await createList(name);
-        setLists((prevLists: ItemList[]) => sortItemLists([...prevLists, newList]));
-        if (!listsInitialized) {
-          setListsInitialized(true);
-        }
-        return newList;
-      } catch (error) {
-        const axiosError = error as AxiosError;
-        throw new Error(extractDetailMessage(axiosError) ?? 'Liste konnte nicht erstellt werden.');
-      }
-    },
-    [listsInitialized],
-  );
-
-  const handleToggleTag = (tagId: number) => {
-    setSelectedTagIds((prev: number[]) =>
-      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
-    );
-  };
-
-  const handleToggleLocation = (locationId: number) => {
-    setSelectedLocationIds((prev: number[]) =>
-      prev.includes(locationId) ? prev.filter((id) => id !== locationId) : [...prev, locationId],
-    );
-  };
-
-  const handleClearFilters = () => {
-    setSelectedTagIds([]);
-    setSelectedLocationIds([]);
-    setOrdering('-purchase_date');
-    setSearchTerm('');
-  };
+  const handleCreateListFromAssign = useCallback(async (name: string) => createNewList(name), [createNewList]);
 
   const handleExportItems = useCallback(async () => {
     setExportError(null);
@@ -367,18 +183,6 @@ const ItemsPage: React.FC = () => {
     }
   }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
 
-  const handleCreateTag = useCallback(async (name: string) => {
-    const newTag = await createTag(name);
-    setTags((prev: Tag[]) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
-    return newTag;
-  }, []);
-
-  const handleCreateLocation = useCallback(async (name: string) => {
-    const newLocation = await createLocation(name);
-    setLocations((prev: Location[]) => [...prev, newLocation].sort((a, b) => a.name.localeCompare(b.name, 'de-DE')));
-    return newLocation;
-  }, []);
-
   const handleDialogClose = () => {
     setDialogOpen(false);
     setDialogMode('create');
@@ -389,7 +193,7 @@ const ItemsPage: React.FC = () => {
     setDialogOpen(false);
     setDialogMode('create');
     setDialogItem(null);
-    setInfoMessage(`„${item.name}“ wurde erfolgreich angelegt.`);
+    setInfoMessage(`"${item.name}" wurde erfolgreich angelegt.`);
     await loadItems();
   };
 
@@ -397,7 +201,7 @@ const ItemsPage: React.FC = () => {
     setDialogOpen(false);
     setDialogMode('create');
     setDialogItem(null);
-    const baseMessage = `„${item.name}“ wurde aktualisiert.`;
+    const baseMessage = `"${item.name}" wurde aktualisiert.`;
     setInfoMessage(warning ? `${baseMessage} ${warning}` : baseMessage);
     await loadItems();
     if (detailItemId === item.id) {
@@ -421,16 +225,14 @@ const ItemsPage: React.FC = () => {
   const handleOpenItemDetails = useCallback(
     (itemId: number, options?: { fromNavigation?: 'next' | 'previous' }) => {
       setDetailItemId(itemId);
-      const cachedItem = items.find((currentItem: Item) => currentItem.id === itemId) ?? null;
+      const cachedItem = items.find((currentItem) => currentItem.id === itemId) ?? null;
       setDetailItem(cachedItem);
 
       const loadPromise = loadItemDetails(itemId);
 
       if (options?.fromNavigation) {
         void loadPromise.finally(() => {
-          setDetailNavigationDirection((current: 'next' | 'previous' | null) =>
-            current === options.fromNavigation ? null : current,
-          );
+          setDetailNavigationDirection((current) => (current === options.fromNavigation ? null : current));
         });
       } else {
         setDetailNavigationDirection(null);
@@ -481,7 +283,7 @@ const ItemsPage: React.FC = () => {
     setDeleteError(null);
     try {
       await deleteItem(detailItemId);
-      setInfoMessage(`„${itemName}“ wurde gelöscht.`);
+      setInfoMessage(`"${itemName}" wurde gelöscht.`);
       handleCloseItemDetails();
       await loadItems();
     } catch (error) {
@@ -489,7 +291,7 @@ const ItemsPage: React.FC = () => {
     } finally {
       setDeleteLoading(false);
     }
-  }, [detailItemId, detailItem, handleCloseItemDetails, loadItems]);
+  }, [detailItem, detailItemId, handleCloseItemDetails, loadItems]);
 
   const handleOpenCreateDialog = useCallback(() => {
     setDialogMode('create');
@@ -509,15 +311,12 @@ const ItemsPage: React.FC = () => {
   }, [detailItem, handleCloseItemDetails]);
 
   const totalItemsCount = pagination?.count ?? items.length;
-  
-  const totalQuantity = useMemo(
-    () => items.reduce((sum: number, current: Item) => sum + current.quantity, 0),
-    [items],
-  );
-  
+
+  const totalQuantity = useMemo(() => items.reduce((sum, current) => sum + current.quantity, 0), [items]);
+
   const totalValue = useMemo(
     () =>
-      items.reduce((sum: number, current: Item) => {
+      items.reduce((sum, current) => {
         if (!current.value) {
           return sum;
         }
@@ -531,7 +330,7 @@ const ItemsPage: React.FC = () => {
     if (detailItemId == null) {
       return -1;
     }
-    return items.findIndex((currentItem: Item) => currentItem.id === detailItemId);
+    return items.findIndex((currentItem) => currentItem.id === detailItemId);
   }, [detailItemId, items]);
 
   const handleNavigateDetail = useCallback(
@@ -540,7 +339,7 @@ const ItemsPage: React.FC = () => {
         return;
       }
 
-      const index = items.findIndex((currentItem: Item) => currentItem.id === detailItemId);
+      const index = items.findIndex((currentItem) => currentItem.id === detailItemId);
       if (index === -1) {
         return;
       }
@@ -556,7 +355,7 @@ const ItemsPage: React.FC = () => {
           navStartItemsVersionRef.current = itemsVersion;
           setPendingDetailNavigation('next');
           setDetailNavigationTarget(null);
-          setPage((prev: number) => prev + 1);
+          setPage((prev) => prev + 1);
         }
         return;
       }
@@ -572,11 +371,11 @@ const ItemsPage: React.FC = () => {
           navStartItemsVersionRef.current = itemsVersion;
           setPendingDetailNavigation('previous');
           setDetailNavigationTarget(null);
-          setPage((prev: number) => Math.max(prev - 1, 1));
+          setPage((prev) => Math.max(prev - 1, 1));
         }
       }
     },
-    [detailItemId, handleOpenItemDetails, items, itemsVersion, pagination],
+    [detailItemId, handleOpenItemDetails, items, itemsVersion, pagination, setPage],
   );
 
   const handleNavigateNext = useCallback(() => {
@@ -588,19 +387,19 @@ const ItemsPage: React.FC = () => {
   }, [handleNavigateDetail]);
 
   const hasNextOnCurrentPage = currentDetailIndex !== -1 && currentDetailIndex < items.length - 1;
-  
+
   const hasPreviousOnCurrentPage = currentDetailIndex > 0;
-  
+
   const canNavigateNext = hasNextOnCurrentPage || Boolean(pagination?.next);
-  
+
   const canNavigatePrevious = hasPreviousOnCurrentPage || Boolean(pagination?.previous);
 
-  const totalCountForPosition = pagination?.count ?? (page - 1) * PAGE_SIZE + items.length;
-  
+  const totalCountForPosition = pagination?.count ?? (page - 1) * ITEMS_PAGE_SIZE + items.length;
+
   const detailPosition = currentDetailIndex === -1
     ? null
     : {
-        current: (page - 1) * PAGE_SIZE + currentDetailIndex + 1,
+        current: (page - 1) * ITEMS_PAGE_SIZE + currentDetailIndex + 1,
         total: totalCountForPosition,
       };
 
@@ -615,7 +414,7 @@ const ItemsPage: React.FC = () => {
 
     const targetItem = (() => {
       if (detailNavigationTarget != null) {
-        return items.find((candidate: Item) => candidate.id === detailNavigationTarget) ?? null;
+        return items.find((candidate) => candidate.id === detailNavigationTarget) ?? null;
       }
       if (pendingDetailNavigation === 'next') {
         return items[0] ?? null;
@@ -637,25 +436,9 @@ const ItemsPage: React.FC = () => {
     navStartItemsVersionRef.current = null;
   }, [detailNavigationTarget, handleOpenItemDetails, items, itemsVersion, pendingDetailNavigation]);
 
-  const isFiltered =
-    debouncedSearchTerm.length > 0 || selectedTagIds.length > 0 || selectedLocationIds.length > 0 || ordering !== '-purchase_date';
-
   return (
     <div className="relative space-y-8">
-      {infoMessage && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          <div className="flex items-start justify-between gap-3">
-            <span>{infoMessage}</span>
-            <button
-              type="button"
-              className="text-emerald-600 transition hover:text-emerald-800"
-              onClick={() => setInfoMessage(null)}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+      {infoMessage && <ItemsInfoBanner message={infoMessage} onDismiss={() => setInfoMessage(null)} />}
 
       <StatisticsCards
         totalItemsCount={totalItemsCount}
@@ -670,65 +453,39 @@ const ItemsPage: React.FC = () => {
         viewMode={viewMode}
         setViewMode={setViewMode}
         isFiltered={isFiltered}
-        onClearFilters={handleClearFilters}
+        onClearFilters={clearFilters}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         tags={tags}
         locations={locations}
         metaLoading={metaLoading}
         selectedTagIds={selectedTagIds}
-        onToggleTag={handleToggleTag}
+        onToggleTag={toggleTag}
         selectedLocationIds={selectedLocationIds}
-        onToggleLocation={handleToggleLocation}
+        onToggleLocation={toggleLocation}
         ordering={ordering}
         setOrdering={setOrdering}
       />
 
       <section className="space-y-4">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">Gegenstände</h3>
-            <p className="text-sm text-slate-500">
-              {loadingItems
-                ? 'Lade Gegenstände …'
-                : `${pagination?.count ?? items.length} Ergebnisse gesamt${isFiltered ? ' (gefiltert)' : ''}.`}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant={selectionMode ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={handleToggleSelectionMode}
-            >
-              {selectionMode ? 'Auswahlmodus beenden' : 'Auswahlmodus aktivieren'}
-            </Button>
-            {selectionMode && selectedItemIds.length > 0 && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                {selectedItemIds.length} ausgewählt
-              </span>
-            )}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => void handleExportItems()}
-              loading={exportingItems}
-            >
-              Exportieren
-            </Button>
-            <Button variant="primary" size="sm" onClick={handleOpenCreateDialog}>
-              Neuer Gegenstand
-            </Button>
-          </div>
-        </header>
+        <ItemsPageHeader
+          totalCount={pagination?.count ?? items.length}
+          loadingItems={loadingItems}
+          isFiltered={isFiltered}
+          selectionMode={selectionMode}
+          selectedCount={selectedItemIds.length}
+          onToggleSelectionMode={toggleSelectionMode}
+          onExport={() => void handleExportItems()}
+          exporting={exportingItems}
+          onCreateItem={handleOpenCreateDialog}
+        />
 
         {selectionMode && (
           <SelectionToolbar
             selectedCount={selectedItemIds.length}
             areAllSelectedOnPage={areAllSelectedOnPage}
-            onToggleSelectAllCurrentPage={handleSelectAllCurrentPage}
-            onClearSelection={handleClearSelection}
+            onToggleSelectAllCurrentPage={selectAllCurrentPage}
+            onClearSelection={clearSelection}
             onOpenAssignSheet={handleOpenAssignSheet}
           />
         )}
@@ -755,33 +512,9 @@ const ItemsPage: React.FC = () => {
           </div>
         )}
 
-        {loadingItems && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-40 w-full animate-pulse rounded-xl border border-slate-200 bg-slate-100"
-              />
-            ))}
-          </div>
-        )}
+        {loadingItems && <ItemsLoadingGrid />}
 
-        {!loadingItems && items.length === 0 && !itemsError && (
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-12 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-slate-500">
-              📦
-            </div>
-            <h4 className="mt-4 text-xl font-semibold text-slate-900">Noch keine Gegenstände erfasst</h4>
-            <p className="mt-2 text-sm text-slate-500">
-              Lege deinen ersten Gegenstand an und starte deine Inventarliste. Alles ist in wenigen Schritten erledigt.
-            </p>
-            <div className="mt-4 flex justify-center">
-              <Button variant="primary" size="md" onClick={handleOpenCreateDialog}>
-                Jetzt starten
-              </Button>
-            </div>
-          </div>
-        )}
+        {!loadingItems && items.length === 0 && !itemsError && <ItemsEmptyState onCreateItem={handleOpenCreateDialog} />}
 
         {!loadingItems && items.length > 0 && viewMode === 'grid' && (
           <ItemsGrid
@@ -791,7 +524,7 @@ const ItemsPage: React.FC = () => {
             onOpenDetails={handleOpenItemDetails}
             selectionMode={selectionMode}
             selectedItemIds={selectedItemIds}
-            onToggleItemSelected={handleToggleItemSelected}
+            onToggleItemSelected={toggleItemSelected}
           />
         )}
 
@@ -803,39 +536,19 @@ const ItemsPage: React.FC = () => {
             onOpenDetails={handleOpenItemDetails}
             selectionMode={selectionMode}
             areAllSelectedOnPage={areAllSelectedOnPage}
-            onToggleSelectAllCurrentPage={handleSelectAllCurrentPage}
+            onToggleSelectAllCurrentPage={selectAllCurrentPage}
             selectedItemIds={selectedItemIds}
-            onToggleItemSelected={handleToggleItemSelected}
+            onToggleItemSelected={toggleItemSelected}
           />
         )}
 
-        {pagination && (pagination.next || pagination.previous) && (
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-            <span>
-              Seite {page} · {pagination.count} Ergebnisse insgesamt
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                disabled={!pagination.previous || page === 1 || loadingItems}
-              >
-                Zurück
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={() => setPage((prev) => prev + 1)}
-                disabled={!pagination.next || loadingItems}
-              >
-                Weiter
-              </Button>
-            </div>
-          </div>
-        )}
+        <ItemsPaginationControls
+          page={page}
+          pagination={pagination}
+          loading={loadingItems}
+          onPrevious={() => setPage((prev) => Math.max(prev - 1, 1))}
+          onNext={() => setPage((prev) => prev + 1)}
+        />
       </section>
 
       <AddItemDialog
