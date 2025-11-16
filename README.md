@@ -1,5 +1,7 @@
 # EmmaTresor
 
+<img width="1250" height="587" alt="image" src="https://github.com/user-attachments/assets/850fa988-28d1-408a-ab55-93a829ad50ec" />
+
 EmmaTresor ist ein sicheres, mandantenfähiges Inventar- und Asset-Management-System auf Basis von Django (Backend) und React/Vite (Frontend). Es verwaltet Gegenstände, Dateien und Bilder mit strenger Trennung pro Benutzerkonto.
 
 ## Funktionen
