@@ -74,31 +74,60 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
   const [sortPreference, setSortPreference] = useState<'default' | 'description' | 'date'>('default');
 
   const sortedDuplicates = useMemo(() => {
+    // Create a shallow copy of groups and items to avoid mutating props
+    const processed = duplicates.map((group) => ({
+      ...group,
+      items: [...group.items],
+    }));
+
     if (sortPreference === 'default') {
-      return duplicates;
+      return processed;
     }
 
-    return [...duplicates].sort((a, b) => {
-      if (sortPreference === 'description') {
+    if (sortPreference === 'description') {
+      // Sort items within groups: Description alphabetical, empty at bottom
+      processed.forEach((group) => {
+        group.items.sort((a, b) => {
+          const descA = a.description || '';
+          const descB = b.description || '';
+          if (descA && !descB) return -1;
+          if (!descA && descB) return 1;
+          return descA.localeCompare(descB);
+        });
+      });
+
+      // Sort groups: Groups with any description first
+      processed.sort((a, b) => {
         const hasDescA = a.items.some((i) => i.description && i.description.trim().length > 0);
         const hasDescB = b.items.some((i) => i.description && i.description.trim().length > 0);
         if (hasDescA && !hasDescB) return -1;
         if (!hasDescA && hasDescB) return 1;
         return 0;
-      }
-      if (sortPreference === 'date') {
+      });
+    }
+
+    if (sortPreference === 'date') {
+      // Sort items within groups: Newest first
+      processed.forEach((group) => {
+        group.items.sort((a, b) => {
+          const dateA = a.purchase_date ? new Date(a.purchase_date).getTime() : 0;
+          const dateB = b.purchase_date ? new Date(b.purchase_date).getTime() : 0;
+          return dateB - dateA;
+        });
+      });
+
+      // Sort groups: Newest date in group first
+      processed.sort((a, b) => {
         const getDate = (group: DuplicateGroup) => {
-          const dates = group.items
-            .map((i) => (i.purchase_date ? new Date(i.purchase_date).getTime() : 0))
-            .sort((d1, d2) => d2 - d1);
-          return dates[0] || 0;
+          // Items are already sorted, so first is newest
+          const firstItem = group.items[0];
+          return firstItem?.purchase_date ? new Date(firstItem.purchase_date).getTime() : 0;
         };
-        const dateA = getDate(a);
-        const dateB = getDate(b);
-        return dateB - dateA;
-      }
-      return 0;
-    });
+        return getDate(b) - getDate(a);
+      });
+    }
+
+    return processed;
   }, [duplicates, sortPreference]);
 
   const sortedQuarantineEntries = useMemo(() => {
