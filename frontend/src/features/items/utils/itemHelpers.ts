@@ -1,6 +1,6 @@
 import type { AxiosError } from 'axios';
 
-import type { ItemList } from '../../../types/inventory.js';
+import type { ItemList } from '../../../types/inventory';
 
 /**
  * Extracts a meaningful message from Axios error responses that follow DRF's `{ detail }` format.

@@ -6,8 +6,8 @@
 import React from 'react';
 import clsx from 'clsx';
 
-import Button from '../common/Button.js';
-import type { Item } from '../../types/inventory.js';
+import Button from '../common/Button';
+import type { Item } from '../../types/inventory';
 
 /**
  * Props interface for ItemsTable component.

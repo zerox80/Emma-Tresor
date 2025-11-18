@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type { Item } from '../../../types/inventory.js';
+import type { Item } from '../../../types/inventory';
 
 interface UseItemSelectionResult {
   selectionMode: boolean;

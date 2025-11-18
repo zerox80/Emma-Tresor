@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import type { AxiosError } from 'axios';
 
-import { exportItems } from '../../../api/inventory.js';
-import { extractDetailMessage } from '../utils/itemHelpers.js';
+import { exportItems } from '../../../api/inventory';
+import { extractDetailMessage } from '../utils/itemHelpers';
 
 interface UseItemsExportArgs {
   debouncedSearchTerm: string;

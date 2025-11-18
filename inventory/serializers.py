@@ -22,7 +22,16 @@ import bleach                                                       # HTML sanit
 from django.utils.html import strip_tags                            # HTML tag removal
 
 # Import models and constants
-from .models import Item, ItemImage, ItemChangeLog, ItemList, Location, Tag, MAX_PURCHASE_AGE_YEARS
+from .models import (
+    Item,
+    ItemImage,
+    ItemChangeLog,
+    ItemList,
+    Location,
+    Tag,
+    MAX_PURCHASE_AGE_YEARS,
+    DuplicateQuarantine,
+)
 
 # Get the User model (either Django's default or custom model)
 User = get_user_model()
@@ -697,6 +706,66 @@ class ItemSerializer(serializers.ModelSerializer):
         if tags is not None:
             instance.tags.set([tag for tag in tags if tag.user_id == user.id])
         return instance
+
+
+class DuplicateCandidateSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for duplicate finder results."""
+
+    location = serializers.IntegerField(source='location_id', read_only=True)
+
+    class Meta:
+        model = Item
+        fields = [
+            'id',
+            'name',
+            'description',
+            'quantity',
+            'purchase_date',
+            'value',
+            'location',
+            'wodis_inventory_number',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = fields
+
+
+class DuplicateQuarantineSerializer(serializers.ModelSerializer):
+    """Serializer for quarantine entries with embedded item previews."""
+
+    item_a = DuplicateCandidateSerializer(read_only=True)
+    item_b = DuplicateCandidateSerializer(read_only=True)
+    item_a_id = serializers.PrimaryKeyRelatedField(queryset=Item.objects.none(), write_only=True, source='item_a')
+    item_b_id = serializers.PrimaryKeyRelatedField(queryset=Item.objects.none(), write_only=True, source='item_b')
+
+    class Meta:
+        model = DuplicateQuarantine
+        fields = [
+            'id',
+            'item_a',
+            'item_b',
+            'item_a_id',
+            'item_b_id',
+            'reason',
+            'notes',
+            'is_active',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'item_a', 'item_b', 'is_active', 'created_at']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        user = getattr(self.context.get('request'), 'user', None)
+        queryset = Item.objects.filter(owner=user) if user and user.is_authenticated else Item.objects.none()
+        self.fields['item_a_id'].queryset = queryset
+        self.fields['item_b_id'].queryset = queryset
+
+    def validate(self, attrs):
+        item_a = attrs.get('item_a') or getattr(self.instance, 'item_a', None)
+        item_b = attrs.get('item_b') or getattr(self.instance, 'item_b', None)
+        if item_a and item_b and item_a.pk == item_b.pk:
+            raise serializers.ValidationError('Item-Paare müssen unterschiedlich sein.')
+        return attrs
 
 class ItemListSerializer(serializers.ModelSerializer):
     

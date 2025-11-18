@@ -1,14 +1,14 @@
 import React from 'react';
 
-import Button from '../../../components/common/Button.js';
-import ItemsGrid from '../../../components/items/ItemsGrid.js';
-import ItemsTable from '../../../components/items/ItemsTable.js';
-import SelectionToolbar from '../../../components/items/SelectionToolbar.js';
-import type { Item, PaginatedResponse } from '../../../types/inventory.js';
-import type { ViewMode } from '../constants.js';
-import ItemsEmptyState from './ItemsEmptyState.js';
-import ItemsLoadingGrid from './ItemsLoadingGrid.js';
-import ItemsPaginationControls from './ItemsPaginationControls.js';
+import Button from '../../../components/common/Button';
+import ItemsGrid from '../../../components/items/ItemsGrid';
+import ItemsTable from '../../../components/items/ItemsTable';
+import SelectionToolbar from '../../../components/items/SelectionToolbar';
+import type { Item, PaginatedResponse } from '../../../types/inventory';
+import type { ViewMode } from '../constants';
+import ItemsEmptyState from './ItemsEmptyState';
+import ItemsLoadingGrid from './ItemsLoadingGrid';
+import ItemsPaginationControls from './ItemsPaginationControls';
 
 interface ItemsListSectionProps {
   selectionMode: boolean;

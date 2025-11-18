@@ -11,16 +11,14 @@
       "@types/*": ["./src/types/*"]                         // Import type definitions with @types prefix
     },
     "skipLibCheck": true,                                    // Skip type checking of declaration files for faster compilation
-    "module": "NodeNext",                                    // Use modern Node.js module resolution
+    "module": "ESNext",                                      // Let Vite handle module output
     "jsx": "react-jsx",                                      // Use modern JSX transform without importing React
     "types": [
       "vite/client"                                          // Include Vite client types for import.meta.env
     ],
 
     /* Module Resolution Configuration */
-    "moduleResolution": "nodenext",                           // Use Next.js module resolution strategy
-    "allowImportingTsExtensions": true,                      // Allow importing .ts files directly
-    "verbatimModuleSyntax": true,                            // Preserve import/export syntax for proper bundling
+    "moduleResolution": "bundler",                            // Use bundler resolution so extensionless imports work
     "noEmit": true,                                          // Don't generate output files (Vite handles this)
 
     /* Type Checking and Linting Options */

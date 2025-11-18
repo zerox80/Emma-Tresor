@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { createLocation, createTag, fetchLocations, fetchTags } from '../../../api/inventory.js';
-import type { Location, Tag } from '../../../types/inventory.js';
+import { createLocation, createTag, fetchLocations, fetchTags } from '../../../api/inventory';
+import type { Location, Tag } from '../../../types/inventory';
 
 interface UseItemsMetadataResult {
   tags: Tag[];

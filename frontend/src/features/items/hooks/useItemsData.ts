@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 
-import { fetchItems } from '../../../api/inventory.js';
-import type { Item, PaginatedResponse } from '../../../types/inventory.js';
-import { ITEMS_PAGE_SIZE } from '../constants.js';
+import { fetchItems } from '../../../api/inventory';
+import type { Item, PaginatedResponse } from '../../../types/inventory';
+import { ITEMS_PAGE_SIZE } from '../constants';
 
 interface UseItemsDataArgs {
   debouncedSearchTerm: string;

@@ -1,7 +1,7 @@
 import React from 'react';
 
-import Button from '../../../components/common/Button.js';
-import type { PaginatedResponse } from '../../../types/inventory.js';
+import Button from '../../../components/common/Button';
+import type { PaginatedResponse } from '../../../types/inventory';
 
 interface ItemsPaginationControlsProps {
   page: number;

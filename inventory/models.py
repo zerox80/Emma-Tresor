@@ -15,6 +15,7 @@ from django.conf import settings                    # Django settings for AUTH_U
 from django.core.exceptions import ValidationError # Custom validation exceptions
 from django.core.validators import MinValueValidator, MaxValueValidator  # Field validators
 from django.db import models, IntegrityError       # Django ORM and database integrity
+from django.db.models import Q
 from datetime import date, timedelta               # Date operations for validation
 from PIL import Image, UnidentifiedImageError     # Image processing for validation
 import os                                         # Operating system operations
@@ -704,3 +705,54 @@ class ItemList(TimeStampedModel):
     def __str__(self) -> str:
         """String representation of the list."""
         return self.name
+
+
+class DuplicateQuarantine(TimeStampedModel):
+    """Stores user-marked false-positive duplicate pairs."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='duplicate_quarantines',
+    )
+
+    item_a = models.ForeignKey(
+        'Item',
+        on_delete=models.CASCADE,
+        related_name='duplicate_quarantined_primary',
+    )
+
+    item_b = models.ForeignKey(
+        'Item',
+        on_delete=models.CASCADE,
+        related_name='duplicate_quarantined_secondary',
+    )
+
+    reason = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['owner', 'item_a', 'item_b'],
+                condition=Q(is_active=True),
+                name='unique_active_duplicate_quarantine_pair',
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.item_a_id == self.item_b_id:
+            raise ValidationError('Item-Paare müssen unterschiedlich sein.')
+        if self.item_a.owner_id != self.owner_id or self.item_b.owner_id != self.owner_id:
+            raise ValidationError('Quarantäne-Paare müssen zu deinem Konto gehören.')
+
+    def save(self, *args, **kwargs):
+        if self.item_a_id and self.item_b_id and self.item_a_id > self.item_b_id:
+            self.item_a, self.item_b = self.item_b, self.item_a
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"Quarantine #{self.pk}: {self.item_a_id}-{self.item_b_id}"

@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 
-import { createList, fetchLists } from '../../../api/inventory.js';
-import type { ItemList } from '../../../types/inventory.js';
-import { sortItemLists } from '../utils/itemHelpers.js';
+import { createList, fetchLists } from '../../../api/inventory';
+import type { ItemList } from '../../../types/inventory';
+import { sortItemLists } from '../utils/itemHelpers';
 
 interface UseItemListsResult {
   lists: ItemList[];

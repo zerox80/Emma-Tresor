@@ -71,7 +71,9 @@ htmlcov/                         # HTML code coverage report directory
 
 # Node.js and Frontend Development Files
 # ======================================
-node_modules/                    # Node.js package dependencies
+# Node.js package dependencies (including nested workspaces)
+node_modules/
+**/node_modules/
 npm-debug.log*                   # npm debug log files
 yarn-debug.log*                  # Yarn debug log files
 yarn-error.log*                  # Yarn error log files

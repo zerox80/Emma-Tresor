@@ -1,6 +1,6 @@
 import React from 'react';
 
-import Button from '../../../components/common/Button.js';
+import Button from '../../../components/common/Button';
 
 interface ItemsPageHeaderProps {
   totalCount: number;
@@ -12,6 +12,8 @@ interface ItemsPageHeaderProps {
   onExport: () => void;
   exporting: boolean;
   onCreateItem: () => void;
+  onOpenDuplicateFinder: () => void;
+  duplicateAlertCount: number;
 }
 
 const ItemsPageHeader: React.FC<ItemsPageHeaderProps> = ({
@@ -24,6 +26,8 @@ const ItemsPageHeader: React.FC<ItemsPageHeaderProps> = ({
   onExport,
   exporting,
   onCreateItem,
+  onOpenDuplicateFinder,
+  duplicateAlertCount,
 }) => (
   <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
@@ -35,6 +39,14 @@ const ItemsPageHeader: React.FC<ItemsPageHeaderProps> = ({
       </p>
     </div>
     <div className="flex flex-wrap items-center gap-2">
+      <Button type="button" variant="ghost" size="sm" onClick={onOpenDuplicateFinder}>
+        Duplikate
+        {duplicateAlertCount > 0 && (
+          <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+            {duplicateAlertCount}
+          </span>
+        )}
+      </Button>
       <Button
         type="button"
         variant={selectionMode ? 'secondary' : 'ghost'}

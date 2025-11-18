@@ -7,9 +7,9 @@ from django.urls import include, path                                    # URL r
 from rest_framework.routers import DefaultRouter                       # DRF router for ViewSets
 from .views import (                                                   # Import all view classes
     CustomTokenObtainPairView, CustomTokenRefreshView, CurrentUserView,
-    GetCSRFTokenView, ItemImageDownloadView, ItemImageViewSet,
-    ItemListViewSet, ItemViewSet, LocationViewSet, LogoutView,
-    TagViewSet, UserRegistrationViewSet
+    DuplicateQuarantineViewSet, GetCSRFTokenView, ItemImageDownloadView,
+    ItemImageViewSet, ItemListViewSet, ItemViewSet, LocationViewSet,
+    LogoutView, TagViewSet, UserRegistrationViewSet
 )
 
 # Create a DRF router for handling ViewSet-based endpoints
@@ -40,6 +40,9 @@ router.register('item-images', ItemImageViewSet, basename='itemimage')
 
 # Inventory list management endpoints: /api/lists/
 router.register('lists', ItemListViewSet, basename='itemlist')
+
+# Duplicate quarantine management: /api/duplicate-quarantine/
+router.register('duplicate-quarantine', DuplicateQuarantineViewSet, basename='duplicate-quarantine')
 
 # User registration endpoint: /api/users/
 router.register('users', UserRegistrationViewSet, basename='user-registration')

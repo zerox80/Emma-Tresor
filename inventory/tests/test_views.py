@@ -25,7 +25,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import time
 from contextlib import contextmanager
 
-from ..models import Item, ItemImage, ItemList, Location, Tag
+from ..models import Item, ItemImage, ItemList, Location, Tag, DuplicateQuarantine
 from ..views import ItemImageViewSet
 
 class TimedAPITestCase(APITestCase):
@@ -209,6 +209,70 @@ class ItemViewSetTests(APITestCase):
         self.assertEqual(response.data['owner'], self.user.id)
         self.assertEqual(response.data['wodis_inventory_number'], 'W-2024-001')
         self.assertTrue(Item.objects.filter(name='Scanner', owner=self.user).exists())
+
+    def test_find_duplicates_returns_groups(self):
+        
+        duplicate_one = Item.objects.create(name='Printer', owner=self.user, location=self.location)
+        duplicate_two = Item.objects.create(name='printer', owner=self.user, location=self.location)
+        Item.objects.create(name='Unique', owner=self.user)
+
+        url = reverse('item-find-duplicates')
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(url, {'name_match': 'exact'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(response.data['count'], 1)
+        self.assertGreaterEqual(response.data['analyzed_count'], 3)
+        first_group = response.data['results'][0]
+        self.assertIn('match_reasons', first_group)
+        item_ids = {item['id'] for item in first_group['items']}
+        self.assertTrue({duplicate_one.id, duplicate_two.id}.issubset(item_ids))
+
+    def test_find_duplicates_requires_active_criteria(self):
+        
+        url = reverse('item-find-duplicates')
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(
+            url,
+            {
+                'name_match': 'none',
+                'description_match': 'none',
+                'wodis_match': 'none',
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
+
+    def test_find_duplicates_auto_preset(self):
+        
+        Item.objects.create(name='Frank Haus', description='Bürostuhl Frank', owner=self.user, location=self.location)
+        Item.objects.create(name='Frank Biel', description='Bürostuhl in Biel', owner=self.user, location=self.location)
+
+        url = reverse('item-find-duplicates')
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(url, {'preset': 'auto'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['preset_used'], 'auto')
+        self.assertGreater(response.data['count'], 0)
+
+    def test_find_duplicates_ignores_quarantined_pairs(self):
+        
+        item_one = Item.objects.create(name='Chair Alpha', owner=self.user, location=self.location)
+        item_two = Item.objects.create(name='Chair Alpha Copy', owner=self.user, location=self.location)
+        DuplicateQuarantine.objects.create(owner=self.user, item_a=item_one, item_b=item_two)
+
+        url = reverse('item-find-duplicates')
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(url, {'name_match': 'prefix'})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 0)
 
 class ItemListViewSetTests(APITestCase):
 

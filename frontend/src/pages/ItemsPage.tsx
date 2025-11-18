@@ -2,24 +2,27 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { AxiosError } from 'axios';
 
-import AddItemDialog from '../components/AddItemDialog.js';
-import ItemDetailView from '../components/ItemDetailView.js';
-import AssignToListSheet from '../components/AssignToListSheet.js';
-import StatisticsCards from '../components/items/StatisticsCards.js';
-import FilterSection from '../components/items/FilterSection.js';
-import { deleteItem, fetchItem, updateListItems } from '../api/inventory.js';
-import type { Item } from '../types/inventory.js';
-import ItemsInfoBanner from '../features/items/components/ItemsInfoBanner.js';
-import ItemsPageHeader from '../features/items/components/ItemsPageHeader.js';
-import { ITEMS_PAGE_SIZE } from '../features/items/constants.js';
-import ItemsListSection from '../features/items/components/ItemsListSection.js';
-import { useItemLists } from '../features/items/hooks/useItemLists.js';
-import { useItemSelection } from '../features/items/hooks/useItemSelection.js';
-import { useItemsData } from '../features/items/hooks/useItemsData.js';
-import { useItemsFilters } from '../features/items/hooks/useItemsFilters.js';
-import { useItemsExport } from '../features/items/hooks/useItemsExport.js';
-import { useItemsMetadata } from '../features/items/hooks/useItemsMetadata.js';
-import { extractDetailMessage } from '../features/items/utils/itemHelpers.js';
+import AddItemDialog from '../components/AddItemDialog';
+import ItemDetailView from '../components/ItemDetailView';
+import AssignToListSheet from '../components/AssignToListSheet';
+import StatisticsCards from '../components/items/StatisticsCards';
+import FilterSection from '../components/items/FilterSection';
+import { deleteItem, fetchItem, updateListItems } from '../api/inventory';
+import type { Item, DuplicateGroup } from '../types/inventory';
+import ItemsInfoBanner from '../features/items/components/ItemsInfoBanner';
+import ItemsPageHeader from '../features/items/components/ItemsPageHeader';
+import DuplicateFinderSheet from '../features/items/components/DuplicateFinderSheet';
+import { ITEMS_PAGE_SIZE } from '../features/items/constants';
+import ItemsListSection from '../features/items/components/ItemsListSection';
+import { useItemLists } from '../features/items/hooks/useItemLists';
+import { useItemSelection } from '../features/items/hooks/useItemSelection';
+import { useItemsData } from '../features/items/hooks/useItemsData';
+import { useItemsFilters } from '../features/items/hooks/useItemsFilters';
+import { useItemsExport } from '../features/items/hooks/useItemsExport';
+import { useItemsMetadata } from '../features/items/hooks/useItemsMetadata';
+import { useDuplicateFinder } from '../features/items/hooks/useDuplicateFinder';
+import type { DuplicateQuarantineEntry } from '../types/inventory';
+import { extractDetailMessage } from '../features/items/utils/itemHelpers';
 
 const ItemsPage: React.FC = () => {
   const location = useLocation();
@@ -92,6 +95,14 @@ const ItemsPage: React.FC = () => {
   const [assignSheetOpen, setAssignSheetOpen] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
+
+  const [duplicateSheetOpen, setDuplicateSheetOpen] = useState(false);
+  const [markingGroupId, setMarkingGroupId] = useState<number | null>(null);
+  const [releasingEntryId, setReleasingEntryId] = useState<number | null>(null);
+  const [undoEntries, setUndoEntries] = useState<DuplicateQuarantineEntry[] | null>(null);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const [undoInProgress, setUndoInProgress] = useState(false);
+  const undoSnackbarTimerRef = useRef<number | null>(null);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(() => Object.fromEntries(locations.map((location) => [location.id, location.name])), [
@@ -407,6 +418,35 @@ const ItemsPage: React.FC = () => {
     handleNavigateDetail('previous');
   }, [handleNavigateDetail]);
 
+  const {
+    duplicates,
+    duplicatesLoading,
+    duplicatesError,
+    presetUsed: duplicatePreset,
+    analyzedCount: duplicateAnalyzedCount,
+    limit: duplicateLimit,
+    loadDuplicates,
+    markGroupAsFalsePositive,
+    quarantineEntries,
+    quarantineLoading,
+    quarantineError,
+    loadQuarantine,
+    releaseQuarantineEntry,
+  } = useDuplicateFinder({
+    searchTerm: debouncedSearchTerm,
+    selectedTagIds,
+    selectedLocationIds,
+    ordering,
+  });
+
+  const duplicateAlertCount = duplicates.length;
+
+  useEffect(() => {
+    if (duplicateSheetOpen) {
+      void loadQuarantine();
+    }
+  }, [duplicateSheetOpen, loadQuarantine]);
+
   const hasNextOnCurrentPage = currentDetailIndex !== -1 && currentDetailIndex < items.length - 1;
 
   const hasPreviousOnCurrentPage = currentDetailIndex > 0;
@@ -457,6 +497,90 @@ const ItemsPage: React.FC = () => {
     navStartItemsVersionRef.current = null;
   }, [detailNavigationTarget, handleOpenItemDetails, items, itemsVersion, pendingDetailNavigation]);
 
+  const handleOpenDuplicateFinder = useCallback(() => {
+    setDuplicateSheetOpen(true);
+  }, []);
+
+  const handleCloseDuplicateFinder = useCallback(() => {
+    setDuplicateSheetOpen(false);
+  }, []);
+
+  const handleMarkGroupAsFalsePositive = useCallback(
+    async (group: DuplicateGroup) => {
+      try {
+        setMarkingGroupId(group.group_id);
+        const createdEntries = await markGroupAsFalsePositive(group);
+        if (createdEntries.length > 0) {
+          setUndoEntries(createdEntries);
+          setUndoError(null);
+        }
+        await loadDuplicates();
+      } catch (error) {
+        setUndoError('Duplikate konnten nicht ausgeblendet werden.');
+      } finally {
+        setMarkingGroupId(null);
+      }
+    },
+    [loadDuplicates, markGroupAsFalsePositive],
+  );
+
+  const handleReleaseQuarantineEntry = useCallback(
+    async (entryId: number) => {
+      try {
+        setReleasingEntryId(entryId);
+        await releaseQuarantineEntry(entryId);
+        await loadDuplicates();
+      } catch (error) {
+        setUndoError('Eintrag konnte nicht wiederhergestellt werden.');
+      } finally {
+        setReleasingEntryId(null);
+      }
+    },
+    [loadDuplicates, releaseQuarantineEntry],
+  );
+
+  const handleUndoFalsePositive = useCallback(async () => {
+    if (!undoEntries || undoInProgress) {
+      return;
+    }
+    try {
+      setUndoInProgress(true);
+      await Promise.all(undoEntries.map((entry) => releaseQuarantineEntry(entry.id)));
+      setUndoEntries(null);
+      await loadDuplicates();
+    } catch (error) {
+      setUndoError('Rückgängig konnte nicht durchgeführt werden.');
+    } finally {
+      setUndoInProgress(false);
+    }
+  }, [loadDuplicates, releaseQuarantineEntry, undoEntries, undoInProgress]);
+
+  const handleDismissUndoSnackbar = useCallback(() => {
+    setUndoEntries(null);
+    setUndoError(null);
+  }, []);
+
+  useEffect(() => {
+    if (!undoEntries) {
+      if (undoSnackbarTimerRef.current) {
+        window.clearTimeout(undoSnackbarTimerRef.current);
+        undoSnackbarTimerRef.current = null;
+      }
+      return;
+    }
+    undoSnackbarTimerRef.current = window.setTimeout(() => {
+      setUndoEntries(null);
+      setUndoError(null);
+      undoSnackbarTimerRef.current = null;
+    }, 7000);
+    return () => {
+      if (undoSnackbarTimerRef.current) {
+        window.clearTimeout(undoSnackbarTimerRef.current);
+        undoSnackbarTimerRef.current = null;
+      }
+    };
+  }, [undoEntries]);
+
   return (
     <div className="relative space-y-8">
       {infoMessage && <ItemsInfoBanner message={infoMessage} onDismiss={() => setInfoMessage(null)} />}
@@ -499,6 +623,8 @@ const ItemsPage: React.FC = () => {
           onExport={() => void handleExportItems()}
           exporting={exportingItems}
           onCreateItem={handleOpenCreateDialog}
+          onOpenDuplicateFinder={handleOpenDuplicateFinder}
+          duplicateAlertCount={duplicateAlertCount}
         />
 
         <ItemsListSection
@@ -575,6 +701,40 @@ const ItemsPage: React.FC = () => {
           navigationDirection={detailNavigationDirection}
           positionInfo={detailPosition}
         />
+      )}
+
+      {undoEntries && (
+        <div
+          className="fixed bottom-6 left-1/2 z-40 w-full max-w-md -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg sm:px-6"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Duplikate ausgeblendet</p>
+              <p className="text-xs text-slate-500">Du kannst das rückgängig machen.</p>
+              {undoError && <p className="mt-1 text-xs text-red-600">{undoError}</p>}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-brand-600 transition hover:text-brand-800"
+                onClick={handleDismissUndoSnackbar}
+              >
+                Verwerfen
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:bg-brand-300"
+                onClick={() => void handleUndoFalsePositive()}
+                disabled={undoInProgress}
+              >
+                Rückgängig
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

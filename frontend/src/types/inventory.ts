@@ -33,6 +33,47 @@ export interface ItemImage {
   image: string;
 }
 
+// =====================
+// Duplicate Finder Types
+// =====================
+
+export interface DuplicateItemPreview {
+  id: number;
+  name: string;
+  description: string | null;
+  quantity: number;
+  purchase_date: string | null;
+  value: string | null;
+  location: number | null;
+  wodis_inventory_number: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DuplicateGroup {
+  group_id: number;
+  match_reasons: string[];
+  items: DuplicateItemPreview[];
+}
+
+export interface DuplicateFinderResponse {
+  count: number;
+  analyzed_count: number;
+  limit: number;
+  preset_used: string | null;
+  results: DuplicateGroup[];
+}
+
+export interface DuplicateQuarantineEntry {
+  id: number;
+  item_a: DuplicateItemPreview;
+  item_b: DuplicateItemPreview;
+  reason: string;
+  notes: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 // ============
 // Item Data
 // ============

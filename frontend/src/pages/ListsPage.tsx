@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { AxiosError } from 'axios';
 
-import Button from '../components/common/Button.js';
-import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet.js';
-import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory.js';
-import type { Item, ItemList } from '../types/inventory.js';
+import Button from '../components/common/Button';
+import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
+import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory';
+import type { Item, ItemList } from '../types/inventory';
 
 interface ListWithItems extends ItemList {
   resolvedItems: Item[];

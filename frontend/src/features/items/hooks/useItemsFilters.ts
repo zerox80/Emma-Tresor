@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useDebouncedValue } from '../../../hooks/useDebouncedValue.js';
-import { DEFAULT_ITEM_ORDERING, type ViewMode } from '../constants.js';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
+import { DEFAULT_ITEM_ORDERING, type ViewMode } from '../constants';
 
 export interface ItemsFiltersState {
   searchTerm: string;
