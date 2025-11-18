@@ -165,70 +165,69 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
         <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
           <header className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-8">
             <div className="space-y-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Duplizierungs-Finder</p>
-              <h2 className="text-2xl font-semibold text-slate-900">Gefundene Übereinstimmungen</h2>
-              <p className="text-sm text-slate-500">
-                {loading
-                  ? 'Analyse läuft …'
-                  : totalGroups === 0
-                    ? 'Keine Duplikate nach aktuellen Filtern gefunden.'
-                    : `${totalGroups} Gruppen auf Basis von ${analyzedCount} geprüften Items (Limit ${limit}).`}
-              </p>
-              {presetUsed === 'auto' && <p className="text-xs text-slate-400">Automatische Analyse mit Name/ Beschreibung/ Kaufdatum.</p>}
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Genauigkeit</p>
-              <div className="mt-2 flex flex-wrap gap-3">
-                {strictnessOptions.map((option) => {
-                  const isActive = option.id === strictness;
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      aria-pressed={isActive}
-                      className={clsx(
-                        'flex min-w-[150px] flex-1 flex-col rounded-2xl border px-4 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-w-[180px]',
-                        isActive
-                          ? 'border-brand-500 bg-brand-50 text-brand-900 shadow-sm'
-                          : 'border-slate-200 text-slate-600 hover:border-brand-200 hover:text-slate-900',
-                      )}
-                      onClick={() => onStrictnessChange(option.id)}
-                    >
-                      <span className="text-sm font-semibold">{option.label}</span>
-                      <span className="mt-1 text-xs text-slate-500">{option.description}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            {strictness === 'relaxed' && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Priorisierung</p>
-                <div className="mt-2">
-                  <select
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:outline-none sm:w-auto"
-                    value={sortPreference}
-                    onChange={(e) => setSortPreference(e.target.value as any)}
-                  >
-                    <option value="default">Standard (Keine)</option>
-                    <option value="description">Beschreibung vorhanden</option>
-                    <option value="date">Kaufdatum (Neueste)</option>
-                  </select>
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Duplizierungs-Finder</p>
+                <h2 className="text-2xl font-semibold text-slate-900">Gefundene Übereinstimmungen</h2>
+                <p className="text-sm text-slate-500">
+                  {loading
+                    ? 'Analyse läuft …'
+                    : totalGroups === 0
+                      ? 'Keine Duplikate nach aktuellen Filtern gefunden.'
+                      : `${totalGroups} Gruppen auf Basis von ${analyzedCount} geprüften Items (Limit ${limit}).`}
+                </p>
+                {presetUsed === 'auto' && <p className="text-xs text-slate-400">Automatische Analyse mit Name/ Beschreibung/ Kaufdatum.</p>}
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Genauigkeit</p>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  {strictnessOptions.map((option) => {
+                    const isActive = option.id === strictness;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        aria-pressed={isActive}
+                        className={clsx(
+                          'flex min-w-[150px] flex-1 flex-col rounded-2xl border px-4 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-w-[180px]',
+                          isActive
+                            ? 'border-brand-500 bg-brand-50 text-brand-900 shadow-sm'
+                            : 'border-slate-200 text-slate-600 hover:border-brand-200 hover:text-slate-900',
+                        )}
+                        onClick={() => onStrictnessChange(option.id)}
+                      >
+                        <span className="text-sm font-semibold">{option.label}</span>
+                        <span className="mt-1 text-xs text-slate-500">{option.description}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            )}
+              {strictness === 'relaxed' && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Priorisierung</p>
+                  <div className="mt-2">
+                    <select
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:outline-none sm:w-auto"
+                      value={sortPreference}
+                      onChange={(e) => setSortPreference(e.target.value as any)}
+                    >
+                      <option value="default">Standard (Keine)</option>
+                      <option value="description">Beschreibung vorhanden</option>
+                      <option value="date">Kaufdatum (Neueste)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              Schließen
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => void onRetry()} loading={loading}>
-              Aktualisieren
-            </Button>
-          </div>
-        </header>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                Schließen
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => void onRetry()} loading={loading}>
+                Aktualisieren
+              </Button>
+            </div>
+          </header>
 
           <div className="flex flex-col sm:flex-row sm:overflow-hidden">
             <nav className="flex items-center gap-4 border-b border-slate-200 px-5 py-3 text-sm font-semibold sm:flex-col sm:border-b-0 sm:border-r sm:min-w-[220px] sm:max-w-[260px] sm:self-stretch sm:px-8 sm:py-6">
