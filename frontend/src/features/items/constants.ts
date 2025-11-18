@@ -23,7 +23,9 @@ export const DUPLICATE_STRICTNESS_OPTIONS: DuplicateStrictnessOption[] = [
     params: {
       name_match: 'contains',
       description_match: 'contains',
+      wodis_match: 'none',
       purchase_date_tolerance_days: 90,
+      require_any_text_match: true,
     },
   },
   {

@@ -1135,6 +1135,7 @@ class ItemViewSet(viewsets.ModelViewSet):
                 'active_criteria': True,
                 'limit': self.duplicate_default_limit,
                 'preset_used': 'auto',
+                'require_any_text_match': False,
             }
 
         name_match = request.query_params.get('name_match', 'exact').lower()
@@ -1142,6 +1143,7 @@ class ItemViewSet(viewsets.ModelViewSet):
         wodis_match = request.query_params.get('wodis_match', 'none').lower()
         tolerance_raw = request.query_params.get('purchase_date_tolerance_days')
         limit_raw = request.query_params.get('limit')
+        any_text_raw = request.query_params.get('require_any_text_match')
 
         if name_match not in self.DUPLICATE_NAME_CHOICES:
             raise serializers.ValidationError({'name_match': 'Ungültiger Wert für name_match.'})
@@ -1175,6 +1177,10 @@ class ItemViewSet(viewsets.ModelViewSet):
             tolerance is not None,
         ])
 
+        require_any_text_match = False
+        if any_text_raw not in (None, ''):
+            require_any_text_match = str(any_text_raw).strip().lower() in {'1', 'true', 'yes', 'on'}
+
         return {
             'name_match': cast(Literal['none', 'exact', 'prefix', 'contains'], name_match),
             'description_match': cast(Literal['none', 'exact', 'contains'], description_match),
@@ -1183,6 +1189,7 @@ class ItemViewSet(viewsets.ModelViewSet):
             'active_criteria': active_criteria,
             'limit': limit,
             'preset_used': None,
+            'require_any_text_match': require_any_text_match,
         }
 
     @staticmethod
@@ -1223,16 +1230,29 @@ class ItemViewSet(viewsets.ModelViewSet):
         reasons: set[str] = set()
 
         name_mode = options['name_match']
-        if name_mode != 'none':
-            if not self._match_text(item_one.name, item_two.name, name_mode):
-                return set()
-            reasons.add(self._label_for_field('name', name_mode))
-
         desc_mode = options['description_match']
-        if desc_mode != 'none':
-            if not self._match_text(item_one.description, item_two.description, desc_mode):
+        require_any_text_match = options.get('require_any_text_match', False)
+        text_field_checked = 0
+        text_match_found = False
+
+        if name_mode != 'none':
+            text_field_checked += 1
+            if self._match_text(item_one.name, item_two.name, name_mode):
+                reasons.add(self._label_for_field('name', name_mode))
+                text_match_found = True
+            elif not require_any_text_match:
                 return set()
-            reasons.add(self._label_for_field('description', desc_mode))
+
+        if desc_mode != 'none':
+            text_field_checked += 1
+            if self._match_text(item_one.description, item_two.description, desc_mode):
+                reasons.add(self._label_for_field('description', desc_mode))
+                text_match_found = True
+            elif not require_any_text_match:
+                return set()
+
+        if require_any_text_match and text_field_checked > 0 and not text_match_found:
+            return set()
 
         wodis_mode = options['wodis_match']
         if wodis_mode != 'none':

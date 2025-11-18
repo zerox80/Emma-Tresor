@@ -404,13 +404,14 @@ export interface DuplicateFinderParams {
   wodis_match?: 'none' | 'exact';
   purchase_date_tolerance_days?: number;
   limit?: number;
+  require_any_text_match?: boolean;
 }
 
 export const fetchDuplicateFinder = async (
   params: DuplicateFinderParams = { preset: 'auto' },
   filters?: FetchItemsOptions,
 ): Promise<DuplicateFinderResponse> => {
-  const requestParams: Record<string, string | number> = { ...params } as Record<string, string | number>;
+  const requestParams: Record<string, string | number | boolean> = { ...params };
 
   if (filters?.query) {
     requestParams.search = filters.query;
