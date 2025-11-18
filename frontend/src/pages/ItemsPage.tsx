@@ -681,6 +681,27 @@ const ItemsPage: React.FC = () => {
         onCreateList={handleCreateListFromAssign}
       />
 
+      <DuplicateFinderSheet
+        open={duplicateSheetOpen}
+        onClose={handleCloseDuplicateFinder}
+        duplicates={duplicates}
+        loading={duplicatesLoading}
+        error={duplicatesError}
+        presetUsed={duplicatePreset}
+        analyzedCount={duplicateAnalyzedCount}
+        limit={duplicateLimit}
+        onRetry={() => loadDuplicates()}
+        onOpenItemDetails={handleOpenItemDetails}
+        onMarkFalsePositive={handleMarkGroupAsFalsePositive}
+        markingGroupId={markingGroupId}
+        quarantineEntries={quarantineEntries}
+        quarantineLoading={quarantineLoading}
+        quarantineError={quarantineError}
+        onReloadQuarantine={() => loadQuarantine()}
+        onReleaseEntry={handleReleaseQuarantineEntry}
+        releasingEntryId={releasingEntryId}
+      />
+
       {detailItemId !== null && (
         <ItemDetailView
           item={detailItem}
