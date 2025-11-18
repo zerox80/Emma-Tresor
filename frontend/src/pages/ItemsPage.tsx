@@ -8,11 +8,17 @@ import AssignToListSheet from '../components/AssignToListSheet';
 import StatisticsCards from '../components/items/StatisticsCards';
 import FilterSection from '../components/items/FilterSection';
 import { deleteItem, fetchItem, updateListItems } from '../api/inventory';
+import type { DuplicateFinderParams } from '../api/inventory';
 import type { Item, DuplicateGroup } from '../types/inventory';
 import ItemsInfoBanner from '../features/items/components/ItemsInfoBanner';
 import ItemsPageHeader from '../features/items/components/ItemsPageHeader';
 import DuplicateFinderSheet from '../features/items/components/DuplicateFinderSheet';
-import { ITEMS_PAGE_SIZE } from '../features/items/constants';
+import {
+  DUPLICATE_STRICTNESS_OPTIONS,
+  DEFAULT_DUPLICATE_STRICTNESS,
+  ITEMS_PAGE_SIZE,
+} from '../features/items/constants';
+import type { DuplicateStrictnessLevel } from '../features/items/constants';
 import ItemsListSection from '../features/items/components/ItemsListSection';
 import { useItemLists } from '../features/items/hooks/useItemLists';
 import { useItemSelection } from '../features/items/hooks/useItemSelection';
@@ -103,6 +109,12 @@ const ItemsPage: React.FC = () => {
   const [undoError, setUndoError] = useState<string | null>(null);
   const [undoInProgress, setUndoInProgress] = useState(false);
   const undoSnackbarTimerRef = useRef<number | null>(null);
+  const [duplicateStrictness, setDuplicateStrictness] = useState<DuplicateStrictnessLevel>(DEFAULT_DUPLICATE_STRICTNESS);
+
+  const duplicateFinderParams = useMemo<DuplicateFinderParams>(() => {
+    const option = DUPLICATE_STRICTNESS_OPTIONS.find((candidate) => candidate.id === duplicateStrictness);
+    return option?.params ?? { preset: 'auto' };
+  }, [duplicateStrictness]);
 
   const tagMap = useMemo(() => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])), [tags]);
   const locationMap = useMemo(() => Object.fromEntries(locations.map((location) => [location.id, location.name])), [
@@ -437,6 +449,7 @@ const ItemsPage: React.FC = () => {
     selectedTagIds,
     selectedLocationIds,
     ordering,
+    finderParams: duplicateFinderParams,
   });
 
   const duplicateAlertCount = duplicates.length;
@@ -503,6 +516,10 @@ const ItemsPage: React.FC = () => {
 
   const handleCloseDuplicateFinder = useCallback(() => {
     setDuplicateSheetOpen(false);
+  }, []);
+
+  const handleDuplicateStrictnessChange = useCallback((level: DuplicateStrictnessLevel) => {
+    setDuplicateStrictness(level);
   }, []);
 
   const handleMarkGroupAsFalsePositive = useCallback(
@@ -700,6 +717,9 @@ const ItemsPage: React.FC = () => {
         onReloadQuarantine={() => loadQuarantine()}
         onReleaseEntry={handleReleaseQuarantineEntry}
         releasingEntryId={releasingEntryId}
+        strictness={duplicateStrictness}
+        strictnessOptions={DUPLICATE_STRICTNESS_OPTIONS}
+        onStrictnessChange={handleDuplicateStrictnessChange}
       />
 
       {detailItemId !== null && (

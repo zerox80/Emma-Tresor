@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import clsx from 'clsx';
 
 import Button from '../../../components/common/Button';
 import type { DuplicateGroup, DuplicateQuarantineEntry } from '../../../types/inventory';
+import type { DuplicateStrictnessLevel, DuplicateStrictnessOption } from '../constants';
 
 interface DuplicateFinderSheetProps {
   open: boolean;
@@ -23,7 +24,17 @@ interface DuplicateFinderSheetProps {
   onReloadQuarantine: () => Promise<void> | void;
   onReleaseEntry: (entryId: number) => Promise<void>;
   releasingEntryId: number | null;
+  strictness: DuplicateStrictnessLevel;
+  strictnessOptions: DuplicateStrictnessOption[];
+  onStrictnessChange: (value: DuplicateStrictnessLevel) => void;
 }
+
+const getSuggestionsPageSize = () => {
+  if (typeof window === 'undefined') {
+    return 6;
+  }
+  return window.innerWidth < 640 ? 4 : 6;
+};
 
 const formatDateTime = (value: string) => {
   try {
@@ -52,9 +63,14 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
   onReloadQuarantine,
   onReleaseEntry,
   releasingEntryId,
+  strictness,
+  strictnessOptions,
+  onStrictnessChange,
 }) => {
   const [activeTab, setActiveTab] = useState<'suggestions' | 'quarantine'>('suggestions');
   const [quarantineSort, setQuarantineSort] = useState<'recent' | 'name'>('recent');
+  const [suggestionsPage, setSuggestionsPage] = useState(1);
+  const [suggestionsPageSize, setSuggestionsPageSize] = useState(getSuggestionsPageSize);
 
   const sortedQuarantineEntries = useMemo(() => {
     if (quarantineSort === 'name') {
@@ -68,6 +84,41 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
   }, [quarantineEntries, quarantineSort]);
 
   const totalGroups = duplicates.length;
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const handleResize = () => {
+      setSuggestionsPageSize(getSuggestionsPageSize());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setSuggestionsPage(1);
+  }, [open, strictness]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(totalGroups / suggestionsPageSize));
+    setSuggestionsPage((previous) => Math.min(previous, maxPage));
+  }, [totalGroups, suggestionsPageSize]);
+
+  const totalSuggestionPages = Math.max(1, Math.ceil(totalGroups / suggestionsPageSize));
+  const firstSuggestionIndex = (suggestionsPage - 1) * suggestionsPageSize;
+  const visibleDuplicates = duplicates.slice(firstSuggestionIndex, firstSuggestionIndex + suggestionsPageSize);
+  const showSuggestionsPagination = totalSuggestionPages > 1;
+
+  const handleSuggestionsPrevious = () => {
+    setSuggestionsPage((previous) => Math.max(1, previous - 1));
+  };
+
+  const handleSuggestionsNext = () => {
+    setSuggestionsPage((previous) => Math.min(totalSuggestionPages, previous + 1));
+  };
 
   if (!open) {
     return null;
@@ -75,19 +126,47 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/40 px-4 py-6 backdrop-blur-sm sm:px-8">
-      <div className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-        <header className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Duplizierungs-Finder</p>
-            <h2 className="text-2xl font-semibold text-slate-900">Gefundene Übereinstimmungen</h2>
-            <p className="text-sm text-slate-500">
-              {loading
-                ? 'Analyse läuft …'
-                : totalGroups === 0
-                  ? 'Keine Duplikate nach aktuellen Filtern gefunden.'
-                  : `${totalGroups} Gruppen auf Basis von ${analyzedCount} geprüften Items (Limit ${limit}).`}
-            </p>
-            {presetUsed === 'auto' && <p className="text-xs text-slate-400">Automatische Analyse mit Name/ Beschreibung/ Kaufdatum.</p>}
+      <div className="relative mx-auto w-full max-w-5xl">
+        <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <header className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-8">
+            <div className="space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Duplizierungs-Finder</p>
+              <h2 className="text-2xl font-semibold text-slate-900">Gefundene Übereinstimmungen</h2>
+              <p className="text-sm text-slate-500">
+                {loading
+                  ? 'Analyse läuft …'
+                  : totalGroups === 0
+                    ? 'Keine Duplikate nach aktuellen Filtern gefunden.'
+                    : `${totalGroups} Gruppen auf Basis von ${analyzedCount} geprüften Items (Limit ${limit}).`}
+              </p>
+              {presetUsed === 'auto' && <p className="text-xs text-slate-400">Automatische Analyse mit Name/ Beschreibung/ Kaufdatum.</p>}
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Genauigkeit</p>
+              <div className="mt-2 flex flex-wrap gap-3">
+                {strictnessOptions.map((option) => {
+                  const isActive = option.id === strictness;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={isActive}
+                      className={clsx(
+                        'flex min-w-[150px] flex-1 flex-col rounded-2xl border px-4 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 sm:min-w-[180px]',
+                        isActive
+                          ? 'border-brand-500 bg-brand-50 text-brand-900 shadow-sm'
+                          : 'border-slate-200 text-slate-600 hover:border-brand-200 hover:text-slate-900',
+                      )}
+                      onClick={() => onStrictnessChange(option.id)}
+                    >
+                      <span className="text-sm font-semibold">{option.label}</span>
+                      <span className="mt-1 text-xs text-slate-500">{option.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={onClose}>
@@ -99,55 +178,62 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
           </div>
         </header>
 
-        <div className="flex flex-col sm:flex-row">
-          <nav className="flex items-center gap-4 border-b border-slate-200 px-5 py-3 text-sm font-semibold sm:flex-col sm:border-b-0 sm:border-r sm:px-8 sm:py-6">
-            <button
-              type="button"
-              className={clsx(
-                'rounded-full px-4 py-2 transition',
-                activeTab === 'suggestions' ? 'bg-brand-100 text-brand-700' : 'text-slate-500 hover:text-slate-700',
-              )}
-              onClick={() => setActiveTab('suggestions')}
-            >
-              Vorschläge ({totalGroups})
-            </button>
-            <button
-              type="button"
-              className={clsx(
-                'rounded-full px-4 py-2 transition',
-                activeTab === 'quarantine' ? 'bg-brand-100 text-brand-700' : 'text-slate-500 hover:text-slate-700',
-              )}
-              onClick={() => setActiveTab('quarantine')}
-            >
-              Quarantäne ({quarantineEntries.length})
-            </button>
-          </nav>
+          <div className="flex flex-col sm:flex-row sm:overflow-hidden">
+            <nav className="flex items-center gap-4 border-b border-slate-200 px-5 py-3 text-sm font-semibold sm:flex-col sm:border-b-0 sm:border-r sm:min-w-[220px] sm:max-w-[260px] sm:self-stretch sm:px-8 sm:py-6">
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-full px-4 py-2 transition',
+                  activeTab === 'suggestions' ? 'bg-brand-100 text-brand-700' : 'text-slate-500 hover:text-slate-700',
+                )}
+                onClick={() => setActiveTab('suggestions')}
+              >
+                Vorschläge ({totalGroups})
+              </button>
+              <button
+                type="button"
+                className={clsx(
+                  'rounded-full px-4 py-2 transition',
+                  activeTab === 'quarantine' ? 'bg-brand-100 text-brand-700' : 'text-slate-500 hover:text-slate-700',
+                )}
+                onClick={() => setActiveTab('quarantine')}
+              >
+                Quarantäne ({quarantineEntries.length})
+              </button>
+            </nav>
 
-          <section className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
-            {activeTab === 'suggestions' && (
-              <SuggestionsSection
-                duplicates={duplicates}
-                loading={loading}
-                error={error}
-                onOpenItemDetails={onOpenItemDetails}
-                onMarkFalsePositive={onMarkFalsePositive}
-                markingGroupId={markingGroupId}
-              />
-            )}
+            <section className="flex-1 overflow-y-auto px-5 py-6 sm:max-h-[60vh] sm:px-8">
+              {activeTab === 'suggestions' && (
+                <SuggestionsSection
+                  duplicates={visibleDuplicates}
+                  loading={loading}
+                  error={error}
+                  onOpenItemDetails={onOpenItemDetails}
+                  onMarkFalsePositive={onMarkFalsePositive}
+                  markingGroupId={markingGroupId}
+                  totalCount={totalGroups}
+                  page={suggestionsPage}
+                  pageCount={totalSuggestionPages}
+                  onNextPage={handleSuggestionsNext}
+                  onPreviousPage={handleSuggestionsPrevious}
+                  showPagination={showSuggestionsPagination}
+                />
+              )}
 
-            {activeTab === 'quarantine' && (
-              <QuarantineSection
-                entries={sortedQuarantineEntries}
-                loading={quarantineLoading}
-                error={quarantineError}
-                onReload={onReloadQuarantine}
-                onReleaseEntry={onReleaseEntry}
-                releasingEntryId={releasingEntryId}
-                sort={quarantineSort}
-                onSortChange={setQuarantineSort}
-              />
-            )}
-          </section>
+              {activeTab === 'quarantine' && (
+                <QuarantineSection
+                  entries={sortedQuarantineEntries}
+                  loading={quarantineLoading}
+                  error={quarantineError}
+                  onReload={onReloadQuarantine}
+                  onReleaseEntry={onReleaseEntry}
+                  releasingEntryId={releasingEntryId}
+                  sort={quarantineSort}
+                  onSortChange={setQuarantineSort}
+                />
+              )}
+            </section>
+          </div>
         </div>
       </div>
     </div>
@@ -161,6 +247,12 @@ interface SuggestionsSectionProps {
   onOpenItemDetails: (itemId: number) => void;
   onMarkFalsePositive: (group: DuplicateGroup) => Promise<void>;
   markingGroupId: number | null;
+  totalCount: number;
+  page: number;
+  pageCount: number;
+  onNextPage: () => void;
+  onPreviousPage: () => void;
+  showPagination: boolean;
 }
 
 const SuggestionsSection: React.FC<SuggestionsSectionProps> = ({
@@ -170,6 +262,12 @@ const SuggestionsSection: React.FC<SuggestionsSectionProps> = ({
   onOpenItemDetails,
   onMarkFalsePositive,
   markingGroupId,
+  totalCount,
+  page,
+  pageCount,
+  onNextPage,
+  onPreviousPage,
+  showPagination,
 }) => {
   if (loading) {
     return <p className="text-sm text-slate-500">Analyse läuft …</p>;
@@ -179,9 +277,12 @@ const SuggestionsSection: React.FC<SuggestionsSectionProps> = ({
     return <p className="text-sm text-red-600">{error}</p>;
   }
 
-  if (duplicates.length === 0) {
+  if (totalCount === 0) {
     return <p className="text-sm text-slate-500">Keine potenziellen Duplikate für die aktuellen Filter.</p>;
   }
+
+  const disablePrevious = page <= 1;
+  const disableNext = page >= pageCount;
 
   return (
     <div className="space-y-4">
@@ -232,6 +333,22 @@ const SuggestionsSection: React.FC<SuggestionsSectionProps> = ({
           </ul>
         </article>
       ))}
+
+      {showPagination && (
+        <div className="mt-4 flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-600 sm:flex-row sm:justify-between">
+          <p className="text-xs sm:text-sm">
+            Seite {page} von {pageCount}
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" variant="ghost" onClick={onPreviousPage} disabled={disablePrevious}>
+              Zurück
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={onNextPage} disabled={disableNext}>
+              Weiter
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

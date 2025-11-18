@@ -15,6 +15,7 @@ interface UseDuplicateFinderArgs {
   selectedTagIds: number[];
   selectedLocationIds: number[];
   ordering: string;
+  finderParams: DuplicateFinderParams;
 }
 
 interface UseDuplicateFinderResult {
@@ -41,7 +42,7 @@ const buildFiltersFromArgs = ({ searchTerm, selectedLocationIds, selectedTagIds,
 });
 
 export const useDuplicateFinder = (args: UseDuplicateFinderArgs): UseDuplicateFinderResult => {
-  const { searchTerm, selectedLocationIds, selectedTagIds, ordering } = args;
+  const { searchTerm, selectedLocationIds, selectedTagIds, ordering, finderParams } = args;
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
   const [duplicatesLoading, setDuplicatesLoading] = useState(false);
   const [duplicatesError, setDuplicatesError] = useState<string | null>(null);
@@ -62,8 +63,9 @@ export const useDuplicateFinder = (args: UseDuplicateFinderArgs): UseDuplicateFi
     async (overrideParams?: DuplicateFinderParams) => {
       setDuplicatesLoading(true);
       setDuplicatesError(null);
+      const paramsToUse = overrideParams ?? finderParams ?? { preset: 'auto' };
       try {
-        const response = await fetchDuplicateFinder(overrideParams ?? { preset: 'auto' }, filters);
+        const response = await fetchDuplicateFinder(paramsToUse, filters);
         setDuplicates(response.results);
         setPresetUsed(response.preset_used);
         setAnalyzedCount(response.analyzed_count);
@@ -74,7 +76,7 @@ export const useDuplicateFinder = (args: UseDuplicateFinderArgs): UseDuplicateFi
         setDuplicatesLoading(false);
       }
     },
-    [filters],
+    [filters, finderParams],
   );
 
   const loadQuarantine = useCallback(async () => {
