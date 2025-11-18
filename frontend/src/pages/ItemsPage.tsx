@@ -98,6 +98,29 @@ const ItemsPage: React.FC = () => {
     locations,
   ]);
 
+  const openEditDialogForItem = useCallback(
+    async (itemId: number) => {
+      setDialogMode('edit');
+      let targetItem = items.find((current) => current.id === itemId) ?? null;
+      if (!targetItem && detailItem?.id === itemId) {
+        targetItem = detailItem;
+      }
+
+      if (!targetItem) {
+        try {
+          targetItem = await fetchItem(itemId);
+        } catch (error) {
+          setInfoMessage('Gegenstand konnte nicht zum Bearbeiten geladen werden.');
+          return;
+        }
+      }
+
+      setDialogItem(targetItem);
+      setDialogOpen(true);
+    },
+    [detailItem, items],
+  );
+
   useEffect(() => {
     void loadItems();
   }, [loadItems]);
@@ -226,6 +249,33 @@ const ItemsPage: React.FC = () => {
     const nextSearch = params.toString();
     navigate({ pathname: location.pathname, search: nextSearch.length > 0 ? `?${nextSearch}` : '' }, { replace: true });
   }, [handleOpenItemDetails, location.pathname, location.search, navigate]);
+
+  useEffect(() => {
+    type LocationState = {
+      focusItemId?: number | null;
+      editItemId?: number | null;
+    } | null;
+
+    const state = (location.state ?? null) as LocationState;
+    if (!state) {
+      return;
+    }
+
+    const focusItemId = typeof state.focusItemId === 'number' ? state.focusItemId : null;
+    const editItemId = typeof state.editItemId === 'number' ? state.editItemId : null;
+
+    if (focusItemId != null) {
+      handleOpenItemDetails(focusItemId);
+    }
+
+    if (editItemId != null) {
+      void openEditDialogForItem(editItemId);
+    }
+
+    if (focusItemId != null || editItemId != null) {
+      navigate(location.pathname + location.search, { replace: true, state: null });
+    }
+  }, [handleOpenItemDetails, location.pathname, location.search, location.state, navigate, openEditDialogForItem]);
 
   const handleCloseItemDetails = useCallback(() => {
     setDetailItemId(null);
