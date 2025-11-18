@@ -71,6 +71,35 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
   const [quarantineSort, setQuarantineSort] = useState<'recent' | 'name'>('recent');
   const [suggestionsPage, setSuggestionsPage] = useState(1);
   const [suggestionsPageSize, setSuggestionsPageSize] = useState(getSuggestionsPageSize);
+  const [sortPreference, setSortPreference] = useState<'default' | 'description' | 'date'>('default');
+
+  const sortedDuplicates = useMemo(() => {
+    if (sortPreference === 'default') {
+      return duplicates;
+    }
+
+    return [...duplicates].sort((a, b) => {
+      if (sortPreference === 'description') {
+        const hasDescA = a.items.some((i) => i.description && i.description.trim().length > 0);
+        const hasDescB = b.items.some((i) => i.description && i.description.trim().length > 0);
+        if (hasDescA && !hasDescB) return -1;
+        if (!hasDescA && hasDescB) return 1;
+        return 0;
+      }
+      if (sortPreference === 'date') {
+        const getDate = (group: DuplicateGroup) => {
+          const dates = group.items
+            .map((i) => (i.purchase_date ? new Date(i.purchase_date).getTime() : 0))
+            .sort((d1, d2) => d2 - d1);
+          return dates[0] || 0;
+        };
+        const dateA = getDate(a);
+        const dateB = getDate(b);
+        return dateB - dateA;
+      }
+      return 0;
+    });
+  }, [duplicates, sortPreference]);
 
   const sortedQuarantineEntries = useMemo(() => {
     if (quarantineSort === 'name') {
@@ -100,7 +129,13 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
       return;
     }
     setSuggestionsPage(1);
-  }, [open, strictness]);
+  }, [open, strictness, sortPreference]);
+
+  useEffect(() => {
+    if (strictness !== 'relaxed') {
+      setSortPreference('default');
+    }
+  }, [strictness]);
 
   useEffect(() => {
     const maxPage = Math.max(1, Math.ceil(totalGroups / suggestionsPageSize));
@@ -109,7 +144,7 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
 
   const totalSuggestionPages = Math.max(1, Math.ceil(totalGroups / suggestionsPageSize));
   const firstSuggestionIndex = (suggestionsPage - 1) * suggestionsPageSize;
-  const visibleDuplicates = duplicates.slice(firstSuggestionIndex, firstSuggestionIndex + suggestionsPageSize);
+  const visibleDuplicates = sortedDuplicates.slice(firstSuggestionIndex, firstSuggestionIndex + suggestionsPageSize);
   const showSuggestionsPagination = totalSuggestionPages > 1;
 
   const handleSuggestionsPrevious = () => {
@@ -166,6 +201,23 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
                   );
                 })}
               </div>
+            </div>
+            {strictness === 'relaxed' && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Priorisierung</p>
+                <div className="mt-2">
+                  <select
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:outline-none sm:w-auto"
+                    value={sortPreference}
+                    onChange={(e) => setSortPreference(e.target.value as any)}
+                  >
+                    <option value="default">Standard (Keine)</option>
+                    <option value="description">Beschreibung vorhanden</option>
+                    <option value="date">Kaufdatum (Neueste)</option>
+                  </select>
+                </div>
+              </div>
+            )}
             </div>
           </div>
           <div className="flex gap-2">
