@@ -17,6 +17,18 @@ export interface DuplicateStrictnessOption {
 
 export const DUPLICATE_STRICTNESS_OPTIONS: DuplicateStrictnessOption[] = [
   {
+    id: 'very_relaxed',
+    label: 'Extrem Locker',
+    description: 'Findet auch entfernte Ähnlichkeiten (z.B. "Herr Frank" & "Siegfried Frank")',
+    params: {
+      name_match: 'contains',
+      description_match: 'none',
+      wodis_match: 'none',
+      purchase_date_tolerance_days: 180,
+      require_any_text_match: false,
+    },
+  },
+  {
     id: 'relaxed',
     label: 'Locker',
     description: 'Grober Vergleich (enthält) und großes Kaufdatumsfenster',
@@ -48,18 +60,6 @@ export const DUPLICATE_STRICTNESS_OPTIONS: DuplicateStrictnessOption[] = [
       description_match: 'exact',
       wodis_match: 'exact',
       purchase_date_tolerance_days: 7,
-    },
-  },
-  {
-    id: 'very_relaxed',
-    label: 'Extrem Locker',
-    description: 'Findet auch entfernte Ähnlichkeiten (z.B. "Herr Frank" & "Siegfried Frank")',
-    params: {
-      name_match: 'contains',
-      description_match: 'none',
-      wodis_match: 'none',
-      purchase_date_tolerance_days: 180,
-      require_any_text_match: false,
     },
   },
 ];
