@@ -161,7 +161,7 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
   }, [open, strictness, sortPreference]);
 
   useEffect(() => {
-    if (strictness !== 'relaxed') {
+    if (strictness !== 'relaxed' && strictness !== 'very_relaxed') {
       setSortPreference('default');
     }
   }, [strictness]);
@@ -231,7 +231,7 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
                   })}
                 </div>
               </div>
-              {strictness === 'relaxed' && (
+              {(strictness === 'relaxed' || strictness === 'very_relaxed') && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Priorisierung</p>
                   <div className="mt-2">
