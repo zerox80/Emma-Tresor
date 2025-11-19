@@ -97,7 +97,7 @@ services:
 
     # External Network Exposure
     ports:
-      - "8888:80"                                     # Expose port 8888 to host machine (mapped to container port 80)
+      - "127.0.0.1:8888:80"                                     # Expose port 8888 to host machine (mapped to container port 80)
 
     # Data Volumes (read-only for security)
     volumes:
