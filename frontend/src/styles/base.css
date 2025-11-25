@@ -1,0 +1,17 @@
+/* =================
+ * Base Body Styles
+ * =================
+ * Styles applied to the document body for consistent layout and appearance.
+ */
+body {
+    margin: 0;
+    /* Remove default browser margin */
+    min-height: 100vh;
+    /* Ensure full viewport height minimum */
+
+    /* Inherit theme colors from root for consistency */
+    background-color: #f8fafc;
+    /* Light gray background */
+    color: #0f172a;
+    /* Dark text for readability */
+}

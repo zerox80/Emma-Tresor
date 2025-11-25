@@ -6,7 +6,7 @@ import apiClient, { ensureCSRFToken } from './api/client';  // Import API client
 import { setupAuthInterceptor } from './api/authInterceptor'; // Import auth interceptor for token refresh
 import { useAuthStore } from './store/authStore';           // Import authentication state store
 import App from './App';                                    // Import main App component
-import './index.css';                                       // Import global CSS styles
+import './styles/index.css';                                       // Import global CSS styles
 
 // Setup authentication interceptor for automatic token refresh
 setupAuthInterceptor(

@@ -1,0 +1,16 @@
+/* =================================
+ * CSS Custom Properties (Root Theme)
+ * =================================
+ * Defines the default color scheme and typography settings for the application.
+ * These values are inherited by all elements unless overridden.
+ */
+:root {
+  color-scheme: light;                                                  /* Indicate light theme to browser */
+
+  /* Font stack prioritizing Inter font, then system fallbacks */
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Default background and text colors matching Tailwind's slate-50 and slate-900 */
+  background-color: #f8fafc;                                          /* Tailwind slate-50 - light gray background */
+  color: #0f172a;                                                      /* Tailwind slate-900 - dark text */
+}

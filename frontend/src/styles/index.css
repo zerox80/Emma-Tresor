@@ -1,0 +1,13 @@
+/* Global Styles
+ * =============
+ * This file contains global CSS styles, theme configuration, and utility classes
+ * that apply throughout the entire application.
+ */
+
+/* Import Tailwind CSS base styles and utilities */
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+@import "./theme.css";
+@import "./base.css";
+@import "./utilities.css";
