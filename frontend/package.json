@@ -24,7 +24,7 @@
     "clsx": "^2.1.1",
     "axios": "^1.13.2",
     "jwt-decode": "^4.0.0",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "vite": "^7.2.4",
