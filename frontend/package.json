@@ -27,7 +27,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "vite": "^7.2.4",
+    "vite": "^7.2.6",
     "@vitejs/plugin-react": "^5.1.1",
     "typescript": "~5.9.3",
     "tailwindcss": "^4.1.15",
