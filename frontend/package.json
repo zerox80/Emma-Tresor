@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "react-hook-form": "^7.67.0",
+    "react-hook-form": "^7.68.0",
     "zod": "^4.1.13",
     "@yudiel/react-qr-scanner": "^2.4.1",
     "@zxing/browser": "^0.1.5",
