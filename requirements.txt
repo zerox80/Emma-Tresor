@@ -4,7 +4,7 @@
 # Each package includes version constraints for security and stability.
 
 # Core Django Framework
-Django>=5.2.0,<5.3.0                          # Main web framework (latest stable)
+Django>=5.2.0,<6.1.0                          # Main web framework (latest stable)
 
 # REST API Framework
 djangorestframework>=3.16.0,<4.0.0            # Django REST Framework for API endpoints
