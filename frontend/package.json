@@ -16,7 +16,7 @@
     "@yudiel/react-qr-scanner": "^2.4.1",
     "@zxing/browser": "^0.1.5",
     "qrcode": "^1.5.4",
-    "react": "^19.1.1",
+    "react": "^19.2.1",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1",
     "react-select": "^5.10.2",
