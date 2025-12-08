@@ -35,6 +35,7 @@ const DashboardPage: React.FC = () => {
   const [previewExportError, setPreviewExportError] = useState<string | null>(null);
   const [listExportingId, setListExportingId] = useState<number | null>(null);
   const [listExportError, setListExportError] = useState<string | null>(null);
+  const [showAllLists, setShowAllLists] = useState(false);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -356,7 +357,7 @@ const DashboardPage: React.FC = () => {
 
           {!loading && listsWithDetail.length > 0 && (
             <ul className="mt-4 space-y-4">
-              {listsWithDetail.slice(0, MAX_LISTS_DISPLAYED).map((list) => {
+              {(showAllLists ? listsWithDetail : listsWithDetail.slice(0, MAX_LISTS_DISPLAYED)).map((list) => {
                 const hasItems = list.resolvedItems.length > 0;
                 const isExpanded = expandedLists.has(list.id);
                 return (
@@ -434,9 +435,17 @@ const DashboardPage: React.FC = () => {
                 );
               })}
 
-              {listsWithDetail.length > MAX_LISTS_DISPLAYED && (
-                <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                  {listsWithDetail.length - MAX_LISTS_DISPLAYED} weitere Listen sind vorhanden.
+              {!showAllLists && listsWithDetail.length > MAX_LISTS_DISPLAYED && (
+                <li className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                  <span>{listsWithDetail.length - MAX_LISTS_DISPLAYED} weitere Listen sind vorhanden.</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllLists(true)}
+                  >
+                    Laden
+                  </Button>
                 </li>
               )}
             </ul>
