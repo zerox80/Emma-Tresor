@@ -30,7 +30,7 @@
     "vite": "^7.2.7",
     "@vitejs/plugin-react": "^5.1.2",
     "typescript": "~5.9.3",
-    "tailwindcss": "^4.1.15",
+    "tailwindcss": "^4.1.18",
     "@tailwindcss/postcss": "^4.1.17",
     "postcss": "^8.4.47",
     "autoprefixer": "^10.4.22",
