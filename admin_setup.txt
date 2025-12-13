@@ -11,7 +11,7 @@ Folge diesen Schritten, um ein Administrator-Konto für das Django-Backend anzul
    ```powershell
    py -3.13 run_backend.py --skip-tests
    ```
-   *Dies erstellt/aktualisiert die virtuelle Umgebung `.venv/`, installiert Abhängigkeiten, führt Migrationen aus und startet `manage.py runserver`. Beende den Server anschließend mit `Ctrl+C`.*
+   *Dies erstellt/aktualisiert die virtuelle Umgebung `.venv/`, installiert Abhängigkeiten, führt Migrationen aus und startet `backend/manage.py runserver`. Beende den Server anschließend mit `Ctrl+C`.*
 
 ## 2. Virtuelle Umgebung aktivieren
 
@@ -24,7 +24,7 @@ Folge diesen Schritten, um ein Administrator-Konto für das Django-Backend anzul
 ## 3. Administrator anlegen (interaktiv)
 
 ```powershell
-python manage.py createsuperuser
+python backend/manage.py createsuperuser
 ```
 
 - Gewünschten Benutzernamen, E-Mail und Passwort eingeben.
@@ -39,7 +39,7 @@ Falls du das Konto skriptgesteuert erzeugen möchtest (z. B. für CI/CD), kannst
 $env:DJANGO_SUPERUSER_USERNAME = "<your-admin-username>"
 $env:DJANGO_SUPERUSER_EMAIL = "<your-admin-email>"
 $env:DJANGO_SUPERUSER_PASSWORD = "<your-secure-password>"
-.\.venv\Scripts\python.exe manage.py createsuperuser --noinput
+.\.venv\Scripts\python.exe backend/manage.py createsuperuser --noinput
 ```
 
 > **WICHTIG - SICHERHEIT:** 

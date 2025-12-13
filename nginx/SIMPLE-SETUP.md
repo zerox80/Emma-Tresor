@@ -73,7 +73,7 @@ alias /path/to/your/project/media/;
 
 ```bash
 # Terminal 1 - Django Backend
-python manage.py runserver 0.0.0.0:8000
+python backend/manage.py runserver 0.0.0.0:8000
 
 # Terminal 2 - React Frontend (Entwicklung)
 cd frontend && npm run dev

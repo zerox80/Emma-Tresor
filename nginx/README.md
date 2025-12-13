@@ -28,7 +28,7 @@ sudo nginx -t && sudo systemctl reload nginx
 ### 4. Services starten:
 ```bash
 # Backend
-python manage.py runserver 0.0.0.0:8000 &
+python backend/manage.py runserver 0.0.0.0:8000 &
 
 # Frontend (Entwicklung)
 cd frontend && npm run dev &

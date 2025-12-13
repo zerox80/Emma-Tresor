@@ -24,6 +24,8 @@ def _load_env_file() -> None:
     """
     env_file = BASE_DIR / '.env'
     if not env_file.exists():
+        env_file = BASE_DIR.parent / '.env'
+    if not env_file.exists():
         return
 
     # Read and parse each line of the .env file

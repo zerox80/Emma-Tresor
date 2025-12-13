@@ -66,6 +66,9 @@ REQUIRED_PACKAGES = [
 FRONTEND_DIR = BASE_DIR / "frontend"
 FRONTEND_PKG_MANAGER = "npm.cmd" if os.name == "nt" else "npm"
 
+# Backend directory (Django project root)
+BACKEND_DIR = BASE_DIR / "backend"
+
 # =========================
 # HELPER FUNCTIONS
 # =========================
@@ -252,7 +255,7 @@ def run_management_command(*args: str) -> None:
         env["PATH"] = f"{bin_dir}{separator}{env['PATH']}"
     
     # Execute Django management command
-    run([python, "manage.py", *args], env=env)
+    run([python, "manage.py", *args], cwd=BACKEND_DIR, env=env)
 
 def apply_migrations() -> None:
     """

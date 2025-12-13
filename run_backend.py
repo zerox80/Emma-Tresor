@@ -50,6 +50,9 @@ IS_WINDOWS = os.name == "nt"
 # Frontend directory path
 FRONTEND_DIR = BASE_DIR / "frontend"
 
+# Backend directory path
+BACKEND_DIR = BASE_DIR / "backend"
+
 # Platform-specific npm executable name
 NPM_EXECUTABLE = "npm.cmd" if IS_WINDOWS else "npm"
 
@@ -339,7 +342,7 @@ def run_tests() -> None:
     Uses the appropriate Python interpreter (system or virtual environment).
     """
     
-    run([str(RUNTIME_PYTHON), "manage.py", "test"], env=python_env())
+    run([str(RUNTIME_PYTHON), "manage.py", "test"], cwd=BACKEND_DIR, env=python_env())
 
 def create_superuser_if_configured() -> None:
     """
@@ -377,7 +380,7 @@ def create_superuser_if_configured() -> None:
     """).format(username=username, email=email, password=password)
     
     print("[runner] Ensuring configured superuser exists...")
-    run([str(RUNTIME_PYTHON), "manage.py", "shell", "-c", script], env=python_env())
+    run([str(RUNTIME_PYTHON), "manage.py", "shell", "-c", script], cwd=BACKEND_DIR, env=python_env())
 
 def main() -> None:
     """
@@ -447,7 +450,7 @@ def main() -> None:
     print("[runner] Starting Django development server...")
     backend_process = subprocess.Popen(
         [str(RUNTIME_PYTHON), "manage.py", "runserver"],
-        cwd=BASE_DIR,
+        cwd=BACKEND_DIR,
         env=python_env(),
     )
     

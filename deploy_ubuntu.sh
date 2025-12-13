@@ -30,7 +30,7 @@ pip install --upgrade pip setuptools wheel
 
 # Install Python dependencies
 echo "Installing Python dependencies..."
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 # Install frontend dependencies
 echo "Installing frontend dependencies..."
@@ -41,17 +41,17 @@ cd ..
 
 # Run Django migrations
 echo "Running Django migrations..."
-python manage.py migrate
+python backend/manage.py migrate
 
 # Collect static files
 echo "Collecting static files..."
-python manage.py collectstatic --noinput
+python backend/manage.py collectstatic --noinput
 
 # Create superuser if needed
 echo "Creating Django superuser..."
-echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'admin123')" | python manage.py shell
+echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'admin123')" | python backend/manage.py shell
 
 echo "=== Deployment completed successfully! ==="
 echo "You can now start the server with:"
 echo "source venv/bin/activate"
-echo "python manage.py runserver 0.0.0.0:8000"
+echo "python backend/manage.py runserver 0.0.0.0:8000"

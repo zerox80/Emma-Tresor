@@ -51,7 +51,7 @@ RUN pip install --upgrade pip \
 # Copy and configure entrypoint script
 # ====================================
 # Custom entrypoint handles user switching and application startup
-COPY docker/backend/entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && \
     chown appuser:appuser /entrypoint.sh
 

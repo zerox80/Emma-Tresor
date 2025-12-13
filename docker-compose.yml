@@ -36,8 +36,8 @@ services:
   # Provides the REST API for the frontend and serves static files.
   backend:
     build:
-      context: .                                      # Build context is project root
-      dockerfile: docker/backend/Dockerfile           # Use custom backend Dockerfile
+      context: ./backend                               # Build context is backend folder
+      dockerfile: Dockerfile                           # Use backend Dockerfile
     restart: unless-stopped                            # Automatic restart on failure
     env_file: .env                                     # Load environment variables
     environment:

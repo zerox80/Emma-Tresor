@@ -75,16 +75,16 @@ source .venv/bin/activate  # Linux/Mac
 .venv\Scripts\Activate.ps1  # Windows
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 # Run migrations
-python manage.py migrate
+python backend/manage.py migrate
 
 # Create superuser
-python manage.py createsuperuser
+python backend/manage.py createsuperuser
 
 # Start development server
-python manage.py runserver
+python backend/manage.py runserver
 ```
 
 ### Frontend Setup
@@ -546,8 +546,8 @@ describe('Component Example', () => {
 1. **Database Migration Errors**
    ```bash
    # Reset migrations (development only)
-   python manage.py migrate --fake-initial
-   python manage.py migrate --fake
+   python backend/manage.py migrate --fake-initial
+   python backend/manage.py migrate --fake
    ```
 
 2. **Permission Denied Errors**

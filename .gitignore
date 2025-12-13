@@ -33,10 +33,10 @@ wheels/                          # Wheel distribution directory
 local_settings.py                # Local development settings (should not be committed)
 db.sqlite3                       # SQLite database file (development database)
 db.sqlite3-journal               # SQLite journal file (transaction log)
-/media                           # User uploaded media files (photos, documents)
-/staticfiles                     # Collected static files (CSS, JS, images)
-/private_media                   # Private media files (not publicly accessible)
-/logs                            # Application log directory
+media/                           # User uploaded media files (photos, documents)
+staticfiles/                     # Collected static files (CSS, JS, images)
+private_media/                   # Private media files (not publicly accessible)
+logs/                            # Application log directory
 
 # Environment Configuration Files
 # ==============================

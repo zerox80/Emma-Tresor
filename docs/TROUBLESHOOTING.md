@@ -99,16 +99,16 @@ django.core.management.base.CommandError: Conflicting migrations detected
 
 # Solutions
 # 1. Check migration status
-python manage.py showmigrations --plan
+python backend/manage.py showmigrations --plan
 
 # 2. Fake initial migration (development only)
-python manage.py migrate --fake-initial
+python backend/manage.py migrate --fake-initial
 
 # 3. Apply specific migration
-python manage.py migrate app_name migration_number
+python backend/manage.py migrate app_name migration_number
 
 # 4. Reset migrations (last resort)
-python manage.py migrate app_name zero
+python backend/manage.py migrate app_name zero
 ```
 
 #### Issue: Static Files Not Loading
@@ -127,7 +127,7 @@ STATIC_URLS = [
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # 3. Collect static files
-python manage.py collectstatic --no-input
+python backend/manage.py collectstatic --no-input
 
 # 4. Check nginx/static file serving
 # Ensure nginx serves static files in production
@@ -147,7 +147,7 @@ timeout errors
 echo $DB_HOST $DB_PORT $DB_NAME $DB_USER
 
 # 2. Test connection manually
-python manage.py dbshell
+python backend/manage.py dbshell
 # Or use psql/mysql client directly
 
 # 3. Check network connectivity
@@ -207,7 +207,7 @@ print(f"Active connections: {len(connections)}")
 
 # 2. Monitor with memory profiler
 pip install memory-profiler
-python -m memory_profiler manage.py runserver
+python -m memory_profiler backend/manage.py runserver
 
 # 3. Check for large object caching
 from django.core.cache import cache
@@ -726,7 +726,7 @@ location /static/ {
 
 # 2. Verify collected static files
 # Run collectstatic in production
-python manage.py collectstatic --no-input --clear
+python backend/manage.py collectstatic --no-input --clear
 
 # 3. Check file permissions
 # Ensure web server can read static files

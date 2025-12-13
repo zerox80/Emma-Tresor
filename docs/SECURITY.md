@@ -48,7 +48,7 @@ Die Betriebs- und Deployment-Umgebung ist auf Sicherheit und Stabilität ausgele
     * **Rate Limiting** (`limit_req_zone`) für API-Endpunkte, um Brute-Force- und Denial-of-Service-Angriffe (DoS) abzuschwächen.
     * Einen expliziten `deny all;`-Block für das `/private_media/`-Verzeichnis, um den direkten Zugriff auf geschützte Dateianhänge zu verhindern.
 
-* **Sicheres Docker-Entrypoint (Privilege Dropping):** Das Start-Skript für den Docker-Container (`docker/backend/entrypoint.sh`) nutzt ein bewährtes Sicherheitsmuster:
+* **Sicheres Docker-Entrypoint (Privilege Dropping):** Das Start-Skript für den Docker-Container (`backend/entrypoint.sh`) nutzt ein bewährtes Sicherheitsmuster:
     1.  Der Container startet als `root`, um systemwichtige Aufgaben auszuführen (z.B. Warten auf die Datenbank, Ausführen von Migrationen).
     2.  Anschließend übergibt es die Ausführung mittels `exec su appuser -c "..."` an einen unprivilegierten Benutzer (`appuser`), wodurch die Angriffsfläche des laufenden Anwendungsservers minimiert wird.
 

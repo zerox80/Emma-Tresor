@@ -14,10 +14,10 @@ EmmaTresor ist ein sicheres, mandantenfähiges Inventar- und Asset-Management-Sy
 
 ## Entwicklung – Schnellstart
 
-1. Virtuelle Umgebung anlegen und aktivieren: `python -m venv .venv`, dann `pip install -r requirements.txt`.  
+1. Virtuelle Umgebung anlegen und aktivieren: `python -m venv .venv`, dann `pip install -r backend/requirements.txt`.  
 2. Beispielkonfiguration kopieren: `cp env.example .env` und Werte anpassen.  
-3. Datenbank migrieren: `python manage.py migrate`.  
-4. Backend starten: `python manage.py runserver`.  
+3. Datenbank migrieren: `python backend/manage.py migrate`.  
+4. Backend starten: `python backend/manage.py runserver`.  
 5. Frontend installieren und starten:  
    - `cd frontend`  
    - `npm install`  
@@ -26,4 +26,3 @@ EmmaTresor ist ein sicheres, mandantenfähiges Inventar- und Asset-Management-Sy
 ## Deployment
 
 Für den Produktivbetrieb stehen Docker-Setups mit `docker-compose.yml` (Backend, Frontend, Nginx) bereit. Details zu API, Sicherheit und Fehlersuche befinden sich im Ordner `docs/`.
-
