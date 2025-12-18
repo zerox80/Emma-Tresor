@@ -33,7 +33,7 @@
     "tailwindcss": "^4.1.18",
     "@tailwindcss/postcss": "^4.1.18",
     "postcss": "^8.4.47",
-    "autoprefixer": "^10.4.22",
+    "autoprefixer": "^10.4.23",
     "@types/node": "^25.0.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
