@@ -12,7 +12,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "react-hook-form": "^7.69.0",
-    "zod": "^4.3.4",
+    "zod": "^4.3.5",
     "@yudiel/react-qr-scanner": "^2.5.0",
     "@zxing/browser": "^0.1.5",
     "qrcode": "^1.5.4",
