@@ -252,6 +252,24 @@ class Item(TimeStampedModel):
     # Items can have multiple tags, tags can be applied to multiple items
     tags = models.ManyToManyField('Tag', related_name='items', blank=True)
 
+    # Employee assignment - optional field for tracking which employee the item belongs to
+    # Useful for tracking equipment assignments to specific personnel
+    employee_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text='Name des Mitarbeiters, dem der Gegenstand zugeordnet ist'
+    )
+
+    # Room number - optional field for tracking which room/space the item is in
+    # Provides more precise location information beyond the general Location field
+    room_number = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text='Raumnummer, in der sich der Gegenstand befindet'
+    )
+
     class Meta:
         # Default ordering for queries - sort items alphabetically by name
         ordering = ['name']

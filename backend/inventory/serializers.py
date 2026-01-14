@@ -525,6 +525,20 @@ class ItemSerializer(serializers.ModelSerializer):
         max_length=120,
         trim_whitespace=True,
     )
+    employee_name = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        max_length=255,
+        trim_whitespace=True,
+    )
+    room_number = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        max_length=50,
+        trim_whitespace=True,
+    )
     images = ItemImageSerializer(many=True, read_only=True)
 
     class Meta:
@@ -541,6 +555,8 @@ class ItemSerializer(serializers.ModelSerializer):
             'owner',
             'location',
             'wodis_inventory_number',
+            'employee_name',
+            'room_number',
             'tags',
             'images',
             'created_at',
@@ -667,6 +683,22 @@ class ItemSerializer(serializers.ModelSerializer):
             else:
                 cleaned = str(raw_value).strip()
                 data['wodis_inventory_number'] = cleaned or None
+        # Handle employee_name field
+        if 'employee_name' in data:
+            raw_value = data['employee_name']
+            if raw_value in {None, ''}:
+                data['employee_name'] = None
+            else:
+                cleaned = str(raw_value).strip()
+                data['employee_name'] = cleaned or None
+        # Handle room_number field
+        if 'room_number' in data:
+            raw_value = data['room_number']
+            if raw_value in {None, ''}:
+                data['room_number'] = None
+            else:
+                cleaned = str(raw_value).strip()
+                data['room_number'] = cleaned or None
         return data
 
     def create(self, validated_data):
@@ -694,6 +726,8 @@ class ItemSerializer(serializers.ModelSerializer):
             'value',
             'location',
             'wodis_inventory_number',
+            'employee_name',
+            'room_number',
         }
         for field in list(normalised.keys()):
             if field not in allowed_fields:
@@ -724,6 +758,8 @@ class DuplicateCandidateSerializer(serializers.ModelSerializer):
             'value',
             'location',
             'wodis_inventory_number',
+            'employee_name',
+            'room_number',
             'created_at',
             'updated_at',
         ]

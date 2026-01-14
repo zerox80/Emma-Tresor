@@ -22,20 +22,28 @@ const itemSchema = z.object({
   value: z.string().nullable().optional(),
   location: z.number().nullable().optional(),
   tags: z.array(z.number()).optional(),
+  employee_name: z
+    .string()
+    .max(255, 'Mitarbeiter Name darf maximal 255 Zeichen enthalten.')
+    .optional(),
+  room_number: z
+    .string()
+    .max(50, 'Raum Nr darf maximal 50 Zeichen enthalten.')
+    .optional(),
 });
 
 type ItemFormSchema = z.infer<typeof itemSchema>;
 
 interface EditItemFormProps {
-  
+
   item: Item;
-  
+
   locations: Location[];
-  
+
   tags: Tag[];
-  
+
   onSuccess: () => void;
-  
+
   onCancel: () => void;
 }
 
@@ -53,12 +61,14 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
     defaultValues: {
       name: item.name,
       description: item.description || '',
-       wodis_inventory_number: item.wodis_inventory_number || '',
+      wodis_inventory_number: item.wodis_inventory_number || '',
       quantity: item.quantity,
       purchase_date: item.purchase_date || '',
       value: item.value || '',
       location: item.location || undefined,
       tags: item.tags || [],
+      employee_name: item.employee_name || '',
+      room_number: item.room_number || '',
     },
   });
 
@@ -70,6 +80,8 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
     const rawValue = values.value;
     const value = rawValue === null || rawValue === undefined || rawValue === '' ? null : String(rawValue);
     const wodis = values.wodis_inventory_number?.trim() ?? '';
+    const employeeName = values.employee_name?.trim() ?? '';
+    const roomNumber = values.room_number?.trim() ?? '';
 
     return {
       name: values.name.trim(),
@@ -80,6 +92,8 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
       location: typeof values.location === 'number' && !Number.isNaN(values.location) ? values.location : null,
       wodis_inventory_number: wodis.length > 0 ? wodis : null,
       tags: values.tags ?? [],
+      employee_name: employeeName.length > 0 ? employeeName : null,
+      room_number: roomNumber.length > 0 ? roomNumber : null,
     };
   };
 
@@ -235,17 +249,52 @@ const EditItemForm: React.FC<EditItemFormProps> = ({ item, locations, tags, onSu
                   key={tag.id}
                   type="button"
                   onClick={() => handleTagToggle(tag.id)}
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-                    watchedTags.includes(tag.id)
+                  className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium transition-colors ${watchedTags.includes(tag.id)
                       ? 'bg-brand-500 text-white'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   {tag.name}
                 </button>
               ))}
             </div>
             {errors.tags && <p className="text-xs text-red-500">{errors.tags.message}</p>}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              <label htmlFor="employee_name" className="text-sm font-medium text-slate-800">
+                Mitarbeiter Name
+              </label>
+              <input
+                id="employee_name"
+                type="text"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                placeholder="z. B. Max Mustermann"
+                {...register('employee_name')}
+              />
+              {errors.employee_name && <p className="text-xs text-red-500">{errors.employee_name.message}</p>}
+              <p className="text-xs text-slate-500">
+                Optional – welchem Mitarbeiter ist der Gegenstand zugeordnet?
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <label htmlFor="room_number" className="text-sm font-medium text-slate-800">
+                Raum Nr
+              </label>
+              <input
+                id="room_number"
+                type="text"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                placeholder="z. B. 101, A2.15"
+                {...register('room_number')}
+              />
+              {errors.room_number && <p className="text-xs text-red-500">{errors.room_number.message}</p>}
+              <p className="text-xs text-slate-500">
+                Optional – in welchem Raum befindet sich der Gegenstand?
+              </p>
+            </div>
           </div>
         </div>
       </div>

@@ -69,6 +69,14 @@ const itemSchema = z.object({
     ),
   location: z.number().nullable().optional(),
   tags: z.array(z.number()).optional(),
+  employee_name: z
+    .string()
+    .max(255, 'Mitarbeiter Name darf maximal 255 Zeichen enthalten.')
+    .optional(),
+  room_number: z
+    .string()
+    .max(50, 'Raum Nr darf maximal 50 Zeichen enthalten.')
+    .optional(),
 });
 
 type ItemFormSchema = z.infer<typeof itemSchema>;
@@ -84,11 +92,13 @@ const DEFAULT_VALUES: ItemFormSchema = {
   value: '',
   location: null,
   tags: [],
+  employee_name: '',
+  room_number: '',
 };
 
 const stepFieldMap: (keyof ItemFormSchema)[][] = [
   ['name', 'wodis_inventory_number', 'quantity', 'purchase_date', 'value'],
-  ['location', 'tags'],
+  ['location', 'tags', 'employee_name', 'room_number'],
   [],
 ];
 
@@ -148,27 +158,27 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     (sourceItem: Item | null = null) => {
       const initialValues: ItemFormSchema = sourceItem
         ? {
-            name: sourceItem?.name ?? '',
-            description: sourceItem.description ?? '',
-            wodis_inventory_number: sourceItem.wodis_inventory_number ?? '',
-            quantity: sourceItem.quantity ?? 1,
-            purchase_date: sourceItem.purchase_date ?? '',
-            value: sourceItem.value ?? '',
-            location: sourceItem.location ?? null,
-            tags: sourceItem.tags ?? [],
-          }
+          name: sourceItem?.name ?? '',
+          description: sourceItem.description ?? '',
+          wodis_inventory_number: sourceItem.wodis_inventory_number ?? '',
+          quantity: sourceItem.quantity ?? 1,
+          purchase_date: sourceItem.purchase_date ?? '',
+          value: sourceItem.value ?? '',
+          location: sourceItem.location ?? null,
+          tags: sourceItem.tags ?? [],
+        }
         : DEFAULT_VALUES;
 
       reset(initialValues);
-    setCurrentStep(0);
-    setFormError(null);
-    setFiles([]);
-    setFileFeedback(null);
-    setCompletedItem(null);
-    setUploadWarning(null);
-    setTagCreationError(null);
-    setLocationCreationError(null);
-    setNewLocationName('');
+      setCurrentStep(0);
+      setFormError(null);
+      setFiles([]);
+      setFileFeedback(null);
+      setCompletedItem(null);
+      setUploadWarning(null);
+      setTagCreationError(null);
+      setLocationCreationError(null);
+      setNewLocationName('');
       setCompletionMode(null);
     },
     [reset],
@@ -351,7 +361,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         const existingNames = new Set(prev.map(f => f.name));
         const newFiles = accepted.filter(f => !existingNames.has(f.name));
         const combined = [...prev, ...newFiles];
-        
+
         if (combined.length > MAX_FILES) {
           setFileFeedback(`Es sind maximal ${MAX_FILES} Dateien erlaubt.`);
           return combined.slice(0, MAX_FILES);
@@ -378,6 +388,8 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     const trimmedValue = values.value?.trim() ?? '';
     const trimmedPurchaseDate = values.purchase_date?.trim() ?? '';
     const trimmedWodis = values.wodis_inventory_number?.trim() ?? '';
+    const trimmedEmployeeName = values.employee_name?.trim() ?? '';
+    const trimmedRoomNumber = values.room_number?.trim() ?? '';
 
     return {
       name: trimmedName,
@@ -388,6 +400,8 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       location: values.location ?? null,
       wodis_inventory_number: trimmedWodis.length > 0 ? trimmedWodis : null,
       tags: values.tags ?? [],
+      employee_name: trimmedEmployeeName.length > 0 ? trimmedEmployeeName : null,
+      room_number: trimmedRoomNumber.length > 0 ? trimmedRoomNumber : null,
     };
   }, []);
 
@@ -656,20 +670,18 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
                 return (
                   <div
                     key={step}
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
-                      active
-                        ? 'border-brand-300 bg-brand-50 text-brand-700'
-                        : reached
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${active
+                      ? 'border-brand-300 bg-brand-50 text-brand-700'
+                      : reached
                         ? 'border-brand-200 bg-brand-25 text-brand-600'
                         : 'border-slate-200 bg-white text-slate-400'
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs ${
-                        active || reached
-                          ? 'border-brand-400 bg-brand-100 text-brand-700'
-                          : 'border-slate-200 text-slate-400'
-                      }`}
+                      className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs ${active || reached
+                        ? 'border-brand-400 bg-brand-100 text-brand-700'
+                        : 'border-slate-200 text-slate-400'
+                        }`}
                     >
                       {index + 1}
                     </span>
@@ -682,362 +694,410 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
           <form className="flex flex-col" onSubmit={onSubmit} noValidate>
             <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-            {formError && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {formError}
-              </div>
-            )}
-
-            {currentStep === 0 && (
-              <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 sm:gap-5 lg:max-w-3xl">
-                <div className="space-y-2">
-                  <label htmlFor="add-item-name" className="text-sm font-medium text-slate-800">
-                    Name *
-                  </label>
-                  <input
-                    id="add-item-name"
-                    type="text"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                    placeholder="z. B. Kamera, Werkzeug, Möbelstück"
-                    autoComplete="off"
-                    {...register('name')}
-                  />
-                  {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+              {formError && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {formError}
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <label htmlFor="add-item-description" className="text-sm font-medium text-slate-800">
-                    Beschreibung
-                  </label>
-                  <textarea
-                    id="add-item-description"
-                    rows={4}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                    placeholder="Optionale Details, Seriennummern oder Zustand..."
-                    {...register('description')}
-                  />
-                  {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    htmlFor="add-item-wodis-inventory-number"
-                    className="text-sm font-medium text-slate-800"
-                  >
-                    Wodis Inventarnummer
-                  </label>
-                  <input
-                    id="add-item-wodis-inventory-number"
-                    type="text"
-                    inputMode="text"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                    placeholder="z. B. W-12345 oder Projektkennung"
-                    {...register('wodis_inventory_number')}
-                  />
-                  <div className="flex flex-col gap-1 text-xs">
-                    {errors.wodis_inventory_number && (
-                      <p className="text-red-500">{errors.wodis_inventory_number.message}</p>
-                    )}
-                    <p className="text-slate-500">
-                      Optional – erleichtert die Suche nach Gegenständen in umfangreichen Beständen.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
+              {currentStep === 0 && (
+                <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 sm:gap-5 lg:max-w-3xl">
                   <div className="space-y-2">
-                    <label htmlFor="add-item-quantity" className="text-sm font-medium text-slate-800">
-                      Menge *
+                    <label htmlFor="add-item-name" className="text-sm font-medium text-slate-800">
+                      Name *
                     </label>
                     <input
-                      id="add-item-quantity"
-                      type="number"
-                      min={1}
-                      step={1}
+                      id="add-item-name"
+                      type="text"
                       className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                      {...register('quantity', { valueAsNumber: true })}
+                      placeholder="z. B. Kamera, Werkzeug, Möbelstück"
+                      autoComplete="off"
+                      {...register('name')}
                     />
-                    {errors.quantity && <p className="text-xs text-red-500">{errors.quantity.message}</p>}
+                    {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="add-item-value" className="text-sm font-medium text-slate-800">
-                      Wert (€)
+                    <label htmlFor="add-item-description" className="text-sm font-medium text-slate-800">
+                      Beschreibung
+                    </label>
+                    <textarea
+                      id="add-item-description"
+                      rows={4}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                      placeholder="Optionale Details, Seriennummern oder Zustand..."
+                      {...register('description')}
+                    />
+                    {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="add-item-wodis-inventory-number"
+                      className="text-sm font-medium text-slate-800"
+                    >
+                      Wodis Inventarnummer
                     </label>
                     <input
-                      id="add-item-value"
-                      type="number"
-                      min={0}
-                      step="0.01"
+                      id="add-item-wodis-inventory-number"
+                      type="text"
+                      inputMode="text"
                       className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                      placeholder="z. B. 249.99"
-                      {...register('value')}
+                      placeholder="z. B. W-12345 oder Projektkennung"
+                      {...register('wodis_inventory_number')}
                     />
-                    {errors.value && <p className="text-xs text-red-500">{errors.value.message}</p>}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="add-item-purchase-date" className="text-sm font-medium text-slate-800">
-                    Kaufdatum
-                  </label>
-                  <input
-                    id="add-item-purchase-date"
-                    type="date"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                    {...register('purchase_date')}
-                  />
-                  {errors.purchase_date && <p className="text-xs text-red-500">{errors.purchase_date.message}</p>}
-                </div>
-              </div>
-            )}
-
-            {currentStep === 1 && (
-              <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 sm:gap-5 lg:max-w-3xl">
-                <div className="space-y-2">
-                  <label htmlFor="add-item-location" className="text-sm font-medium text-slate-800">
-                    Standort
-                  </label>
-                  <select
-                    id="add-item-location"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                    {...register('location', { 
-                      setValueAs: (v) => v === '' ? null : Number(v)
-                    })}
-                  >
-                    <option value="">Kein Standort ausgewählt</option>
-                    {sortedLocations.map((location) => (
-                      <option key={location.id} value={location.id}>
-                        {location.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
-                </div>
-
-                <div className="space-y-3 rounded-lg border border-dashed border-slate-200 p-4 lg:p-5">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm font-medium text-slate-800">Neuen Standort hinzufügen</p>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
-                      <input
-                        type="text"
-                        value={newLocationName}
-                        onChange={(event) => setNewLocationName(event.target.value)}
-                        placeholder="z. B. Büro, Keller, Wohnzimmer"
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleCreateLocation}
-                        loading={isCreatingLocation}
-                      >
-                        Speichern
-                      </Button>
-                    </div>
-                  </div>
-                  {locationCreationError && (
-                    <p className="text-xs text-red-500">{locationCreationError}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Controller
-                    control={control}
-                    name="tags"
-                    render={({ field }) => (
-                      <TagSelector
-                        options={tagOptions}
-                        selectedIds={field.value ?? []}
-                        onChange={field.onChange}
-                        onCreateTag={handleCreateTag}
-                        disabled={isSubmitting}
-                        isCreating={isCreatingTag}
-                      />
-                    )}
-                  />
-                  {tagCreationError && (
-                    <p className="text-xs text-red-500">{tagCreationError}</p>
-                  )}
-                  {errors.tags && <p className="text-xs text-red-500">{errors.tags.message}</p>}
-                  {watchedValues.tags && watchedValues.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {selectedTags.map((label) => (
-                        <span
-                          key={label}
-                          className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700"
-                        >
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 sm:gap-6 lg:max-w-4xl">
-                <section
-                  ref={reviewSectionRef}
-                  tabIndex={-1}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-5 lg:p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
-                >
-                  <h4 className="text-sm font-semibold uppercase text-slate-500">Zusammenfassung</h4>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Name</p>
-                      <p className="text-sm font-semibold text-slate-900">{watchedValues.name || '-'}</p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Wodis Inventarnummer</p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {watchedValues.wodis_inventory_number?.trim()
-                          ? watchedValues.wodis_inventory_number
-                          : '-'}
+                    <div className="flex flex-col gap-1 text-xs">
+                      {errors.wodis_inventory_number && (
+                        <p className="text-red-500">{errors.wodis_inventory_number.message}</p>
+                      )}
+                      <p className="text-slate-500">
+                        Optional – erleichtert die Suche nach Gegenständen in umfangreichen Beständen.
                       </p>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Menge</p>
-                      <p className="text-sm font-semibold text-slate-900">{watchedValues.quantity}</p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Wert</p>
-                      <p className="text-sm font-semibold text-slate-900">{formatCurrency(watchedValues.value)}</p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Kaufdatum</p>
-                      <p className="text-sm font-semibold text-slate-900">{formatDate(watchedValues.purchase_date)}</p>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Beschreibung</p>
-                      <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                        {watchedValues.description?.trim() ? watchedValues.description : '—'}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Standort</p>
-                      <p className="text-sm font-semibold text-slate-900">{selectedLocationName}</p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Tags</p>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {selectedTags.length > 0 ? (
-                          selectedTags.map((label) => (
-                            <span
-                              key={label}
-                              className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700"
-                            >
-                              {label}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-sm text-slate-500">Keine Tags</span>
-                        )}
-                      </div>
-                    </div>
                   </div>
-                </section>
 
-                <section className="rounded-xl border border-slate-200 bg-white p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h4 className="text-sm font-semibold uppercase text-slate-500">Bilder (optional)</h4>
-                      <p className="text-xs text-slate-500">
-                        Ziehe Dateien hierher oder wähle sie aus. Maximal {MAX_FILES} Dateien (Bild oder PDF) à {MAX_FILE_SIZE_MB} MB.
-                      </p>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="add-item-images"
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-100"
-                      >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16M4 12h16" />
-                        </svg>
-                        Dateien auswählen
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label htmlFor="add-item-quantity" className="text-sm font-medium text-slate-800">
+                        Menge *
                       </label>
                       <input
-                        id="add-item-images"
-                        type="file"
-                        accept="image/*,.pdf"
-                        multiple
-                        hidden
-                        onChange={(event) => handleSelectFiles(event.target.files)}
+                        id="add-item-quantity"
+                        type="number"
+                        min={1}
+                        step={1}
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                        {...register('quantity', { valueAsNumber: true })}
                       />
+                      {errors.quantity && <p className="text-xs text-red-500">{errors.quantity.message}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="add-item-value" className="text-sm font-medium text-slate-800">
+                        Wert (€)
+                      </label>
+                      <input
+                        id="add-item-value"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                        placeholder="z. B. 249.99"
+                        {...register('value')}
+                      />
+                      {errors.value && <p className="text-xs text-red-500">{errors.value.message}</p>}
                     </div>
                   </div>
 
-                  <div
-                    className="mt-4 flex min-h-[140px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500"
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      event.dataTransfer.dropEffect = 'copy';
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      handleSelectFiles(event.dataTransfer.files);
-                    }}
-                  >
-                    {files.length === 0 ? (
-                      <p className="text-center text-sm text-slate-500">Hierhin ziehen oder oben auf „Dateien auswählen“ klicken.</p>
-                    ) : (
-                      <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {filePreviews.map((preview) => (
-                          <div
-                            key={preview.url}
-                            className="relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+                  <div className="space-y-2">
+                    <label htmlFor="add-item-purchase-date" className="text-sm font-medium text-slate-800">
+                      Kaufdatum
+                    </label>
+                    <input
+                      id="add-item-purchase-date"
+                      type="date"
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                      {...register('purchase_date')}
+                    />
+                    {errors.purchase_date && <p className="text-xs text-red-500">{errors.purchase_date.message}</p>}
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 1 && (
+                <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 sm:gap-5 lg:max-w-3xl">
+                  <div className="space-y-2">
+                    <label htmlFor="add-item-location" className="text-sm font-medium text-slate-800">
+                      Standort
+                    </label>
+                    <select
+                      id="add-item-location"
+                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                      {...register('location', {
+                        setValueAs: (v) => v === '' ? null : Number(v)
+                      })}
+                    >
+                      <option value="">Kein Standort ausgewählt</option>
+                      {sortedLocations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.location && <p className="text-xs text-red-500">{errors.location.message}</p>}
+                  </div>
+
+                  <div className="space-y-3 rounded-lg border border-dashed border-slate-200 p-4 lg:p-5">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm font-medium text-slate-800">Neuen Standort hinzufügen</p>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+                        <input
+                          type="text"
+                          value={newLocationName}
+                          onChange={(event) => setNewLocationName(event.target.value)}
+                          placeholder="z. B. Büro, Keller, Wohnzimmer"
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={handleCreateLocation}
+                          loading={isCreatingLocation}
+                        >
+                          Speichern
+                        </Button>
+                      </div>
+                    </div>
+                    {locationCreationError && (
+                      <p className="text-xs text-red-500">{locationCreationError}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Controller
+                      control={control}
+                      name="tags"
+                      render={({ field }) => (
+                        <TagSelector
+                          options={tagOptions}
+                          selectedIds={field.value ?? []}
+                          onChange={field.onChange}
+                          onCreateTag={handleCreateTag}
+                          disabled={isSubmitting}
+                          isCreating={isCreatingTag}
+                        />
+                      )}
+                    />
+                    {tagCreationError && (
+                      <p className="text-xs text-red-500">{tagCreationError}</p>
+                    )}
+                    {errors.tags && <p className="text-xs text-red-500">{errors.tags.message}</p>}
+                    {watchedValues.tags && watchedValues.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {selectedTags.map((label) => (
+                          <span
+                            key={label}
+                            className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700"
                           >
-                            {preview.kind === 'image' ? (
-                              <img src={preview.url} alt={preview.name} className="h-36 w-full object-cover" />
-                            ) : (
-                              <div className="flex h-36 w-full flex-col items-center justify-center bg-slate-100 text-slate-600">
-                                <svg
-                                  className="h-10 w-10"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zm7 0v5h5"
-                                  />
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6M9 17h6" />
-                                </svg>
-                                <span className="mt-2 text-xs font-semibold uppercase">
-                                  {preview.kind === 'pdf' ? 'PDF' : 'DATEI'}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between px-3 py-2 text-xs text-slate-600">
-                              <span className="truncate pr-2" title={preview.name}>
-                                {preview.name}
-                              </span>
-                              <button
-                                type="button"
-                                className="text-red-500 transition hover:text-red-600"
-                                onClick={() => handleRemoveFile(preview.name)}
-                              >
-                                Entfernen
-                              </button>
-                            </div>
-                          </div>
+                            {label}
+                          </span>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {fileFeedback && (
-                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-                      {fileFeedback}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label htmlFor="add-item-employee-name" className="text-sm font-medium text-slate-800">
+                        Mitarbeiter Name
+                      </label>
+                      <input
+                        id="add-item-employee-name"
+                        type="text"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                        placeholder="z. B. Max Mustermann"
+                        {...register('employee_name')}
+                      />
+                      {errors.employee_name && <p className="text-xs text-red-500">{errors.employee_name.message}</p>}
+                      <p className="text-xs text-slate-500">
+                        Optional – welchem Mitarbeiter ist der Gegenstand zugeordnet?
+                      </p>
                     </div>
-                  )}
-              </section>
-              </div>
-            )}
+
+                    <div className="space-y-2">
+                      <label htmlFor="add-item-room-number" className="text-sm font-medium text-slate-800">
+                        Raum Nr
+                      </label>
+                      <input
+                        id="add-item-room-number"
+                        type="text"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                        placeholder="z. B. 101, A2.15"
+                        {...register('room_number')}
+                      />
+                      {errors.room_number && <p className="text-xs text-red-500">{errors.room_number.message}</p>}
+                      <p className="text-xs text-slate-500">
+                        Optional – in welchem Raum befindet sich der Gegenstand?
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 2 && (
+                <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 sm:gap-6 lg:max-w-4xl">
+                  <section
+                    ref={reviewSectionRef}
+                    tabIndex={-1}
+                    className="rounded-xl border border-slate-200 bg-slate-50 p-5 lg:p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-200"
+                  >
+                    <h4 className="text-sm font-semibold uppercase text-slate-500">Zusammenfassung</h4>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Name</p>
+                        <p className="text-sm font-semibold text-slate-900">{watchedValues.name || '-'}</p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Wodis Inventarnummer</p>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {watchedValues.wodis_inventory_number?.trim()
+                            ? watchedValues.wodis_inventory_number
+                            : '-'}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Menge</p>
+                        <p className="text-sm font-semibold text-slate-900">{watchedValues.quantity}</p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Wert</p>
+                        <p className="text-sm font-semibold text-slate-900">{formatCurrency(watchedValues.value)}</p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Kaufdatum</p>
+                        <p className="text-sm font-semibold text-slate-900">{formatDate(watchedValues.purchase_date)}</p>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Beschreibung</p>
+                        <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                          {watchedValues.description?.trim() ? watchedValues.description : '—'}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Standort</p>
+                        <p className="text-sm font-semibold text-slate-900">{selectedLocationName}</p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Tags</p>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {selectedTags.length > 0 ? (
+                            selectedTags.map((label) => (
+                              <span
+                                key={label}
+                                className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700"
+                              >
+                                {label}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-slate-500">Keine Tags</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Mitarbeiter Name</p>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {watchedValues.employee_name?.trim() ? watchedValues.employee_name : '—'}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">Raum Nr</p>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {watchedValues.room_number?.trim() ? watchedValues.room_number : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="rounded-xl border border-slate-200 bg-white p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold uppercase text-slate-500">Bilder (optional)</h4>
+                        <p className="text-xs text-slate-500">
+                          Ziehe Dateien hierher oder wähle sie aus. Maximal {MAX_FILES} Dateien (Bild oder PDF) à {MAX_FILE_SIZE_MB} MB.
+                        </p>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="add-item-images"
+                          className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-100"
+                        >
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16M4 12h16" />
+                          </svg>
+                          Dateien auswählen
+                        </label>
+                        <input
+                          id="add-item-images"
+                          type="file"
+                          accept="image/*,.pdf"
+                          multiple
+                          hidden
+                          onChange={(event) => handleSelectFiles(event.target.files)}
+                        />
+                      </div>
+                    </div>
+
+                    <div
+                      className="mt-4 flex min-h-[140px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500"
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = 'copy';
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        handleSelectFiles(event.dataTransfer.files);
+                      }}
+                    >
+                      {files.length === 0 ? (
+                        <p className="text-center text-sm text-slate-500">Hierhin ziehen oder oben auf „Dateien auswählen“ klicken.</p>
+                      ) : (
+                        <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {filePreviews.map((preview) => (
+                            <div
+                              key={preview.url}
+                              className="relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+                            >
+                              {preview.kind === 'image' ? (
+                                <img src={preview.url} alt={preview.name} className="h-36 w-full object-cover" />
+                              ) : (
+                                <div className="flex h-36 w-full flex-col items-center justify-center bg-slate-100 text-slate-600">
+                                  <svg
+                                    className="h-10 w-10"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zm7 0v5h5"
+                                    />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6M9 17h6" />
+                                  </svg>
+                                  <span className="mt-2 text-xs font-semibold uppercase">
+                                    {preview.kind === 'pdf' ? 'PDF' : 'DATEI'}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between px-3 py-2 text-xs text-slate-600">
+                                <span className="truncate pr-2" title={preview.name}>
+                                  {preview.name}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="text-red-500 transition hover:text-red-600"
+                                  onClick={() => handleRemoveFile(preview.name)}
+                                >
+                                  Entfernen
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {fileFeedback && (
+                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+                        {fileFeedback}
+                      </div>
+                    )}
+                  </section>
+                </div>
+              )}
             </div>
             <footer className="border-t border-slate-200 bg-white px-4 py-4 sm:px-6 sm:py-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

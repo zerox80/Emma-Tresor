@@ -7,46 +7,46 @@ import Button from './common/Button';
 import ItemChangeHistory from './ItemChangeHistory';
 
 interface DetailPositionInfo {
-  
+
   current: number;
-  
+
   total: number;
 }
 
 interface ItemDetailViewProps {
-  
+
   item: Item | null;
-  
+
   loading: boolean;
-  
+
   error: string | null;
-  
+
   onClose: () => void;
-  
+
   onEdit: () => void;
-  
+
   onRetry?: () => void;
-  
+
   onDelete?: () => void;
-  
+
   deleteLoading?: boolean;
-  
+
   deleteError?: string | null;
-  
+
   tagMap: Record<number, string>;
-  
+
   locationMap: Record<number, string>;
-  
+
   onNavigatePrevious?: () => void;
-  
+
   onNavigateNext?: () => void;
-  
+
   canNavigatePrevious?: boolean;
-  
+
   canNavigateNext?: boolean;
-  
+
   navigationDirection?: 'next' | 'previous' | null;
-  
+
   positionInfo?: DetailPositionInfo | null;
 }
 
@@ -72,7 +72,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
   navigationDirection = null,
   positionInfo = null,
 }) => {
-  
+
   type QrPreview = {
     url: string;
     revokable: boolean;
@@ -640,7 +640,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
               className="relative z-10 w-full max-w-4xl rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
               ref={dialogRef}
             >
-              {}
+              { }
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h3 id="item-detail-heading" className="text-2xl font-semibold text-slate-900">
@@ -694,7 +694,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </div>
               </div>
 
-              {}
+              { }
               {loading && (
                 <div className="flex h-64 items-center justify-center">
                   <div className="text-center">
@@ -704,7 +704,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </div>
               )}
 
-              {}
+              { }
               {error && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
                   <p className="mb-4 text-red-700">{error}</p>
@@ -716,7 +716,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </div>
               )}
 
-              {}
+              { }
               {!loading && !error && item && (
                 <div className="space-y-8">
                   <section className="rounded-xl border border-slate-200 bg-white p-6">
@@ -771,6 +771,23 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                             <p className="mt-1 text-xs text-indigo-700">Nutze diese Nummer für die Suche oder zum Abgleich mit Wodis.</p>
                           </div>
                         )}
+                        {/* Employee Name & Room Number */}
+                        {(item.employee_name || item.room_number) && (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {item.employee_name && (
+                              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                                <p className="font-semibold text-slate-700">Mitarbeiter Name</p>
+                                <p className="mt-1 text-slate-900">{item.employee_name}</p>
+                              </div>
+                            )}
+                            {item.room_number && (
+                              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                                <p className="font-semibold text-slate-700">Raum Nr</p>
+                                <p className="mt-1 text-slate-900">{item.room_number}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                           <Button
                             type="button"
@@ -808,7 +825,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
                   </section>
 
-                  {}
+                  { }
                   {attachments.length > 0 ? (
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
                       <h4 className="mb-4 text-lg font-semibold text-slate-900">Anhänge</h4>
@@ -902,9 +919,9 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
                   )}
 
-                  {}
+                  { }
                   <div className="grid gap-8 lg:grid-cols-2">
-                    {}
+                    { }
                     <div className="rounded-xl border border-slate-200 bg-white p-6">
                       <h4 className="mb-4 text-lg font-semibold text-slate-900">Grundinformationen</h4>
                       <dl className="space-y-4">
@@ -947,7 +964,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                       </dl>
                     </div>
 
-                    {}
+                    { }
                     <div className="rounded-xl border border-slate-200 bg-white p-6">
                       <h4 className="mb-4 text-lg font-semibold text-slate-900">Zuordnung</h4>
                       <dl className="space-y-4">
@@ -982,7 +999,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                     </div>
                   </div>
 
-                  {}
+                  { }
                   <div className="rounded-xl border border-slate-200 bg-white p-6">
                     <h4 className="mb-4 text-lg font-semibold text-slate-900">Änderungshistorie</h4>
                     <ItemChangeHistory changelog={changelog} loading={changelogLoading} error={changelogError} />
@@ -990,7 +1007,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
                 </div>
               )}
 
-              {}
+              { }
               {!loading && !error && item && (
                 <div className="mt-8 space-y-4">
                   {deleteError && (

@@ -117,6 +117,12 @@ export interface Item {
 
   /** WODIS system inventory number (optional external reference) */
   wodis_inventory_number: string | null;
+
+  /** Name of the employee the item is assigned to (optional) */
+  employee_name: string | null;
+
+  /** Room number where the item is located (optional) */
+  room_number: string | null;
 }
 
 /**
@@ -149,6 +155,12 @@ export interface ItemPayload {
 
   /** WODIS system inventory number (optional external reference) */
   wodis_inventory_number: string | null;
+
+  /** Employee name for item assignment (optional) */
+  employee_name: string | null;
+
+  /** Room number for item location (optional) */
+  room_number: string | null;
 }
 
 // ==================
