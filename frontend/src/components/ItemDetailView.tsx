@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import type { Item, ItemChangeLog } from '../types/inventory';
 import { apiBaseUrl } from '../api/client';
@@ -645,9 +646,17 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
     onNavigatePrevious,
   ]);
 
-  return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={onClose} />
+  useEffect(() => {
+    // Lock body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100]">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onClick={onClose} />
       <div className="relative flex h-full items-center justify-center p-4 sm:p-6">
         <div
           role="dialog"
@@ -1087,7 +1096,8 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
