@@ -13,7 +13,7 @@
     "@hookform/resolvers": "^5.2.2",
     "react-hook-form": "^7.71.0",
     "zod": "^4.3.5",
-    "@yudiel/react-qr-scanner": "^2.5.0",
+    "@yudiel/react-qr-scanner": "^2.5.1",
     "@zxing/browser": "^0.1.5",
     "qrcode": "^1.5.4",
     "react": "^19.2.3",
