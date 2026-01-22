@@ -1063,24 +1063,27 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
 
                 {/* Tab Navigation & Main Actions */}
                 <div className={`flex items-end gap-3 ${confirmingDelete ? 'opacity-50 pointer-events-none' : ''}`}>
-                  {activeTab !== 'overview' && (
-                    <Button type="button" variant="secondary" onClick={handlePrevTab}>
-                      Zurück
-                    </Button>
-                  )}
 
-                  <div className="mx-1 hidden h-10 w-px bg-slate-200 sm:block" />
 
                   <Button type="button" variant="secondary" onClick={onClose}>
                     Schließen
                   </Button>
 
+                  <div className="mx-1 hidden h-10 w-px bg-slate-200 sm:block" />
+
                   <div className="flex flex-col gap-2">
-                    {activeTab !== 'history' && (
-                      <Button type="button" variant="primary" onClick={handleNextTab} className="w-full">
-                        Weiter
-                      </Button>
-                    )}
+                    <div className="flex gap-2">
+                      {activeTab !== 'overview' && (
+                        <Button type="button" variant="secondary" onClick={handlePrevTab} className="flex-1">
+                          Zurück
+                        </Button>
+                      )}
+                      {activeTab !== 'history' && (
+                        <Button type="button" variant="primary" onClick={handleNextTab} className="flex-1">
+                          Weiter
+                        </Button>
+                      )}
+                    </div>
                     <Button type="button" variant="primary" onClick={onEdit} className="w-full">
                       Bearbeiten
                     </Button>
