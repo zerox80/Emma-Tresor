@@ -22,7 +22,7 @@
     "react-select": "^5.10.2",
     "@types/react-select": "^5.0.1",
     "clsx": "^2.1.1",
-    "axios": "^1.13.2",
+    "axios": "^1.13.3",
     "jwt-decode": "^4.0.0",
     "zustand": "^5.0.10"
   },
