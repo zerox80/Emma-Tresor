@@ -17,7 +17,7 @@
     "@zxing/browser": "^0.1.5",
     "qrcode": "^1.5.4",
     "react": "^19.2.4",
-    "react-dom": "^19.2.3",
+    "react-dom": "^19.2.4",
     "react-router-dom": "^7.12.0",
     "react-select": "^5.10.2",
     "@types/react-select": "^5.0.1",
