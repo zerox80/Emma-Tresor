@@ -32,7 +32,7 @@ bleach>=6.0.0,<7.0.0                         # HTML sanitization for XSS prevent
 
 # Database & Deployment
 psycopg[binary]>=3.2.10,<4.0.0               # PostgreSQL database adapter
-gunicorn>=23.0.0,<24.0.0                    # Production WSGI server
+gunicorn>=23.0.0,<25.0.0                    # Production WSGI server
 
 # Development & Configuration
 python-dotenv>=1.0.0,<2.0.0                  # Environment variable management (.env files)
