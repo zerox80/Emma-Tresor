@@ -3,29 +3,29 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     open-pull-requests-limit: 20
 
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     open-pull-requests-limit: 20
 
   - package-ecosystem: "docker"
     directory: "/docker/backend"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     open-pull-requests-limit: 20
 
   - package-ecosystem: "docker"
     directory: "/docker/frontend"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     open-pull-requests-limit: 20
 
   - package-ecosystem: "docker"
     directory: "/docker/nginx"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     open-pull-requests-limit: 20
