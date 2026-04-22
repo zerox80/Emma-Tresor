@@ -35,4 +35,4 @@ psycopg[binary]>=3.2.10,<4.0.0               # PostgreSQL database adapter
 gunicorn>=23.0.0,<26.0.0                    # Production WSGI server
 
 # Development & Configuration
-python-dotenv>=1.0.0,<2.0.0                  # Environment variable management (.env files)
+python-dotenv>=1.2.2,<2.0.0                  # Environment variable management (.env files)
