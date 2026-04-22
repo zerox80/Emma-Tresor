@@ -31,7 +31,7 @@ qrcode[pil]>=8.2,<9.0.0                      # QR code generation for asset tags
 bleach>=6.0.0,<7.0.0                         # HTML sanitization for XSS prevention
 
 # Database & Deployment
-psycopg[binary]>=3.2.10,<4.0.0               # PostgreSQL database adapter
+psycopg[binary]>=3.3.3,<4.0.0               # PostgreSQL database adapter
 gunicorn>=23.0.0,<26.0.0                    # Production WSGI server
 
 # Development & Configuration
