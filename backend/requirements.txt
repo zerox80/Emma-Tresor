@@ -19,7 +19,7 @@ django-cors-headers>=4.3.0,<5.0.0            # Cross-Origin Resource Sharing hea
 django-csp>=4.0.0,<5.0.0                     # Content Security Policy headers
 
 # API Enhancement
-django-filter>=25.1,<26.0                     # Advanced filtering for REST API
+django-filter>=25.2,<26.0                     # Advanced filtering for REST API
 
 # Image & Media Processing
 Pillow>=11.3.0,<13.0.0                      # Image processing library for item photos
