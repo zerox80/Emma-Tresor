@@ -12,7 +12,7 @@ djangorestframework>=3.17.1,<4.0.0            # Django REST Framework for API en
 # Authentication & Security
 djangorestframework-simplejwt>=5.5.1,<6.0.0  # JWT token authentication
 argon2-cffi>=25.1.0,<26.0                      # Password hashing (most secure algorithm)
-django-axes>=6.5.0,<9.0.0                    # Login attempt protection/brute force prevention
+django-axes>=8.3.1,<9.0.0                    # Login attempt protection/brute force prevention
 
 # Web Security Headers
 django-cors-headers>=4.9.0,<5.0.0            # Cross-Origin Resource Sharing headers
