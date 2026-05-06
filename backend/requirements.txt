@@ -10,7 +10,7 @@ Django>=6.0.5,<6.1.0                          # Main web framework (latest stabl
 djangorestframework>=3.17.1,<4.0.0            # Django REST Framework for API endpoints
 
 # Authentication & Security
-djangorestframework-simplejwt>=5.3.0,<6.0.0  # JWT token authentication
+djangorestframework-simplejwt>=5.5.1,<6.0.0  # JWT token authentication
 argon2-cffi>=25.1.0,<26.0                      # Password hashing (most secure algorithm)
 django-axes>=6.5.0,<9.0.0                    # Login attempt protection/brute force prevention
 
