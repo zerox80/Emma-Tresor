@@ -138,6 +138,9 @@ AUDITED_FIELDS: tuple[str, ...] = (
     'purchase_date',     # Date item was purchased
     'value',             # Monetary value
     'location_id',       # Foreign key to Location (tracked by ID not object)
+    'wodis_inventory_number',
+    'employee_name',
+    'room_number',
 )
 
 # =========================

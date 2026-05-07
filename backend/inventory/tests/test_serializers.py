@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
-from ..models import Item, ItemList, Location, Tag
+from ..models import Item, ItemChangeLog, ItemList, Location, Tag
 from ..serializers import ItemListSerializer, ItemSerializer, UserRegistrationSerializer
 User = get_user_model()
 
@@ -119,6 +119,55 @@ class ItemSerializerTests(TestCase):
         updated_item = serializer.save()
         updated_item.refresh_from_db()
         self.assertIsNone(updated_item.wodis_inventory_number)
+
+    def test_update_audits_extended_item_fields(self):
+        item = Item.objects.create(name='Camera', owner=self.user, location
+            =self.location_user, wodis_inventory_number='OLD-1',
+            employee_name='Old Employee', room_number='100')
+        data = {'name': 'Camera', 'description': '', 'quantity': 1, 'value':
+            '', 'location': self.location_user.id, 'wodis_inventory_number':
+            'NEW-2', 'employee_name': 'New Employee', 'room_number': '200',
+            'tags': []}
+        serializer = self._get_serializer(instance=item, data=data, request
+            =self._build_request(self.user))
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        updated_item = serializer.save()
+
+        log = ItemChangeLog.objects.filter(item=updated_item, action='update'
+            ).latest('created_at')
+        self.assertEqual(log.changes['wodis_inventory_number']['old'],
+            'OLD-1')
+        self.assertEqual(log.changes['wodis_inventory_number']['new'],
+            'NEW-2')
+        self.assertEqual(log.changes['employee_name']['old'],
+            'Old Employee')
+        self.assertEqual(log.changes['employee_name']['new'],
+            'New Employee')
+        self.assertEqual(log.changes['room_number']['old'], '100')
+        self.assertEqual(log.changes['room_number']['new'], '200')
+
+    def test_update_audits_tag_changes(self):
+        item = Item.objects.create(name='Camera', owner=self.user, location
+            =self.location_user)
+        item.tags.set([self.tag_user])
+        data = {'name': 'Camera', 'description': '', 'quantity': 1, 'value':
+            '', 'location': self.location_user.id, 'tags': [self.
+            tag_user_2.id]}
+        serializer = self._get_serializer(instance=item, data=data, request
+            =self._build_request(self.user))
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        updated_item = serializer.save()
+
+        tag_logs = [
+            log for log in ItemChangeLog.objects.filter(item=updated_item,
+                action='update')
+            if 'tags' in log.changes
+        ]
+        self.assertEqual(len(tag_logs), 1)
+        self.assertEqual(tag_logs[0].changes['tags']['old'], [self.
+            tag_user.id])
+        self.assertEqual(tag_logs[0].changes['tags']['new'], [self.
+            tag_user_2.id])
 
 class ItemListSerializerTests(TestCase):
 

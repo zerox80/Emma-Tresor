@@ -7,10 +7,32 @@
 
 from __future__ import annotations                   # Enable forward references for type hints
 from django.conf import settings                     # Django settings configuration
-from rest_framework import authentication            # REST Framework authentication base classes
+from django.middleware.csrf import CsrfViewMiddleware
+from rest_framework import authentication, exceptions # REST Framework authentication base classes
 from rest_framework.request import Request           # REST Framework request object type
 from rest_framework_simplejwt.authentication import JWTAuthentication  # JWT authentication base class
 from rest_framework_simplejwt.exceptions import InvalidToken           # JWT validation error
+
+
+class _CSRFCheck(CsrfViewMiddleware):
+    """Return the CSRF failure reason instead of an HttpResponse."""
+
+    def _reject(self, request, reason):
+        return reason
+
+
+def enforce_csrf(request: Request) -> None:
+    """Apply Django's CSRF validation to cookie-authenticated API requests."""
+
+    def _get_response(_request):
+        return None
+
+    check = _CSRFCheck(_get_response)
+    check.process_request(request)
+    reason = check.process_view(request, None, (), {})
+    if reason:
+        raise exceptions.PermissionDenied(f'CSRF Failed: {reason}')
+
 
 class CookieJWTAuthentication(JWTAuthentication):
     """
@@ -70,6 +92,8 @@ class CookieJWTAuthentication(JWTAuthentication):
             # Token is invalid (expired, bad signature, etc.) - return None
             # This prevents authentication errors from breaking the request flow
             return None
+
+        enforce_csrf(request)
 
         # Token is valid - authenticate the user and return the result
         # get_user() loads the user from the database using the token's user_id claim

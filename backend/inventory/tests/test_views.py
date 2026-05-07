@@ -28,6 +28,15 @@ from contextlib import contextmanager
 from ..models import Item, ItemImage, ItemList, Location, Tag, DuplicateQuarantine
 from ..views import ItemImageViewSet
 
+
+def set_csrf_cookie(client):
+
+    response = client.get(reverse('csrf_token'))
+    csrf_token = response.cookies[settings.CSRF_COOKIE_NAME].value
+    client.cookies[settings.CSRF_COOKIE_NAME] = csrf_token
+    return csrf_token
+
+
 class TimedAPITestCase(APITestCase):
 
     @contextmanager
@@ -45,7 +54,7 @@ class TimedAPITestCase(APITestCase):
 class BaseViewTestCase(TestCase):
 
     def setUp(self):
-        
+
         self.user = User.objects.create_user(username='testuser', password='password')
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
@@ -67,7 +76,7 @@ class LandingPageTests(TestCase):
 class TagViewSetTests(APITestCase):
 
     def setUp(self):
-        
+
         self.client = APIClient()
         self.user = User.objects.create_user('tagger', 'tagger@example.com', 'StrongPass123!')
         self.client.force_authenticate(user=self.user)
@@ -273,6 +282,97 @@ class ItemViewSetTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 0)
+
+class CookieJWTCSRFSecurityTests(APITestCase):
+
+    def setUp(self):
+
+        self.user = User.objects.create_user('csrf_user', 'csrf@example.com', 'StrongPass123!')
+        self.location = Location.objects.create(name='Storage', user=self.user)
+
+    def set_access_cookie(self, client):
+
+        refresh = RefreshToken.for_user(self.user)
+        client.cookies[settings.JWT_ACCESS_COOKIE_NAME] = str(refresh.access_token)
+        return refresh
+
+    def test_cookie_access_token_post_without_csrf_is_rejected(self):
+
+        client = APIClient()
+        self.set_access_cookie(client)
+        url = reverse('item-list')
+
+        response = client.post(url, {'name': 'Blocked', 'quantity': 1}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Item.objects.filter(name='Blocked', owner=self.user).exists())
+
+    def test_cookie_access_token_get_without_csrf_succeeds(self):
+
+        client = APIClient()
+        self.set_access_cookie(client)
+        url = reverse('item-list')
+
+        response = client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cookie_access_token_post_with_csrf_succeeds(self):
+
+        client = APIClient()
+        self.set_access_cookie(client)
+        csrf_token = set_csrf_cookie(client)
+        url = reverse('item-list')
+
+        response = client.post(
+            url,
+            {'name': 'Allowed', 'quantity': 1, 'location': self.location.id},
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Item.objects.filter(name='Allowed', owner=self.user).exists())
+
+    def test_bearer_access_token_post_without_csrf_succeeds(self):
+
+        client = APIClient()
+        refresh = RefreshToken.for_user(self.user)
+        client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+        url = reverse('item-list')
+
+        response = client.post(
+            url,
+            {'name': 'Bearer Allowed', 'quantity': 1, 'location': self.location.id},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Item.objects.filter(name='Bearer Allowed', owner=self.user).exists())
+
+    def test_refresh_cookie_without_csrf_is_rejected(self):
+
+        client = APIClient()
+        refresh = RefreshToken.for_user(self.user)
+        client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = str(refresh)
+        url = reverse('token_refresh')
+
+        response = client.post(url, {}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_refresh_cookie_with_csrf_succeeds(self):
+
+        client = APIClient()
+        refresh = RefreshToken.for_user(self.user)
+        client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = str(refresh)
+        csrf_token = set_csrf_cookie(client)
+        url = reverse('token_refresh')
+
+        response = client.post(url, {}, format='json', HTTP_X_CSRFTOKEN=csrf_token)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(settings.JWT_ACCESS_COOKIE_NAME, response.cookies)
 
 class ItemListViewSetTests(APITestCase):
 
@@ -591,7 +691,7 @@ class AuthSecurityTests(TimedAPITestCase):
             with self.assertTiming(min_seconds=0.1):
                 response = self.client.post(url, {'email': 'nobody@example.com', 'password': 'password'})
                 self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertIn('Login attempt with non-existent email', cm.output[0])
+        self.assertTrue(any('Authentication failed' in message for message in cm.output))
 
     def test_login_with_wrong_password_is_slowed(self):
         
@@ -606,7 +706,8 @@ class AuthSecurityTests(TimedAPITestCase):
         self.client.post(login_url, {'email': self.user.email, 'password': 'password123'})
 
         refresh_url = reverse('token_refresh')
-        response = self.client.post(refresh_url, {})
+        csrf_token = set_csrf_cookie(self.client)
+        response = self.client.post(refresh_url, {}, HTTP_X_CSRFTOKEN=csrf_token)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn(settings.JWT_ACCESS_COOKIE_NAME, response.cookies)
         self.assertTrue(response.data['rotated'])

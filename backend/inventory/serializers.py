@@ -716,6 +716,7 @@ class ItemSerializer(serializers.ModelSerializer):
         
         user = self._require_user()
         tags = validated_data.pop('tags', None)
+        old_tag_ids = sorted(instance.tags.values_list('id', flat=True)) if tags is not None else None
         normalised = self._normalise_payload(validated_data)
 
         allowed_fields = {
@@ -738,7 +739,17 @@ class ItemSerializer(serializers.ModelSerializer):
         instance.save()
 
         if tags is not None:
-            instance.tags.set([tag for tag in tags if tag.user_id == user.id])
+            own_tags = [tag for tag in tags if tag.user_id == user.id]
+            instance.tags.set(own_tags)
+            new_tag_ids = sorted(instance.tags.values_list('id', flat=True))
+            if old_tag_ids != new_tag_ids:
+                ItemChangeLog.objects.create(
+                    item=instance,
+                    action='update',
+                    user=user,
+                    item_name=instance.name,
+                    changes={'tags': {'old': old_tag_ids, 'new': new_tag_ids}},
+                )
         return instance
 
 
