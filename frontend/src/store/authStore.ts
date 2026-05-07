@@ -6,7 +6,7 @@
 import { create, type StateCreator } from 'zustand';              // State management library
 import { persist, type PersistOptions } from 'zustand/middleware'; // Persistence middleware
 
-import apiClient from '../api/client';                             // Configured API client
+import apiClient, { ensureCSRFToken } from '../api/client';         // Configured API client
 import type { LoginRequest, LoginResponse, RegisterRequest, UserProfile } from '../types/auth'; // Type definitions
 
 /**
@@ -41,7 +41,7 @@ interface AuthState {
   register: (payload: RegisterRequest) => Promise<void>;
   
   /** Refresh method - updates expired access token */
-  refreshAccessToken: () => Promise<void>;
+  refreshAccessToken: () => Promise<boolean>;
   
   /** Initialize method - restores auth state from storage */
   initialise: () => Promise<void>;
@@ -70,6 +70,9 @@ const resetState = (set: AuthStoreSetter) => {
 
 /** Type definition for Zustand persist middleware mutators */
 type PersistMutators = [['zustand/persist', unknown]];
+
+/** Persisted subset of authentication state. */
+type PersistedAuthState = Pick<AuthState, 'user' | 'isAuthenticated' | 'hasInitialised' | 'remembering'>;
 
 /**
  * Create authentication store with all state and actions.
@@ -191,6 +194,7 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
     const payload = remember ? { remember: '1' } : undefined;
 
     try {
+      await ensureCSRFToken();
       const { data } = await apiClient.post<{ access_expires: number; rotated: boolean }>('/token/refresh/', payload);
       set({
         accessExpiresAt: Date.now() + data.access_expires * 1000,
@@ -221,6 +225,7 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
    */
   logout: async () => {
     try {
+      await ensureCSRFToken();
       // Notify the backend to invalidate tokens
       await apiClient.post('/auth/logout/', {});
     } catch (error) {
@@ -242,7 +247,7 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
  * Persists the authentication state to localStorage/sessionStorage
  * based on the user's "remember me" preference.
  */
-const persistOptions: PersistOptions<AuthState> = {
+const persistOptions: PersistOptions<AuthState, PersistedAuthState> = {
   name: AUTH_STORAGE_KEY,
   partialize: (state: AuthState) => ({
     user: state.user,
@@ -259,5 +264,5 @@ const persistOptions: PersistOptions<AuthState> = {
  * to create a fully functional authentication state store.
  */
 export const useAuthStore = create<AuthState>()(
-  persist<AuthState>(authStoreCreator, persistOptions),
+  persist<AuthState, [], [], PersistedAuthState>(authStoreCreator, persistOptions),
 );

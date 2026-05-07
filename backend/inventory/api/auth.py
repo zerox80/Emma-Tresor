@@ -26,6 +26,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from ..authentication import enforce_csrf
 from ..serializers import UserRegistrationSerializer
 from .throttles import LoginRateThrottle, LogoutRateThrottle, RegisterRateThrottle
 
@@ -471,6 +472,7 @@ class CustomTokenRefreshView(TokenRefreshView):
         # Prepare data for serializer
         data = request.data.copy()
         if 'refresh' not in data and refresh_cookie:
+            enforce_csrf(request)
             data['refresh'] = refresh_cookie
 
         # Extract remember preference
