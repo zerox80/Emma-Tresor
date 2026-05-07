@@ -3,7 +3,12 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 from ..models import Item, ItemChangeLog, ItemList, Location, Tag
-from ..serializers import ItemListSerializer, ItemSerializer, UserRegistrationSerializer
+from ..serializers import (
+    ItemChangeLogSerializer,
+    ItemListSerializer,
+    ItemSerializer,
+    UserRegistrationSerializer,
+)
 User = get_user_model()
 
 class UserRegistrationSerializerTests(TestCase):
@@ -168,6 +173,36 @@ class ItemSerializerTests(TestCase):
             tag_user.id])
         self.assertEqual(tag_logs[0].changes['tags']['new'], [self.
             tag_user_2.id])
+
+    def test_change_log_serializer_resolves_tag_ids_to_names(self):
+        item = Item.objects.create(name='Camera', owner=self.user, location
+            =self.location_user)
+        missing_tag_id = self.tag_user_2.id + 1000
+        log = ItemChangeLog.objects.create(item=item, action='update', user
+            =self.user, item_name=item.name, changes={'tags': {'old': [
+            self.tag_user.id, missing_tag_id], 'new': [self.tag_user_2.id]}})
+
+        data = ItemChangeLogSerializer(log).data
+
+        self.assertEqual(data['changes']['tags']['old'], ['Electronics',
+            f'#{missing_tag_id}'])
+        self.assertEqual(data['changes']['tags']['new'], ['Appliances'])
+        log.refresh_from_db()
+        self.assertEqual(log.changes['tags']['old'], [self.tag_user.id,
+            missing_tag_id])
+
+    def test_change_log_serializer_still_resolves_location_ids(self):
+        item = Item.objects.create(name='Camera', owner=self.user, location
+            =self.location_user)
+        new_location = Location.objects.create(name='Office', user=self.user)
+        log = ItemChangeLog.objects.create(item=item, action='update', user
+            =self.user, item_name=item.name, changes={'location_id': {
+            'old': self.location_user.id, 'new': new_location.id}})
+
+        data = ItemChangeLogSerializer(log).data
+
+        self.assertEqual(data['changes']['location_id']['old'], 'Basement')
+        self.assertEqual(data['changes']['location_id']['new'], 'Office')
 
 class ItemListSerializerTests(TestCase):
 

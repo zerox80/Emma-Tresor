@@ -912,6 +912,7 @@ class ItemChangeLogSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._location_cache: dict[int, str] = {}
+        self._tag_cache: dict[int, str] = {}
 
     def _resolve_location_name(self, value):
         if value in (None, ''):
@@ -933,15 +934,51 @@ class ItemChangeLogSerializer(serializers.ModelSerializer):
         self._location_cache[location_id] = name
         return name
 
+    def _resolve_tag_name(self, value):
+        if value in (None, ''):
+            return value
+        try:
+            tag_id = int(value)
+        except (TypeError, ValueError):
+            return value
+
+        if tag_id in self._tag_cache:
+            return self._tag_cache[tag_id]
+
+        tag = Tag.objects.filter(pk=tag_id).only('name').first()
+        if tag is None:
+            name = f"#{tag_id}"
+        else:
+            name = tag.name
+
+        self._tag_cache[tag_id] = name
+        return name
+
+    def _resolve_tag_names(self, value):
+        if value in (None, ''):
+            return value
+        if isinstance(value, (list, tuple, set)):
+            return [self._resolve_tag_name(tag_id) for tag_id in value]
+        return self._resolve_tag_name(value)
+
     def to_representation(self, instance):
         
         data = super().to_representation(instance)
         changes = data.get('changes')
         if isinstance(changes, dict):
+            changes = {
+                field: dict(change) if isinstance(change, dict) else change
+                for field, change in changes.items()
+            }
+            data['changes'] = changes
             location_change = changes.get('location_id')
             if isinstance(location_change, dict):
                 for key in ('old', 'new'):
                     location_change[key] = self._resolve_location_name(location_change.get(key))
+            tag_change = changes.get('tags')
+            if isinstance(tag_change, dict):
+                for key in ('old', 'new'):
+                    tag_change[key] = self._resolve_tag_names(tag_change.get(key))
         return data
 
     class Meta:
