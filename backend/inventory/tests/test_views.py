@@ -167,6 +167,35 @@ class LogoutViewTests(APITestCase):
         response = self.client.post(url, {'refresh': str(refresh)}, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_cookie_logout_without_csrf_is_rejected(self):
+
+        client = APIClient()
+        refresh = RefreshToken.for_user(self.user)
+        client.cookies[settings.JWT_ACCESS_COOKIE_NAME] = str(refresh.access_token)
+        client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = str(refresh)
+        url = reverse('logout')
+
+        response = client.post(url, {}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cookie_logout_with_csrf_succeeds_and_clears_cookies(self):
+
+        client = APIClient()
+        refresh = RefreshToken.for_user(self.user)
+        client.cookies[settings.JWT_ACCESS_COOKIE_NAME] = str(refresh.access_token)
+        client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = str(refresh)
+        csrf_token = set_csrf_cookie(client)
+        url = reverse('logout')
+
+        response = client.post(url, {}, format='json', HTTP_X_CSRFTOKEN=csrf_token)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertIn(settings.JWT_ACCESS_COOKIE_NAME, response.cookies)
+        self.assertIn(settings.JWT_REFRESH_COOKIE_NAME, response.cookies)
+        self.assertEqual(response.cookies[settings.JWT_ACCESS_COOKIE_NAME].value, '')
+        self.assertEqual(response.cookies[settings.JWT_REFRESH_COOKIE_NAME].value, '')
+
 class ItemViewSetTests(APITestCase):
 
     def setUp(self):

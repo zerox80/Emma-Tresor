@@ -225,6 +225,7 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (set, get) =>
    */
   logout: async () => {
     try {
+      await ensureCSRFToken();
       // Notify the backend to invalidate tokens
       await apiClient.post('/auth/logout/', {});
     } catch (error) {
