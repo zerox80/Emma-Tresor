@@ -51,23 +51,15 @@ RUNTIME_PYTHON = Path(sys.executable)
 # Whether to use virtual environment for backend commands
 USING_VENV = False
 
-# Required Python packages for the backend
-# These are the core dependencies needed for Django REST API functionality
-REQUIRED_PACKAGES = [
-    "django==5.2.*",                           # Django web framework (exact version)
-    "djangorestframework>=3.15,<4.0",         # Django REST Framework
-    "djangorestframework-simplejwt>=5.3,<6.0", # JWT authentication
-    "django-cors-headers>=4.3,<5.0",           # CORS support
-    "argon2-cffi>=23.1",                       # Password hashing
-    "Pillow>=11.0,<12.0",                      # Image processing
-]
-
 # Frontend directory and package manager configuration
 FRONTEND_DIR = BASE_DIR / "frontend"
 FRONTEND_PKG_MANAGER = "npm.cmd" if os.name == "nt" else "npm"
 
 # Backend directory (Django project root)
 BACKEND_DIR = BASE_DIR / "backend"
+
+# Backend dependency manifest
+REQUIREMENTS_FILE = BACKEND_DIR / "requirements.txt"
 
 # =========================
 # HELPER FUNCTIONS
@@ -180,12 +172,14 @@ def install_dependencies() -> None:
     """
     Install required Python packages using pip.
     
-    Installs all packages listed in REQUIRED_PACKAGES using the specified Python interpreter.
+    Installs packages from backend/requirements.txt using the specified Python interpreter.
     This ensures all backend dependencies are available for Django to function properly.
     """
     
     python = str(RUNTIME_PYTHON)
-    run([python, "-m", "pip", "install", *REQUIRED_PACKAGES])
+    if not REQUIREMENTS_FILE.exists():
+        raise SystemExit(f"Backend requirements file not found: {REQUIREMENTS_FILE}")
+    run([python, "-m", "pip", "install", "-r", str(REQUIREMENTS_FILE)])
 
 def install_frontend_dependencies() -> None:
     """

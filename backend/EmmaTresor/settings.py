@@ -447,13 +447,11 @@ CORS_ALLOWED_ORIGINS = _env_list(
     default='http://localhost:5173,http://127.0.0.1:5173',
 )
 
-allowed_https_hosts = {host for host in ALLOWED_HOSTS if host and host != '*'} or None
 for origin in CORS_ALLOWED_ORIGINS:
     _validate_https_url(
         origin,
         setting_name='CORS_ALLOWED_ORIGINS',
         allow_local_http=True,
-        allowed_https_hosts=allowed_https_hosts,
     )
 
 CORS_ALLOW_CREDENTIALS = True
@@ -535,6 +533,9 @@ ALLOW_USER_REGISTRATION = _env_bool(os.environ.get('ALLOW_USER_REGISTRATION'), d
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+LOG_DIR = Path(os.environ.get('DJANGO_LOG_DIR', str(BASE_DIR / 'logs')))
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -551,7 +552,7 @@ LOGGING = {
         'security_file': {
             'level': 'WARNING',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs' / 'security.log',
+            'filename': LOG_DIR / 'security.log',
             'maxBytes': 10485760,
             'backupCount': 100,
             'formatter': 'verbose',
@@ -583,11 +584,9 @@ _validate_https_url(
     FRONTEND_BASE_URL,
     setting_name='FRONTEND_BASE_URL',
     allow_local_http=True,
-    allowed_https_hosts=allowed_https_hosts,
 )
 _validate_https_url(
     FRONTEND_LOGIN_URL,
     setting_name='FRONTEND_LOGIN_URL',
     allow_local_http=True,
-    allowed_https_hosts=allowed_https_hosts,
 )

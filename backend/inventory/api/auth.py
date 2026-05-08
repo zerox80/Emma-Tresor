@@ -323,6 +323,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     # Use constant-time comparison
                     username_check = constant_time_compare(username.lower(), user.username.lower())
                     if username_check:
+                        attrs[self.username_field] = getattr(user, self.username_field)
                         user_found = True
                         authentication_result = user
         except Exception:

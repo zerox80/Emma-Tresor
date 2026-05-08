@@ -368,16 +368,22 @@ def create_superuser_if_configured() -> None:
         return
     
     # Create Django shell script to ensure superuser exists
-    script = textwrap.dedent("""
+    username_literal = repr(username)
+    email_literal = repr(email)
+    password_literal = repr(password)
+    script = textwrap.dedent(f"""
         from django.contrib.auth import get_user_model
         
+        username = {username_literal}
+        email = {email_literal}
+        password = {password_literal}
         User = get_user_model()
-        if not User.objects.filter(username='{username}').exists():
-            User.objects.create_superuser('{username}', '{email}', '{password}')
-            print(f"Created superuser: {username}")
+        if not User.objects.filter(username=username).exists():
+            User.objects.create_superuser(username, email, password)
+            print("Created superuser:", username)
         else:
-            print(f"Superuser already exists: {username}")
-    """).format(username=username, email=email, password=password)
+            print("Superuser already exists:", username)
+    """)
     
     print("[runner] Ensuring configured superuser exists...")
     run([str(RUNTIME_PYTHON), "manage.py", "shell", "-c", script], cwd=BACKEND_DIR, env=python_env())
