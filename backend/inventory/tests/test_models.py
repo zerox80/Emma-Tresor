@@ -137,4 +137,7 @@ class ItemImageModelTests(BaseModelTestCase):
 
         with self.assertRaises(ValidationError) as cm:
             item_image.clean()
-        self.assertIn('Bild ist zu groß', str(cm.exception))
+        error_text = str(cm.exception)
+        self.assertIn('Bildabmessungen zu groß', error_text)
+        self.assertIn('10000x10000', error_text)
+        self.assertIn('8192x8192', error_text)

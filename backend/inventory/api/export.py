@@ -29,6 +29,8 @@ ITEM_EXPORT_HEADERS = [
     'Aktualisiert am',   # Last update timestamp
 ]
 
+CSV_FORMULA_PREFIXES = ('=', '+', '-', '@')
+
 
 def _format_decimal(value):
     """
@@ -81,6 +83,18 @@ def _format_datetime(value):
     # Convert to local timezone
     localized = timezone.localtime(value)
     return localized.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _neutralize_csv_text(value):
+    """
+    Return a CSV-safe text value that spreadsheet apps won't evaluate as a formula.
+    """
+    if value is None:
+        return ''
+    text = str(value)
+    if text.lstrip().startswith(CSV_FORMULA_PREFIXES):
+        return f"'{text}"
+    return text
 
 
 def _prepare_items_csv_response(filename_prefix):
@@ -138,13 +152,13 @@ def _write_items_to_csv(writer, items):
         # Write row with formatted values
         writer.writerow([
             item.id,                                    # ID
-            item.name,                                  # Name
-            item.description or '',                     # Description
+            _neutralize_csv_text(item.name),            # Name
+            _neutralize_csv_text(item.description),     # Description
             item.quantity,                              # Quantity
-            location,                                   # Location
-            tags,                                       # Tags
-            lists,                                      # Lists
-            item.wodis_inventory_number or '',          # Inventory number
+            _neutralize_csv_text(location),             # Location
+            _neutralize_csv_text(tags),                 # Tags
+            _neutralize_csv_text(lists),                # Lists
+            _neutralize_csv_text(item.wodis_inventory_number),  # Inventory number
             _format_date(item.purchase_date),           # Purchase date
             _format_decimal(item.value),                # Value
             str(item.asset_tag),                        # Asset tag UUID
@@ -158,6 +172,7 @@ __all__ = [
     '_format_decimal',
     '_format_date',
     '_format_datetime',
+    '_neutralize_csv_text',
     '_prepare_items_csv_response',
     '_write_items_to_csv',
 ]

@@ -810,8 +810,32 @@ class DuplicateQuarantineSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         item_a = attrs.get('item_a') or getattr(self.instance, 'item_a', None)
         item_b = attrs.get('item_b') or getattr(self.instance, 'item_b', None)
-        if item_a and item_b and item_a.pk == item_b.pk:
-            raise serializers.ValidationError('Item-Paare müssen unterschiedlich sein.')
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError('Authentifizierung erforderlich.')
+
+        if item_a and item_b:
+            if item_a.pk == item_b.pk:
+                raise serializers.ValidationError('Item-Paare müssen unterschiedlich sein.')
+            if item_a.owner_id != user.id or item_b.owner_id != user.id:
+                raise serializers.ValidationError('Quarantäne-Paare müssen zu deinem Konto gehören.')
+
+            if item_a.pk > item_b.pk:
+                item_a, item_b = item_b, item_a
+                attrs['item_a'] = item_a
+                attrs['item_b'] = item_b
+
+            existing = DuplicateQuarantine.objects.filter(
+                owner=user,
+                item_a=item_a,
+                item_b=item_b,
+                is_active=True,
+            )
+            if self.instance is not None:
+                existing = existing.exclude(pk=self.instance.pk)
+            if existing.exists():
+                raise serializers.ValidationError('Dieses Quarantäne-Paar existiert bereits.')
         return attrs
 
 class ItemListSerializer(serializers.ModelSerializer):

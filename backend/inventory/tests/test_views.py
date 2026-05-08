@@ -6,9 +6,11 @@ from inventory.models import Item, Tag, Location
 
 User = get_user_model()
 
+import csv
 import shutil
 import tempfile
-from io import BytesIO
+from datetime import date
+from io import BytesIO, StringIO
 from unittest import mock
 
 from django.conf import settings
@@ -132,6 +134,17 @@ class CustomTokenViewTests(APITestCase):
             self.assertEqual(response.data['user']['username'], 'tokenuser')
             self.assertEqual(response.data['user']['email'], 'tokenuser@example.com')
 
+    def test_token_accepts_mixed_case_username(self):
+
+        with mock.patch('rest_framework.views.APIView.get_throttles', return_value=[]):
+            url = reverse('token_obtain_pair')
+            payload = {'username': 'TOKENUSER', 'password': 'StrongPass123!'}
+
+            response = self.client.post(url, payload, format='json')
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data['user']['username'], 'tokenuser')
+
 class LogoutViewTests(APITestCase):
 
     def setUp(self):
@@ -169,7 +182,7 @@ class LogoutViewTests(APITestCase):
 
     def test_cookie_logout_without_csrf_is_rejected(self):
 
-        client = APIClient()
+        client = APIClient(enforce_csrf_checks=True)
         refresh = RefreshToken.for_user(self.user)
         client.cookies[settings.JWT_ACCESS_COOKIE_NAME] = str(refresh.access_token)
         client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = str(refresh)
@@ -181,7 +194,7 @@ class LogoutViewTests(APITestCase):
 
     def test_cookie_logout_with_csrf_succeeds_and_clears_cookies(self):
 
-        client = APIClient()
+        client = APIClient(enforce_csrf_checks=True)
         refresh = RefreshToken.for_user(self.user)
         client.cookies[settings.JWT_ACCESS_COOKIE_NAME] = str(refresh.access_token)
         client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = str(refresh)
@@ -286,8 +299,22 @@ class ItemViewSetTests(APITestCase):
 
     def test_find_duplicates_auto_preset(self):
         
-        Item.objects.create(name='Frank Haus', description='Bürostuhl Frank', owner=self.user, location=self.location)
-        Item.objects.create(name='Frank Biel', description='Bürostuhl in Biel', owner=self.user, location=self.location)
+        Item.objects.create(
+            name='Frank Haus',
+            description='Bürostuhl Frank',
+            owner=self.user,
+            location=self.location,
+            wodis_inventory_number='WODIS-1',
+            purchase_date=date.today(),
+        )
+        Item.objects.create(
+            name='Frank Biel',
+            description='Bürostuhl Frank mit Rollen',
+            owner=self.user,
+            location=self.location,
+            wodis_inventory_number='WODIS-1',
+            purchase_date=date.today(),
+        )
 
         url = reverse('item-find-duplicates')
         self.client.force_authenticate(user=self.user)
@@ -312,6 +339,77 @@ class ItemViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 0)
 
+    def test_export_neutralizes_formula_text_fields(self):
+
+        formula_location = Location.objects.create(name='=Location', user=self.user)
+        item = Item.objects.create(
+            name='=cmd',
+            description='+description',
+            owner=self.user,
+            location=formula_location,
+            wodis_inventory_number='@inventory',
+        )
+        tag = Tag.objects.create(name='-tag', user=self.user)
+        item.tags.set([tag])
+        item_list = ItemList.objects.create(name='=list', owner=self.user)
+        item_list.items.set([item])
+
+        url = reverse('item-export-items')
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        rows = list(csv.reader(StringIO(response.content.decode('utf-8-sig')), delimiter=';'))
+        exported = next(row for row in rows[1:] if int(row[0]) == item.id)
+        self.assertEqual(exported[1], "'=cmd")
+        self.assertEqual(exported[2], "'+description")
+        self.assertEqual(exported[4], "'=Location")
+        self.assertEqual(exported[5], "'-tag")
+        self.assertEqual(exported[6], "'=list")
+        self.assertEqual(exported[7], "'@inventory")
+
+class DuplicateQuarantineViewSetTests(APITestCase):
+
+    def setUp(self):
+
+        self.client = APIClient()
+        self.user = User.objects.create_user('dupe-owner', 'dupes@example.com', 'StrongPass123!')
+        self.item_one = Item.objects.create(name='Chair A', owner=self.user)
+        self.item_two = Item.objects.create(name='Chair B', owner=self.user)
+        self.client.force_authenticate(user=self.user)
+
+    def test_reversed_duplicate_pair_returns_validation_error(self):
+
+        DuplicateQuarantine.objects.create(owner=self.user, item_a=self.item_one, item_b=self.item_two)
+        url = reverse('duplicate-quarantine-list')
+        payload = {'item_a_id': self.item_two.id, 'item_b_id': self.item_one.id}
+
+        response = self.client.post(url, payload, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            DuplicateQuarantine.objects.filter(owner=self.user, is_active=True).count(),
+            1,
+        )
+
+    def test_restore_collision_returns_validation_error(self):
+
+        DuplicateQuarantine.objects.create(owner=self.user, item_a=self.item_one, item_b=self.item_two)
+        inactive = DuplicateQuarantine.objects.create(
+            owner=self.user,
+            item_a=self.item_two,
+            item_b=self.item_one,
+            is_active=False,
+        )
+        url = reverse('duplicate-quarantine-restore', args=[inactive.id])
+
+        response = self.client.post(url, {}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        inactive.refresh_from_db()
+        self.assertFalse(inactive.is_active)
+
 class CookieJWTCSRFSecurityTests(APITestCase):
 
     def setUp(self):
@@ -327,7 +425,7 @@ class CookieJWTCSRFSecurityTests(APITestCase):
 
     def test_cookie_access_token_post_without_csrf_is_rejected(self):
 
-        client = APIClient()
+        client = APIClient(enforce_csrf_checks=True)
         self.set_access_cookie(client)
         url = reverse('item-list')
 
@@ -338,7 +436,7 @@ class CookieJWTCSRFSecurityTests(APITestCase):
 
     def test_cookie_access_token_get_without_csrf_succeeds(self):
 
-        client = APIClient()
+        client = APIClient(enforce_csrf_checks=True)
         self.set_access_cookie(client)
         url = reverse('item-list')
 
@@ -348,7 +446,7 @@ class CookieJWTCSRFSecurityTests(APITestCase):
 
     def test_cookie_access_token_post_with_csrf_succeeds(self):
 
-        client = APIClient()
+        client = APIClient(enforce_csrf_checks=True)
         self.set_access_cookie(client)
         csrf_token = set_csrf_cookie(client)
         url = reverse('item-list')
@@ -365,7 +463,7 @@ class CookieJWTCSRFSecurityTests(APITestCase):
 
     def test_bearer_access_token_post_without_csrf_succeeds(self):
 
-        client = APIClient()
+        client = APIClient(enforce_csrf_checks=True)
         refresh = RefreshToken.for_user(self.user)
         client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         url = reverse('item-list')
@@ -381,7 +479,7 @@ class CookieJWTCSRFSecurityTests(APITestCase):
 
     def test_refresh_cookie_without_csrf_is_rejected(self):
 
-        client = APIClient()
+        client = APIClient(enforce_csrf_checks=True)
         refresh = RefreshToken.for_user(self.user)
         client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = str(refresh)
         url = reverse('token_refresh')
@@ -392,7 +490,7 @@ class CookieJWTCSRFSecurityTests(APITestCase):
 
     def test_refresh_cookie_with_csrf_succeeds(self):
 
-        client = APIClient()
+        client = APIClient(enforce_csrf_checks=True)
         refresh = RefreshToken.for_user(self.user)
         client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = str(refresh)
         csrf_token = set_csrf_cookie(client)
