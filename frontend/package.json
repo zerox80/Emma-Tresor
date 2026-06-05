@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^5.4.0",
     "react-hook-form": "^7.77.0",
     "zod": "^4.4.3",
     "@yudiel/react-qr-scanner": "^2.5.1",
