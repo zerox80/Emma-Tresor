@@ -28,7 +28,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from ..authentication import enforce_csrf
 from ..serializers import UserRegistrationSerializer
-from .throttles import LoginRateThrottle, LogoutRateThrottle, RegisterRateThrottle
+from .throttles import LoginIPRateThrottle, LoginRateThrottle, LogoutRateThrottle, RegisterRateThrottle
 
 User = get_user_model()
 
@@ -397,7 +397,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     - Returns user information on successful login
     """
     serializer_class = CustomTokenObtainPairSerializer
-    throttle_classes = [LoginRateThrottle]
+    throttle_classes = [LoginRateThrottle, LoginIPRateThrottle]
 
     def post(self, request, *args, **kwargs):
         """

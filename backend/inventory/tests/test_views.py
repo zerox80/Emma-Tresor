@@ -14,11 +14,13 @@ from io import BytesIO, StringIO
 from unittest import mock
 
 from django.conf import settings
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 from PIL import Image
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.settings import api_settings
 from types import SimpleNamespace
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -27,6 +29,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import time
 from contextlib import contextmanager
 
+from ..api.throttles import LoginIPRateThrottle, LoginRateThrottle
 from ..models import Item, ItemImage, ItemList, Location, Tag, DuplicateQuarantine
 from ..views import ItemImageViewSet
 
@@ -37,6 +40,30 @@ def set_csrf_cookie(client):
     csrf_token = response.cookies[settings.CSRF_COOKIE_NAME].value
     client.cookies[settings.CSRF_COOKIE_NAME] = csrf_token
     return csrf_token
+
+
+@contextmanager
+def temporary_rest_framework_settings(rest_framework_settings):
+    override = override_settings(REST_FRAMEWORK=rest_framework_settings)
+    override.enable()
+    api_settings.reload()
+    try:
+        yield
+    finally:
+        override.disable()
+        api_settings.reload()
+
+
+def rest_framework_settings_with(**overrides):
+    rest_framework_settings = {**settings.REST_FRAMEWORK}
+    throttle_rates = overrides.pop('DEFAULT_THROTTLE_RATES', None)
+    if throttle_rates is not None:
+        rest_framework_settings['DEFAULT_THROTTLE_RATES'] = {
+            **settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'],
+            **throttle_rates,
+        }
+    rest_framework_settings.update(overrides)
+    return rest_framework_settings
 
 
 class TimedAPITestCase(APITestCase):
@@ -810,6 +837,80 @@ class AuthSecurityTests(TimedAPITestCase):
     def setUp(self):
         
         self.user = User.objects.create_user('auth_user', 'auth@example.com', 'password123')
+
+    def test_login_identifier_cache_key_ignores_spoofed_xff(self):
+
+        throttle = LoginRateThrottle()
+        request_one = SimpleNamespace(
+            data={'email': ' Auth@Example.COM '},
+            META={
+                'HTTP_X_FORWARDED_FOR': '1.1.1.1',
+                'REMOTE_ADDR': '127.0.0.1',
+            },
+        )
+        request_two = SimpleNamespace(
+            data={'email': 'auth@example.com'},
+            META={
+                'HTTP_X_FORWARDED_FOR': '2.2.2.2',
+                'REMOTE_ADDR': '127.0.0.1',
+            },
+        )
+
+        cache_key = throttle.get_cache_key(request_one, view=None)
+
+        self.assertEqual(cache_key, throttle.get_cache_key(request_two, view=None))
+        self.assertNotIn('auth@example.com', cache_key)
+
+    def test_login_identifier_throttle_rejects_varied_spoofed_xff(self):
+
+        cache.clear()
+        self.addCleanup(cache.clear)
+        throttle_rates = {
+            **LoginRateThrottle.THROTTLE_RATES,
+            'login': '2/minute',
+            'login_ip': '100/minute',
+        }
+        url = reverse('token_obtain_pair')
+        payload = {'email': 'spoofed@example.com', 'password': 'wrong-password'}
+
+        with mock.patch.object(LoginRateThrottle, 'THROTTLE_RATES', throttle_rates):
+            with mock.patch.object(LoginIPRateThrottle, 'THROTTLE_RATES', throttle_rates):
+                with mock.patch('inventory.api.auth.time.sleep', return_value=None):
+                    first_response = self.client.post(
+                        url,
+                        payload,
+                        format='json',
+                        HTTP_X_FORWARDED_FOR='1.1.1.1',
+                    )
+                    second_response = self.client.post(
+                        url,
+                        payload,
+                        format='json',
+                        HTTP_X_FORWARDED_FOR='2.2.2.2',
+                    )
+                    third_response = self.client.post(
+                        url,
+                        payload,
+                        format='json',
+                        HTTP_X_FORWARDED_FOR='3.3.3.3',
+                    )
+
+        self.assertEqual(first_response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(second_response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(third_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_login_ip_throttle_uses_cleaned_xff_with_configured_proxy(self):
+
+        rest_framework_settings = rest_framework_settings_with(NUM_PROXIES=1)
+        request = SimpleNamespace(
+            META={
+                'HTTP_X_FORWARDED_FOR': '203.0.113.25',
+                'REMOTE_ADDR': '127.0.0.1',
+            },
+        )
+
+        with temporary_rest_framework_settings(rest_framework_settings):
+            self.assertEqual(LoginIPRateThrottle().get_ident(request), '203.0.113.25')
 
     def test_login_with_nonexistent_email_is_slowed(self):
         

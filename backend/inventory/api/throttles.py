@@ -1,11 +1,46 @@
 """Custom DRF throttle classes for the inventory API."""
 
+import hashlib
+
 from rest_framework import throttling
 
 
-class LoginRateThrottle(throttling.AnonRateThrottle):
-    """Rate limiter for login attempts - prevents brute force attacks."""
+class LoginRateThrottle(throttling.SimpleRateThrottle):
+    """Rate limiter for login attempts by normalized email or username."""
     scope = 'login'
+
+    def get_cache_key(self, request, view):
+        identifier = self._get_identifier(request)
+        if not identifier:
+            identifier = self.get_ident(request)
+
+        digest = hashlib.sha256(identifier.encode('utf-8')).hexdigest()
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': digest,
+        }
+
+    @staticmethod
+    def _get_identifier(request) -> str | None:
+        try:
+            data = getattr(request, 'data', None)
+        except Exception:
+            data = None
+
+        if not hasattr(data, 'get'):
+            return None
+
+        raw_identifier = data.get('email') or data.get('username')
+        if raw_identifier is None:
+            return None
+
+        identifier = str(raw_identifier).strip().lower()
+        return identifier or None
+
+
+class LoginIPRateThrottle(throttling.AnonRateThrottle):
+    """Rate limiter for login attempts by trusted client IP."""
+    scope = 'login_ip'
 
 
 class RegisterRateThrottle(throttling.AnonRateThrottle):
@@ -60,6 +95,7 @@ __all__ = [
     'ItemImageDownloadRateThrottle',
     'ItemReadRateThrottle',
     'ItemUpdateRateThrottle',
+    'LoginIPRateThrottle',
     'LoginRateThrottle',
     'LogoutRateThrottle',
     'QRGenerateRateThrottle',

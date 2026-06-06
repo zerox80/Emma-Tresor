@@ -64,6 +64,32 @@ def _env_bool(value: str | None, *, default: bool = False) -> bool:
         return default
     return value.lower() in {'1', 'true', 'yes', 'on'}
 
+def _env_int(key: str, *, default: int, minimum: int | None = None) -> int:
+    """
+    Convert environment variable string to integer with optional lower bound.
+
+    Args:
+        key: Environment variable key
+        default: Default value if environment variable is missing
+        minimum: Optional minimum accepted value
+
+    Returns:
+        int: Parsed integer value
+    """
+    value = os.environ.get(key)
+    if value in {None, ''}:
+        return default
+
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ImproperlyConfigured(f'{key} must be an integer.') from exc
+
+    if minimum is not None and parsed < minimum:
+        raise ImproperlyConfigured(f'{key} must be at least {minimum}.')
+
+    return parsed
+
 # Load environment variables from .env file at startup
 _load_env_file()
 
@@ -361,6 +387,7 @@ MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT', BASE_DIR / 'media'))
 PRIVATE_MEDIA_ROOT = Path(os.environ.get('DJANGO_PRIVATE_MEDIA_ROOT', BASE_DIR / 'private_media'))
 
 REST_FRAMEWORK = {
+    'NUM_PROXIES': _env_int('DRF_NUM_PROXIES', default=0, minimum=0),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'inventory.authentication.CookieJWTAuthentication',
     ),
@@ -388,6 +415,7 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '1000/hour',
         'login': '5/minute',
+        'login_ip': '20/minute',
         'register': '3/minute',
         'logout': '10/minute',
         'item_create': '50/hour',

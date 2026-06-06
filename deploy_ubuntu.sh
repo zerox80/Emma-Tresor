@@ -35,7 +35,7 @@ pip install -r backend/requirements.txt
 # Install frontend dependencies
 echo "Installing frontend dependencies..."
 cd frontend
-npm install
+npm ci
 npm run build
 cd ..
 
@@ -47,11 +47,55 @@ python backend/manage.py migrate
 echo "Collecting static files..."
 python backend/manage.py collectstatic --noinput
 
-# Create superuser if needed
-echo "Creating Django superuser..."
-echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'admin123')" | python backend/manage.py shell
+# Create superuser only when explicitly requested with safe credentials
+if [ "${AUTO_CREATE_SUPERUSER:-false}" = "true" ]; then
+    echo "Validating Django superuser configuration..."
+    : "${DJANGO_SUPERUSER_USERNAME:?DJANGO_SUPERUSER_USERNAME must be set when AUTO_CREATE_SUPERUSER=true}"
+    : "${DJANGO_SUPERUSER_EMAIL:?DJANGO_SUPERUSER_EMAIL must be set when AUTO_CREATE_SUPERUSER=true}"
+    : "${DJANGO_SUPERUSER_PASSWORD:?DJANGO_SUPERUSER_PASSWORD must be set when AUTO_CREATE_SUPERUSER=true}"
+
+    if [ "${#DJANGO_SUPERUSER_PASSWORD}" -lt 16 ]; then
+        echo "DJANGO_SUPERUSER_PASSWORD must be at least 16 characters long." >&2
+        exit 1
+    fi
+
+    insecure_admin_password="admin""123"
+    case "$(printf '%s' "$DJANGO_SUPERUSER_PASSWORD" | tr '[:upper:]' '[:lower:]')" in
+        "$insecure_admin_password"|password|change-me|your-secure-password-here)
+            echo "DJANGO_SUPERUSER_PASSWORD uses a known default value; aborting." >&2
+            exit 1
+            ;;
+    esac
+
+    python backend/manage.py shell <<'PY'
+import os
+
+from django.contrib.auth import get_user_model
+
+username = os.environ['DJANGO_SUPERUSER_USERNAME'].strip()
+email = os.environ['DJANGO_SUPERUSER_EMAIL'].strip()
+password = os.environ['DJANGO_SUPERUSER_PASSWORD']
+
+if not username or not email or not password:
+    raise SystemExit('Superuser environment variables must not be empty.')
+
+User = get_user_model()
+existing = User.objects.filter(username=username).first()
+if existing:
+    if not (existing.is_staff and existing.is_superuser):
+        raise SystemExit(
+            f"User '{username}' already exists but is not a staff superuser; aborting without changing credentials."
+        )
+    print(f"Superuser '{username}' already exists; leaving credentials unchanged.")
+else:
+    User.objects.create_superuser(username=username, email=email, password=password)
+    print(f"Superuser '{username}' created.")
+PY
+else
+    echo "Skipping automatic superuser creation. Set AUTO_CREATE_SUPERUSER=true with secure DJANGO_SUPERUSER_* values, or run createsuperuser interactively."
+fi
 
 echo "=== Deployment completed successfully! ==="
-echo "You can now start the server with:"
+echo "Start Django behind Nginx with Gunicorn bound to localhost, for example:"
 echo "source venv/bin/activate"
-echo "python backend/manage.py runserver 0.0.0.0:8000"
+echo "gunicorn EmmaTresor.wsgi:application --chdir backend --bind 127.0.0.1:8000 --workers 3"
