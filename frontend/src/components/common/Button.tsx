@@ -3,20 +3,20 @@
 // This is a flexible, accessible button component that supports multiple variants,
 // sizes, and states. It follows the design system and includes loading states.
 
-import React from 'react';                                       // Import React for JSX and types
-import clsx from 'clsx';                                       // Utility for conditional class names
+import React from "react"; // Import React for JSX and types
+import clsx from "clsx"; // Utility for conditional class names
 
 /**
  * Available button variants for different visual styles.
  * Each variant has specific colors and hover states.
  */
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 /**
  * Available button sizes for different use cases.
  * Controls padding and text size for appropriate hierarchy.
  */
-type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
+type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 /**
  * Props interface for the Button component.
@@ -43,19 +43,22 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
  */
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-brand-500 text-white hover:bg-brand-600 focus-visible:outline-brand-300 disabled:bg-brand-200 disabled:text-slate-400',
+    "bg-brand-500 text-white hover:bg-brand-600 " +
+    "focus-visible:outline-brand-300 disabled:bg-brand-200 disabled:text-slate-400",
   // Primary: Blue brand color, white text, darker on hover, lighter when disabled
 
   secondary:
-    'bg-white text-slate-700 border border-slate-200 hover:border-brand-200 hover:text-brand-600 focus-visible:outline-brand-300 disabled:bg-slate-100 disabled:text-slate-400',
+    "bg-white text-slate-700 border border-slate-200 hover:border-brand-200 " +
+    "hover:text-brand-600 focus-visible:outline-brand-300 disabled:bg-slate-100 " +
+    "disabled:text-slate-400",
   // Secondary: White background with border, brand accent on hover
 
   ghost:
-    'bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:outline-brand-300 disabled:text-slate-300',
+    "bg-transparent text-slate-600 hover:bg-slate-100 focus-visible:outline-brand-300 disabled:text-slate-300",
   // Ghost: Transparent background, subtle highlight on hover
 
   danger:
-    'bg-red-500 text-white hover:bg-red-600 focus-visible:outline-red-300 disabled:bg-red-200 disabled:text-red-100',
+    "bg-red-500 text-white hover:bg-red-600 focus-visible:outline-red-300 disabled:bg-red-200 disabled:text-red-100",
   // Danger: Red for destructive actions, darker red on hover
 };
 
@@ -66,10 +69,10 @@ const variantStyles: Record<ButtonVariant, string> = {
  * All buttons maintain consistent border radius and font weight.
  */
 const sizeStyles: Record<ButtonSize, string> = {
-  xs: 'px-2 py-1 text-xs',                                      // Extra small: Inline actions
-  sm: 'px-3 py-1.5 text-xs',                                      // Small: Compact padding for tight spaces
-  md: 'px-4 py-2 text-sm',                                        // Medium: Standard size for most use cases
-  lg: 'px-6 py-3 text-base',                                      // Large: Prominent buttons with more padding
+  xs: "px-2 py-1 text-xs", // Extra small: Inline actions
+  sm: "px-3 py-1.5 text-xs", // Small: Compact padding for tight spaces
+  md: "px-4 py-2 text-sm", // Medium: Standard size for most use cases
+  lg: "px-6 py-3 text-base", // Large: Prominent buttons with more padding
 };
 
 /**
@@ -83,33 +86,40 @@ const sizeStyles: Record<ButtonSize, string> = {
  * @returns {JSX.Element} Rendered button element
  */
 const Button: React.FC<ButtonProps> = ({
-  variant = 'primary',                                          // Default to primary variant
-  size = 'md',                                                   // Default to medium size
-  loading = false,                                               // Default to not loading
-  className,                                                     // Additional CSS classes
-  disabled,                                                      // Standard disabled attribute
-  children,                                                      // Button content
-  ...props                                                       // Pass through other button attributes
+  variant = "primary", // Default to primary variant
+  size = "md", // Default to medium size
+  loading = false, // Default to not loading
+  className, // Additional CSS classes
+  disabled, // Standard disabled attribute
+  children, // Button content
+  ...props // Pass through other button attributes
 }) => (
   <button
-    type="button"                                               // Explicit button type (can be overridden)
+    type="button" // Explicit button type (can be overridden)
     className={clsx(
       // Base button styles: flexbox layout, rounded corners, font styling, transitions, focus rings
-      'inline-flex items-center justify-center rounded-lg font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-      variantStyles[variant],                                   // Apply variant-specific colors
-      sizeStyles[size],                                        // Apply size-specific padding and text size
-      loading && 'cursor-wait opacity-80',                     // Loading state: waiting cursor and reduced opacity
-      className,                                               // Merge with any additional classes
+      "inline-flex items-center justify-center rounded-lg font-semibold " +
+        "transition focus-visible:outline focus-visible:outline-2 " +
+        "focus-visible:outline-offset-2",
+      variantStyles[variant], // Apply variant-specific colors
+      sizeStyles[size], // Apply size-specific padding and text size
+      loading && "cursor-wait opacity-80", // Loading state: waiting cursor and reduced opacity
+      className, // Merge with any additional classes
     )}
-    disabled={disabled || loading}                             // Disable button if explicitly disabled or loading
-    {...props}                                                  // Pass through remaining props (onClick, aria-label, etc.)
+    disabled={disabled || loading} // Disable button if explicitly disabled or loading
+    {...props} // Pass through remaining props (onClick, aria-label, etc.)
   >
     {/* Show loading spinner when in loading state */}
     {loading && (
-      <span className="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-slate-100 border-t-transparent" />
+      <span
+        className={[
+          "mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-slate-100",
+          "border-t-transparent",
+        ].join(" ")}
+      />
     )}
     {children}
   </button>
 );
 
-export default Button;                                          // Export as default
+export default Button; // Export as default

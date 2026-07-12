@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { createLocation, createTag, fetchLocations, fetchTags } from '../../../api/inventory';
-import type { Location, Tag } from '../../../types/inventory';
+import {
+  createLocation,
+  createTag,
+  fetchLocations,
+  fetchTags,
+} from "../../../api/inventory";
+import type { Location, Tag } from "../../../types/inventory";
 
 interface UseItemsMetadataResult {
   tags: Tag[];
@@ -14,7 +19,7 @@ interface UseItemsMetadataResult {
 }
 
 const sortByName = <T extends { name: string }>(entries: T[]): T[] =>
-  [...entries].sort((a, b) => a.name.localeCompare(b.name, 'de-DE'));
+  [...entries].sort((a, b) => a.name.localeCompare(b.name, "de-DE"));
 
 export const useItemsMetadata = (): UseItemsMetadataResult => {
   const [tags, setTags] = useState<Tag[]>([]);
@@ -30,14 +35,19 @@ export const useItemsMetadata = (): UseItemsMetadataResult => {
     setMetaLoading(true);
     setMetaError(null);
     try {
-      const [fetchedTags, fetchedLocations] = await Promise.all([fetchTags(), fetchLocations()]);
+      const [fetchedTags, fetchedLocations] = await Promise.all([
+        fetchTags(),
+        fetchLocations(),
+      ]);
       if (mountedRef.current && requestId === latestRequestId.current) {
         setTags(sortByName(fetchedTags));
         setLocations(sortByName(fetchedLocations));
       }
     } catch (error) {
       if (mountedRef.current && requestId === latestRequestId.current) {
-        setMetaError('Tags und Standorte konnten nicht geladen werden. Bitte versuche es erneut.');
+        setMetaError(
+          "Tags und Standorte konnten nicht geladen werden. Bitte versuche es erneut.",
+        );
       }
     } finally {
       if (mountedRef.current && requestId === latestRequestId.current) {

@@ -21,10 +21,34 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('item_name', models.CharField(blank=True, max_length=255)),
-                ('action', models.CharField(choices=[('create', 'Erstellung'), ('update', 'Aktualisierung'), ('delete', 'Löschung')], max_length=12)),
+                (
+                    'action',
+                    models.CharField(
+                        choices=[('create', 'Erstellung'), ('update', 'Aktualisierung'), ('delete', 'Löschung')],
+                        max_length=12,
+                    ),
+                ),
                 ('changes', models.JSONField(blank=True, default=dict)),
-                ('item', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='change_logs', to='inventory.item')),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='item_change_logs', to=settings.AUTH_USER_MODEL)),
+                (
+                    'item',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name='change_logs',
+                        to='inventory.item',
+                    ),
+                ),
+                (
+                    'user',
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name='item_change_logs',
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
                 'verbose_name': 'Änderungsprotokoll',

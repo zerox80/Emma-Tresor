@@ -3,7 +3,7 @@
 // This React hook creates a debounced version of a value that only updates
 // after a specified delay has passed without the value changing.
 
-import { useEffect, useState } from 'react';                       // React hooks for state and effects
+import { useEffect, useState } from "react"; // React hooks for state and effects
 
 /** Default delay in milliseconds for debouncing */
 const DEFAULT_DELAY = 400;
@@ -35,7 +35,10 @@ const DEFAULT_DELAY = 400;
  * }, [debouncedSearch]);
  * ```
  */
-export const useDebouncedValue = <T>(value: T, delay: number = DEFAULT_DELAY): T => {
+export const useDebouncedValue = <T>(
+  value: T,
+  delay: number = DEFAULT_DELAY,
+): T => {
   // State to hold the debounced value
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -43,14 +46,14 @@ export const useDebouncedValue = <T>(value: T, delay: number = DEFAULT_DELAY): T
   useEffect(() => {
     // Set up a timeout that will update the debounced value after the delay
     const handle = window.setTimeout(() => {
-      setDebouncedValue(value);                                      // Update debounced value with latest value
+      setDebouncedValue(value); // Update debounced value with latest value
     }, delay);
 
     // Cleanup function: clear the timeout if value changes or component unmounts
     return () => {
-      window.clearTimeout(handle);                                   // Cancel pending timeout
+      window.clearTimeout(handle); // Cancel pending timeout
     };
-  }, [value, delay]);                                                // Re-run effect when value or delay changes
+  }, [value, delay]); // Re-run effect when value or delay changes
 
-  return debouncedValue;                                             // Return the current debounced value
+  return debouncedValue; // Return the current debounced value
 };

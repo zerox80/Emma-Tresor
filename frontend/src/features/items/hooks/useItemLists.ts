@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState } from "react";
 
-import { createList, fetchLists } from '../../../api/inventory';
-import type { ItemList } from '../../../types/inventory';
-import { sortItemLists } from '../utils/itemHelpers';
+import { createList, fetchLists } from "../../../api/inventory";
+import type { ItemList } from "../../../types/inventory";
+import { sortItemLists } from "../utils/itemHelpers";
 
 interface UseItemListsResult {
   lists: ItemList[];
@@ -29,7 +29,9 @@ export const useItemLists = (): UseItemListsResult => {
       setLists(sortItemLists(fetchedLists));
       setListsInitialized(true);
     } catch (error) {
-      setListsError('Deine Listen konnten nicht geladen werden. Bitte versuche es erneut.');
+      setListsError(
+        "Deine Listen konnten nicht geladen werden. Bitte versuche es erneut.",
+      );
     } finally {
       setListsLoading(false);
     }

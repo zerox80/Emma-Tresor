@@ -3,8 +3,8 @@
 // This component displays a floating toolbar when items are selected in the table/grid.
 // It provides bulk actions like selecting all, clearing selection, and assigning to lists.
 
-import React from 'react';                                       // Import React library for JSX
-import Button from '../common/Button';                           // Import reusable Button component
+import React from "react"; // Import React library for JSX
+import Button from "../common/Button"; // Import reusable Button component
 
 /**
  * Props interface for SelectionToolbar component.
@@ -35,27 +35,36 @@ type Props = {
  * is positioned at the bottom of the screen with a glass morphism effect.
  */
 const SelectionToolbar: React.FC<Props> = ({
-  selectedCount,                                                 // Number of selected items
-  areAllSelectedOnPage,                                          // Whether all page items are selected
-  onToggleSelectAllCurrentPage,                                  // Toggle page selection callback
-  onClearSelection,                                             // Clear all selections callback
-  onOpenAssignSheet,                                            // Open assign to list callback
+  selectedCount, // Number of selected items
+  areAllSelectedOnPage, // Whether all page items are selected
+  onToggleSelectAllCurrentPage, // Toggle page selection callback
+  onClearSelection, // Clear all selections callback
+  onOpenAssignSheet, // Open assign to list callback
 }) => {
   // Early return: don't render toolbar if no items are selected
   if (selectedCount === 0) return null;
 
   return (
-    <div className="mx-auto mb-4 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-xl backdrop-blur">
+    <div
+      className={[
+        "mx-auto mb-4 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white/95",
+        "px-5 py-4 shadow-xl backdrop-blur",
+      ].join(" ")}
+    >
       {/* Inner container with responsive layout */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Left side: selection information */}
         <div>
           {/* Display count of selected items */}
-          <p className="text-sm font-semibold text-slate-900">{selectedCount} Gegenstände ausgewählt</p>
+          <p className="text-sm font-semibold text-slate-900">
+            {selectedCount} Gegenstände ausgewählt
+          </p>
           {/* German: "{count} items selected" */}
 
           {/* Helper text explaining available actions */}
-          <p className="text-xs text-slate-500">Wähle eine Liste oder ändere deine Auswahl.</p>
+          <p className="text-xs text-slate-500">
+            Wähle eine Liste oder ändere deine Auswahl.
+          </p>
           {/* German: "Choose a list or modify your selection" */}
         </div>
 
@@ -63,23 +72,24 @@ const SelectionToolbar: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-2">
           {/* Toggle selection for current page */}
           <Button
-            type="button"                                           // Prevent form submission
-            variant="ghost"                                         // Transparent button style
-            size="sm"                                               // Small button size
-            onClick={onToggleSelectAllCurrentPage}                  // Toggle page selection
+            type="button" // Prevent form submission
+            variant="ghost" // Transparent button style
+            size="sm" // Small button size
+            onClick={onToggleSelectAllCurrentPage} // Toggle page selection
           >
-            {areAllSelectedOnPage
-              ? 'Auswahl dieser Seite entfernen'                    // German: "Remove selection of this page"
-              : 'Diese Seite auswählen'                             // German: "Select this page"
+            {
+              areAllSelectedOnPage
+                ? "Auswahl dieser Seite entfernen" // German: "Remove selection of this page"
+                : "Diese Seite auswählen" // German: "Select this page"
             }
           </Button>
 
           {/* Clear all selections button */}
           <Button
-            type="button"                                           // Prevent form submission
-            variant="ghost"                                         // Transparent button style
-            size="sm"                                               // Small button size
-            onClick={onClearSelection}                              // Clear all selected items
+            type="button" // Prevent form submission
+            variant="ghost" // Transparent button style
+            size="sm" // Small button size
+            onClick={onClearSelection} // Clear all selected items
           >
             {/* German: "Clear selection" */}
             Auswahl löschen
@@ -87,18 +97,18 @@ const SelectionToolbar: React.FC<Props> = ({
 
           {/* Assign to list button */}
           <Button
-            type="button"                                           // Prevent form submission
-            variant="secondary"                                     // Gray button style
-            size="sm"                                               // Small button size
-            onClick={onOpenAssignSheet}                             // Open assignment sheet
+            type="button" // Prevent form submission
+            variant="secondary" // Gray button style
+            size="sm" // Small button size
+            onClick={onOpenAssignSheet} // Open assignment sheet
           >
             {/* German: "Add to list" */}
             Zur Liste hinzufügen
           </Button>
         </div>
       </div>
-    </div>                                                          // Close toolbar container
-  );                                                               // Close return statement
+    </div> // Close toolbar container
+  ); // Close return statement
 };
 
-export default SelectionToolbar;                                  // Export as default component
+export default SelectionToolbar; // Export as default component

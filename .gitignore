@@ -1,5 +1,17 @@
 # EmmaTresor Git Ignore Configuration
 # ====================================
+# Effective patterns are kept without inline comments because Git treats
+# trailing text as part of an ignore pattern.
+**/__pycache__/
+*.py[cod]
+.venv/
+.codex-venv/
+node_modules/
+**/node_modules/
+frontend/dist/
+backend/logs/
+backend/private_media/
+
 # This file tells Git which files and directories to ignore during version control.
 # Ignored files won't be tracked, committed, or pushed to the repository.
 # This prevents sensitive data, temporary files, and build artifacts from being committed.

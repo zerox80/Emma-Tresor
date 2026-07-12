@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
-import { DEFAULT_ITEM_ORDERING, type ViewMode } from '../constants';
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { DEFAULT_ITEM_ORDERING, type ViewMode } from "../constants";
 
 export interface ItemsFiltersState {
   searchTerm: string;
@@ -22,12 +22,12 @@ export interface ItemsFiltersState {
 }
 
 export const useItemsFilters = (): ItemsFiltersState => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [selectedLocationIds, setSelectedLocationIds] = useState<number[]>([]);
   const [ordering, setOrdering] = useState<string>(DEFAULT_ITEM_ORDERING);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -41,19 +41,25 @@ export const useItemsFilters = (): ItemsFiltersState => {
     return [...prev, entryId];
   }, []);
 
-  const toggleTag = useCallback((tagId: number) => {
-    setSelectedTagIds((prev) => toggleId(prev, tagId));
-  }, [toggleId]);
+  const toggleTag = useCallback(
+    (tagId: number) => {
+      setSelectedTagIds((prev) => toggleId(prev, tagId));
+    },
+    [toggleId],
+  );
 
-  const toggleLocation = useCallback((locationId: number) => {
-    setSelectedLocationIds((prev) => toggleId(prev, locationId));
-  }, [toggleId]);
+  const toggleLocation = useCallback(
+    (locationId: number) => {
+      setSelectedLocationIds((prev) => toggleId(prev, locationId));
+    },
+    [toggleId],
+  );
 
   const clearFilters = useCallback(() => {
     setSelectedTagIds([]);
     setSelectedLocationIds([]);
     setOrdering(DEFAULT_ITEM_ORDERING);
-    setSearchTerm('');
+    setSearchTerm("");
   }, []);
 
   const isFiltered = useMemo(

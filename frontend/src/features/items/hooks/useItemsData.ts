@@ -1,8 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from "react";
 
-import { fetchItems } from '../../../api/inventory';
-import type { Item, PaginatedResponse } from '../../../types/inventory';
-import { ITEMS_PAGE_SIZE } from '../constants';
+import { fetchItems } from "../../../api/inventory";
+import type { Item, PaginatedResponse } from "../../../types/inventory";
+import { ITEMS_PAGE_SIZE } from "../constants";
 
 interface UseItemsDataArgs {
   debouncedSearchTerm: string;
@@ -29,7 +29,9 @@ export const useItemsData = ({
   selectedTagIds,
 }: UseItemsDataArgs): UseItemsDataResult => {
   const [items, setItems] = useState<Item[]>([]);
-  const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(null);
+  const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(
+    null,
+  );
   const [loadingItems, setLoadingItems] = useState(true);
   const [itemsError, setItemsError] = useState<string | null>(null);
   const [itemsVersion, setItemsVersion] = useState(0);
@@ -46,7 +48,8 @@ export const useItemsData = ({
         page,
         pageSize: ITEMS_PAGE_SIZE,
         tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
-        locations: selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
+        locations:
+          selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
         ordering: ordering.trim().length > 0 ? ordering : undefined,
       });
       if (requestId === latestRequestId.current) {
@@ -56,14 +59,22 @@ export const useItemsData = ({
       }
     } catch (error) {
       if (requestId === latestRequestId.current) {
-        setItemsError('Deine Gegenstände konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.');
+        setItemsError(
+          "Deine Gegenstände konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.",
+        );
       }
     } finally {
       if (requestId === latestRequestId.current) {
         setLoadingItems(false);
       }
     }
-  }, [debouncedSearchTerm, ordering, page, selectedLocationIds, selectedTagIds]);
+  }, [
+    debouncedSearchTerm,
+    ordering,
+    page,
+    selectedLocationIds,
+    selectedTagIds,
+  ]);
 
   return {
     items,

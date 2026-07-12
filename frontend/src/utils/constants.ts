@@ -25,15 +25,15 @@ export const FILE_UPLOAD_CONSTANTS = {
    * - Document format: pdf (for manuals or receipts)
    */
   ALLOWED_EXTENSIONS: [
-    '.jpg',    // JPEG image format
-    '.jpeg',   // JPEG image format (alternative extension)
-    '.png',    // PNG image format (supports transparency)
-    '.gif',    // GIF animated image format
-    '.webp',   // WebP modern image format
-    '.bmp',    // Bitmap image format
-    '.avif',   // AVIF next-gen image format
-    '.heic',   // Apple HEIC image format (iPhone photos)
-    '.heif',   // Apple HEIF image format
-    '.pdf',    // Portable Document Format for documents
+    ".jpg", // JPEG image format
+    ".jpeg", // JPEG image format (alternative extension)
+    ".png", // PNG image format (supports transparency)
+    ".gif", // GIF animated image format
+    ".webp", // WebP modern image format
+    ".bmp", // Bitmap image format
+    ".avif", // AVIF next-gen image format
+    ".heic", // Apple HEIC image format (iPhone photos)
+    ".heif", // Apple HEIF image format
+    ".pdf", // Portable Document Format for documents
   ],
-} as const;                                                           // Prevent modification of constant object
+} as const; // Prevent modification of constant object

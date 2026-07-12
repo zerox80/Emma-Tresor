@@ -1,38 +1,37 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import type { ChangeEvent } from 'react';
-import clsx from 'clsx';
+import React, { useEffect, useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
+import clsx from "clsx";
 
-import Button from './common/Button';
-import type { Item } from '../types/inventory';
+import Button from "./common/Button";
+import type { Item } from "../types/inventory";
 
 export interface ManageableItem extends Item {
   assignmentCount: number;
 }
 
-type FilterMode = 'all' | 'unassigned' | 'inList';
+type FilterMode = "all" | "unassigned" | "inList";
 
 const filterOptions: Array<{ value: FilterMode; label: string }> = [
-  { value: 'all', label: 'Alle' },
-  { value: 'unassigned', label: 'Nicht zugewiesen' },
-  { value: 'inList', label: 'In dieser Liste' },
+  { value: "all", label: "Alle" },
+  { value: "unassigned", label: "Nicht zugewiesen" },
+  { value: "inList", label: "In dieser Liste" },
 ];
 
 export interface ManageListItemsSheetProps {
-  
   open: boolean;
-  
+
   onClose: () => void;
-  
+
   listName: string;
-  
+
   items: ManageableItem[];
-  
+
   initialSelectedIds: number[];
-  
+
   saving: boolean;
-  
+
   error: string | null;
-  
+
   onSave: (itemIds: number[]) => Promise<void>;
 }
 
@@ -46,19 +45,24 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
   error,
   onSave,
 }) => {
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [localSelectedIds, setLocalSelectedIds] = useState<Set<number>>(new Set<number>(initialSelectedIds));
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [localSelectedIds, setLocalSelectedIds] = useState<Set<number>>(
+    new Set<number>(initialSelectedIds),
+  );
   const [localError, setLocalError] = useState<string | null>(null);
-  const [filterMode, setFilterMode] = useState<FilterMode>('all');
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
 
-  const initialSelectedSet = useMemo(() => new Set<number>(initialSelectedIds), [initialSelectedIds]);
+  const initialSelectedSet = useMemo(
+    () => new Set<number>(initialSelectedIds),
+    [initialSelectedIds],
+  );
 
   useEffect(() => {
     if (open) {
-      setSearchTerm('');
+      setSearchTerm("");
       setLocalSelectedIds(new Set<number>(initialSelectedIds));
       setLocalError(null);
-      setFilterMode('all');
+      setFilterMode("all");
     }
   }, [open, initialSelectedIds]);
 
@@ -70,15 +74,20 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
 
   const filteredItems = useMemo<ManageableItem[]>(() => {
     const term = searchTerm.trim().toLowerCase();
-    const base: ManageableItem[] = term.length === 0
-      ? items
-      : items.filter((item: ManageableItem) => `${item.name} ${item.description ?? ''}`.toLowerCase().includes(term));
+    const base: ManageableItem[] =
+      term.length === 0
+        ? items
+        : items.filter((item: ManageableItem) =>
+            `${item.name} ${item.description ?? ""}`
+              .toLowerCase()
+              .includes(term),
+          );
 
     return base.filter((item: ManageableItem) => {
-      if (filterMode === 'unassigned') {
+      if (filterMode === "unassigned") {
         return item.assignmentCount === 0;
       }
-      if (filterMode === 'inList') {
+      if (filterMode === "inList") {
         return localSelectedIds.has(item.id);
       }
       return true;
@@ -87,10 +96,16 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
 
   const selectedCount = localSelectedIds.size;
   const filteredCount = filteredItems.length;
-  const allFilteredSelected = filteredCount > 0 && filteredItems.every((item) => localSelectedIds.has(item.id));
+  const allFilteredSelected =
+    filteredCount > 0 &&
+    filteredItems.every((item) => localSelectedIds.has(item.id));
 
   const filterCounts = useMemo<Record<FilterMode, number>>(() => {
-    const unassignedCount = items.reduce((count: number, item: ManageableItem) => (item.assignmentCount === 0 ? count + 1 : count), 0);
+    const unassignedCount = items.reduce(
+      (count: number, item: ManageableItem) =>
+        item.assignmentCount === 0 ? count + 1 : count,
+      0,
+    );
     return {
       all: items.length,
       unassigned: unassignedCount,
@@ -167,7 +182,10 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
     try {
       await onSave(Array.from(localSelectedIds));
     } catch (saveError) {
-      const message = saveError instanceof Error ? saveError.message : 'Änderungen konnten nicht gespeichert werden.';
+      const message =
+        saveError instanceof Error
+          ? saveError.message
+          : "Änderungen konnten nicht gespeichert werden.";
       setLocalError(message);
     }
   };
@@ -180,8 +198,9 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
     summaryParts.push(`${removedCount} entfernt`);
   }
 
-  const summaryText = summaryParts.length > 0 ? summaryParts.join(' · ') : 'Keine Änderungen';
-  
+  const summaryText =
+    summaryParts.length > 0 ? summaryParts.join(" · ") : "Keine Änderungen";
+
   if (!open) {
     return null;
   }
@@ -200,13 +219,25 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
       <section
         role="dialog"
         aria-modal="true"
-        className="relative flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-[0_36px_70px_-30px_rgba(15,23,42,0.4)] ring-1 ring-slate-900/10"
-        style={{ maxHeight: 'min(92vh, 800px)' }}
+        className={[
+          "relative flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white",
+          "shadow-[0_36px_70px_-30px_rgba(15,23,42,0.4)] ring-1 ring-slate-900/10",
+        ].join(" ")}
+        style={{ maxHeight: "min(92vh, 800px)" }}
       >
-        <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200 bg-white/95 px-5 py-5 backdrop-blur sm:px-8 sm:py-6">
+        <header
+          className={[
+            "sticky top-0 z-10 flex items-start justify-between gap-4 border-b",
+            "border-slate-200 bg-white/95 px-5 py-5 backdrop-blur sm:px-8 sm:py-6",
+          ].join(" ")}
+        >
           <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">Liste bearbeiten</p>
-            <h2 className="text-2xl font-semibold text-slate-900">{listName}</h2>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">
+              Liste bearbeiten
+            </p>
+            <h2 className="text-2xl font-semibold text-slate-900">
+              {listName}
+            </h2>
             <p className="text-sm text-slate-500">
               {selectedCount} von {items.length} Gegenständen ausgewählt
             </p>
@@ -228,10 +259,19 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
           <div className="space-y-5 border-b border-slate-200 px-5 py-5 sm:px-8 sm:py-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="w-full lg:max-w-lg">
-                <label htmlFor="manage-items-search" className="block text-sm font-medium text-slate-700">
+                <label
+                  htmlFor="manage-items-search"
+                  className="block text-sm font-medium text-slate-700"
+                >
                   Gegenstände durchsuchen
                 </label>
-                <div className="mt-2 flex items-center gap-3 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-200/60">
+                <div
+                  className={[
+                    "mt-2 flex items-center gap-3 rounded-xl border border-slate-300 bg-white px-4",
+                    "py-2.5 text-sm text-slate-900 shadow-sm focus-within:border-brand-300",
+                    "focus-within:ring-2 focus-within:ring-brand-200/60",
+                  ].join(" ")}
+                >
                   <span className="text-slate-400">🔍</span>
                   <input
                     id="manage-items-search"
@@ -254,18 +294,22 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
                       type="button"
                       onClick={() => setFilterMode(option.value)}
                       className={clsx(
-                        'flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                        "flex items-center gap-2 rounded-full border px-4 py-2 " +
+                          "text-sm font-medium transition focus:outline-none " +
+                          "focus-visible:ring-2 focus-visible:ring-brand-500",
                         isActive
-                          ? 'border-brand-400 bg-brand-50 text-brand-700 shadow-sm'
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:text-brand-600',
+                          ? "border-brand-400 bg-brand-50 text-brand-700 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-brand-200 hover:text-brand-600",
                       )}
                       disabled={saving}
                     >
                       <span>{option.label}</span>
                       <span
                         className={clsx(
-                          'rounded-full px-2 py-0.5 text-xs font-semibold',
-                          isActive ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-500',
+                          "rounded-full px-2 py-0.5 text-xs font-semibold",
+                          isActive
+                            ? "bg-brand-100 text-brand-700"
+                            : "bg-slate-100 text-slate-500",
                         )}
                       >
                         {count}
@@ -284,7 +328,9 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
                 onClick={handleToggleFiltered}
                 disabled={filteredCount === 0 || saving}
               >
-                {allFilteredSelected ? 'Gefilterte abwählen' : 'Gefilterte auswählen'}
+                {allFilteredSelected
+                  ? "Gefilterte abwählen"
+                  : "Gefilterte auswählen"}
               </Button>
               <Button
                 type="button"
@@ -305,74 +351,98 @@ const ManageListItemsSheet: React.FC<ManageListItemsSheetProps> = ({
             )}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8 sm:py-6">
-              {items.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-                  Noch keine Gegenstände erfasst. Lege zunächst Einträge im Inventar an.
-                </div>
-              )}
+            {items.length === 0 && (
+              <div
+                className={[
+                  "rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center",
+                  "text-sm text-slate-500",
+                ].join(" ")}
+              >
+                Noch keine Gegenstände erfasst. Lege zunächst Einträge im
+                Inventar an.
+              </div>
+            )}
 
-              {items.length > 0 && filteredCount === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-                  Keine Treffer für „{searchTerm}“.
-                </div>
-              )}
+            {items.length > 0 && filteredCount === 0 && (
+              <div
+                className={[
+                  "rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center",
+                  "text-sm text-slate-500",
+                ].join(" ")}
+              >
+                Keine Treffer für „{searchTerm}“.
+              </div>
+            )}
 
-              {filteredCount > 0 && (
-                <ul className="grid gap-3 md:grid-cols-2">
-                  {filteredItems.map((item: ManageableItem) => {
-                    const checked = localSelectedIds.has(item.id);
-                    const isUnassigned = item.assignmentCount === 0;
-                    return (
-                      <li
-                        key={item.id}
-                        className={clsx(
-                          'rounded-2xl border p-4 shadow-sm transition',
-                          checked
-                            ? 'border-brand-300 bg-brand-50/80 ring-1 ring-brand-200'
-                            : 'border-slate-200 bg-white hover:border-brand-200 hover:shadow-md',
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <label className="flex flex-1 cursor-pointer items-start gap-3">
-                            <input
-                              type="checkbox"
-                              className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                              checked={checked}
-                              onChange={() => handleToggleItem(item.id)}
-                              disabled={saving}
-                            />
-                            <span className="flex flex-1 flex-col gap-1">
-                              <span className="text-sm font-semibold text-slate-900">{item.name}</span>
-                              {item.description && (
-                                <span className="text-xs text-slate-500 line-clamp-2">{item.description}</span>
-                              )}
-                              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                                <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium">{item.quantity}× vorhanden</span>
-                                <span
-                                  className={clsx(
-                                    'rounded-full px-2 py-0.5 font-semibold',
-                                    isUnassigned ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600',
-                                  )}
-                                >
-                                  {isUnassigned ? 'Nicht zugewiesen' : `${item.assignmentCount} Listen`}
-                                </span>
-                              </div>
+            {filteredCount > 0 && (
+              <ul className="grid gap-3 md:grid-cols-2">
+                {filteredItems.map((item: ManageableItem) => {
+                  const checked = localSelectedIds.has(item.id);
+                  const isUnassigned = item.assignmentCount === 0;
+                  return (
+                    <li
+                      key={item.id}
+                      className={clsx(
+                        "rounded-2xl border p-4 shadow-sm transition",
+                        checked
+                          ? "border-brand-300 bg-brand-50/80 ring-1 ring-brand-200"
+                          : "border-slate-200 bg-white hover:border-brand-200 hover:shadow-md",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <label className="flex flex-1 cursor-pointer items-start gap-3">
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                            checked={checked}
+                            onChange={() => handleToggleItem(item.id)}
+                            disabled={saving}
+                          />
+                          <span className="flex flex-1 flex-col gap-1">
+                            <span className="text-sm font-semibold text-slate-900">
+                              {item.name}
                             </span>
-                          </label>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+                            {item.description && (
+                              <span className="text-xs text-slate-500 line-clamp-2">
+                                {item.description}
+                              </span>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium">
+                                {item.quantity}× vorhanden
+                              </span>
+                              <span
+                                className={clsx(
+                                  "rounded-full px-2 py-0.5 font-semibold",
+                                  isUnassigned
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-slate-200 text-slate-600",
+                                )}
+                              >
+                                {isUnassigned
+                                  ? "Nicht zugewiesen"
+                                  : `${item.assignmentCount} Listen`}
+                              </span>
+                            </div>
+                          </span>
+                        </label>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
 
-        <footer className="sticky bottom-0 border-t border-slate-200 bg-white/95 px-5 py-5 backdrop-blur sm:px-8 sm:py-6">
+        <footer
+          className={[
+            "sticky bottom-0 border-t border-slate-200 bg-white/95 px-5 py-5 backdrop-blur",
+            "sm:px-8 sm:py-6",
+          ].join(" ")}
+        >
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-slate-500">
-              {summaryText}
-            </div>
+            <div className="text-sm text-slate-500">{summaryText}</div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
               <Button
                 type="button"

@@ -30,7 +30,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='item',
             name='wodis_inventory_number',
-            field=models.CharField(blank=True, db_index=True, help_text='Optionale Inventarnummer aus Wodis', max_length=120, null=True),
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text='Optionale Inventarnummer aus Wodis',
+                max_length=120,
+                null=True,
+            ),
         ),
         migrations.AlterField(
             model_name='itemimage',

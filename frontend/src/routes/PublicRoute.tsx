@@ -3,11 +3,11 @@
 // This route guard component protects public routes (login, register) from authenticated users.
 // Authenticated users are redirected to the application.
 
-import React from 'react';                                  // React core library
-import { Navigate, useLocation, type Location } from 'react-router-dom'; // React Router navigation utilities
+import React from "react"; // React core library
+import { Navigate, useLocation, type Location } from "react-router-dom"; // React Router navigation utilities
 
-import LoadingScreen from '../components/common/LoadingScreen'; // Loading indicator component
-import { useAuth } from '../hooks/useAuth';                 // Authentication state hook
+import LoadingScreen from "../components/common/LoadingScreen"; // Loading indicator component
+import { useAuth } from "../hooks/useAuth"; // Authentication state hook
 
 /**
  * Props interface for PublicRoute component.
@@ -58,7 +58,8 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   // If they were trying to access a specific page, redirect there
   // Otherwise, redirect to dashboard
   if (isAuthenticated) {
-    const redirectPath = (location.state as { from?: Location })?.from?.pathname ?? '/';
+    const redirectPath =
+      (location.state as { from?: Location })?.from?.pathname ?? "/";
     return <Navigate to={redirectPath} replace />;
   }
 

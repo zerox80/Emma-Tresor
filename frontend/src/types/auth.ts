@@ -12,13 +12,13 @@
 export interface LoginRequest {
   /** User's email address (required for email-based login) */
   email: string;
-  
+
   /** User's password (required) */
   password: string;
-  
+
   /** Whether to remember the user's session across browser restarts */
   rememberMe: boolean;
-  
+
   /** User's username (optional, alternative to email-based login) */
   username?: string;
 }
@@ -32,10 +32,10 @@ export interface LoginRequest {
 export interface LoginResponse {
   /** User profile data if authentication was successful */
   user?: UserProfile;
-  
+
   /** Access token expiration time in seconds from now */
   access_expires: number;
-  
+
   /** Whether the user chose to be remembered on the backend */
   remember: boolean;
 }
@@ -49,13 +49,13 @@ export interface LoginResponse {
 export interface RegisterRequest {
   /** Unique username for the new account (required) */
   username: string;
-  
+
   /** Email address for the new account (required) */
   email: string;
-  
+
   /** Password for the new account (required) */
   password: string;
-  
+
   /** Password confirmation to prevent typos (required) */
   password_confirm: string;
 }
@@ -69,10 +69,10 @@ export interface RegisterRequest {
 export interface UserProfile {
   /** Unique database identifier for the user */
   id: number;
-  
+
   /** User's unique username for login */
   username: string;
-  
+
   /** User's email address for notifications and login */
   email: string;
 }

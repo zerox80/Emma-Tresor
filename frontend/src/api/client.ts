@@ -3,7 +3,7 @@
 // This module sets up the Axios HTTP client for communicating with the Django backend.
 // It handles CSRF protection, base URL resolution, and request/response interceptors.
 
-import axios from 'axios';                                 // HTTP client library for API requests
+import axios from "axios"; // HTTP client library for API requests
 
 /**
  * Derive fallback API URL based on environment and browser context.
@@ -13,16 +13,16 @@ import axios from 'axios';                                 // HTTP client librar
 const deriveFallbackApi = (): string => {
   // Use local development server in development mode
   if (import.meta.env.DEV) {
-    return 'http://127.0.0.1:8000/api';
+    return "http://127.0.0.1:8000/api";
   }
 
   // Use current window origin if available (for production deployments)
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return `${window.location.origin.replace(/\/$/, '')}/api`;
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return `${window.location.origin.replace(/\/$/, "")}/api`;
   }
 
   // Default fallback for unknown environments
-  return 'http://127.0.0.1:8000/api';
+  return "http://127.0.0.1:8000/api";
 };
 
 /**
@@ -38,34 +38,38 @@ const deriveFallbackApi = (): string => {
  */
 const resolveBaseURL = () => {
   // Get configured API base URL from environment variables
-  const configured = (import.meta.env.VITE_API_BASE_URL ?? '').trim();
+  const configured = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
   const fallback = deriveFallbackApi();
   const source = configured.length > 0 ? configured : fallback;
 
   try {
     // Parse the URL to manipulate components
     const url = new URL(source);
-    
+
     // Ensure /api pathname is present
-    if (!url.pathname || url.pathname === '/') {
-      url.pathname = '/api';
+    if (!url.pathname || url.pathname === "/") {
+      url.pathname = "/api";
     }
-    
+
     // Handle protocol detection for security
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       try {
         const { protocol, host } = window.location;
         // Upgrade to HTTPS if page is secure and API URL is HTTP
-        if (protocol === 'https:' && url.protocol === 'http:' && url.host === host) {
-          url.protocol = 'https:';
+        if (
+          protocol === "https:" &&
+          url.protocol === "http:" &&
+          url.host === host
+        ) {
+          url.protocol = "https:";
         }
       } catch (error) {
         // Silently ignore location access errors
       }
     }
-    
+
     // Remove trailing slash for consistency
-    const normalised = url.toString().replace(/\/$/, '');
+    const normalised = url.toString().replace(/\/$/, "");
     return normalised;
   } catch (error) {
     // Return fallback if URL parsing fails
@@ -83,15 +87,15 @@ const resolveBaseURL = () => {
  */
 export const getCSRFToken = (): string | null => {
   // Skip if not in browser environment
-  if (typeof document === 'undefined') return null;
-  
-  const name = 'csrftoken';                                    // Django's default CSRF cookie name
+  if (typeof document === "undefined") return null;
+
+  const name = "csrftoken"; // Django's default CSRF cookie name
   const cookieValue = document.cookie
-    .split('; ')                                           // Split cookies into array
-    .find((row) => row.startsWith(`${name}=`))             // Find CSRF cookie
-    ?.split('=')[1];                                        // Extract token value
-  
-  return cookieValue || null;                                   // Return token or null
+    .split("; ") // Split cookies into array
+    .find((row) => row.startsWith(`${name}=`)) // Find CSRF cookie
+    ?.split("=")[1]; // Extract token value
+
+  return cookieValue || null; // Return token or null
 };
 
 /**
@@ -104,13 +108,13 @@ export const getCSRFToken = (): string | null => {
  */
 export const ensureCSRFToken = async (): Promise<void> => {
   const token = getCSRFToken();
-  if (token) return;                                       // Token already exists, no action needed
-  
+  if (token) return; // Token already exists, no action needed
+
   try {
     // Fetch CSRF token from Django endpoint
     await axios.get(`${apiBaseUrl}/csrf/`, { withCredentials: true });
   } catch (error) {
-    console.error('Failed to fetch CSRF token:', error);
+    console.error("Failed to fetch CSRF token:", error);
   }
 };
 
@@ -128,11 +132,11 @@ export const apiBaseUrl = resolveBaseURL();
  * - CSRF token injection for state-changing requests
  */
 const apiClient = axios.create({
-  baseURL: apiBaseUrl,                                      // Use resolved base URL
-  withCredentials: true,                                     // Send cookies for authentication
-  timeout: 30000,                                           // 30 second timeout
+  baseURL: apiBaseUrl, // Use resolved base URL
+  withCredentials: true, // Send cookies for authentication
+  timeout: 30000, // 30 second timeout
   headers: {
-    Accept: 'application/json',                                 // Expect JSON responses
+    Accept: "application/json", // Expect JSON responses
   },
 });
 
@@ -145,11 +149,14 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Check if request method requires CSRF protection
-    if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+    if (
+      config.method &&
+      ["post", "put", "patch", "delete"].includes(config.method.toLowerCase())
+    ) {
       const csrfToken = getCSRFToken();
       if (csrfToken) {
         // Add CSRF token to request headers
-        config.headers['X-CSRFToken'] = csrfToken;
+        config.headers["X-CSRFToken"] = csrfToken;
       }
     }
     return config;
@@ -157,7 +164,7 @@ apiClient.interceptors.request.use(
   (error) => {
     // Pass through request configuration errors
     return Promise.reject(error);
-  }
+  },
 );
 
-export default apiClient;                                      // Export configured Axios instance
+export default apiClient; // Export configured Axios instance

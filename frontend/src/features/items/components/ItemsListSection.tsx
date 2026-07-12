@@ -1,14 +1,14 @@
-import React from 'react';
+import React from "react";
 
-import Button from '../../../components/common/Button';
-import ItemsGrid from '../../../components/items/ItemsGrid';
-import ItemsTable from '../../../components/items/ItemsTable';
-import SelectionToolbar from '../../../components/items/SelectionToolbar';
-import type { Item, PaginatedResponse } from '../../../types/inventory';
-import type { ViewMode } from '../constants';
-import ItemsEmptyState from './ItemsEmptyState';
-import ItemsLoadingGrid from './ItemsLoadingGrid';
-import ItemsPaginationControls from './ItemsPaginationControls';
+import Button from "../../../components/common/Button";
+import ItemsGrid from "../../../components/items/ItemsGrid";
+import ItemsTable from "../../../components/items/ItemsTable";
+import SelectionToolbar from "../../../components/items/SelectionToolbar";
+import type { Item, PaginatedResponse } from "../../../types/inventory";
+import type { ViewMode } from "../constants";
+import ItemsEmptyState from "./ItemsEmptyState";
+import ItemsLoadingGrid from "./ItemsLoadingGrid";
+import ItemsPaginationControls from "./ItemsPaginationControls";
 
 interface ItemsListSectionProps {
   selectionMode: boolean;
@@ -96,9 +96,11 @@ const ItemsListSection: React.FC<ItemsListSectionProps> = ({
 
     {loadingItems && <ItemsLoadingGrid />}
 
-    {!loadingItems && items.length === 0 && !itemsError && <ItemsEmptyState onCreateItem={onCreateItem} />}
+    {!loadingItems && items.length === 0 && !itemsError && (
+      <ItemsEmptyState onCreateItem={onCreateItem} />
+    )}
 
-    {!loadingItems && items.length > 0 && viewMode === 'grid' && (
+    {!loadingItems && items.length > 0 && viewMode === "grid" && (
       <ItemsGrid
         items={items}
         locationMap={locationMap}
@@ -110,7 +112,7 @@ const ItemsListSection: React.FC<ItemsListSectionProps> = ({
       />
     )}
 
-    {!loadingItems && items.length > 0 && viewMode === 'table' && (
+    {!loadingItems && items.length > 0 && viewMode === "table" && (
       <ItemsTable
         items={items}
         locationMap={locationMap}

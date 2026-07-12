@@ -1,31 +1,30 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import clsx from 'clsx';
+import React, { useEffect, useMemo, useState } from "react";
+import clsx from "clsx";
 
-import Button from './common/Button';
-import type { ItemList } from '../types/inventory';
+import Button from "./common/Button";
+import type { ItemList } from "../types/inventory";
 
 interface AssignToListSheetProps {
-  
   open: boolean;
-  
+
   onClose: () => void;
-  
+
   lists: ItemList[];
-  
+
   loading: boolean;
-  
+
   error: string | null;
-  
+
   onReload: () => void;
-  
+
   onAssign: (listId: number) => Promise<void>;
-  
+
   assignLoading: boolean;
-  
+
   assignError: string | null;
-  
+
   selectedCount: number;
-  
+
   onCreateList: (name: string) => Promise<ItemList>;
 }
 
@@ -42,20 +41,20 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
   selectedCount,
   onCreateList,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedListId, setSelectedListId] = useState<number | null>(null);
   const [internalError, setInternalError] = useState<string | null>(null);
   const [createMode, setCreateMode] = useState(false);
-  const [newListName, setNewListName] = useState('');
+  const [newListName, setNewListName] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setSearchTerm('');
+      setSearchTerm("");
       setInternalError(null);
       setCreateMode(false);
-      setNewListName('');
+      setNewListName("");
       setCreateError(null);
     } else {
       setSelectedListId(null);
@@ -87,7 +86,7 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
 
   const handleAssign = async () => {
     if (selectedListId == null) {
-      setInternalError('Bitte wähle eine Liste aus.');
+      setInternalError("Bitte wähle eine Liste aus.");
       return;
     }
 
@@ -95,7 +94,10 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
     try {
       await onAssign(selectedListId);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Zuweisung fehlgeschlagen. Bitte versuche es erneut.';
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Zuweisung fehlgeschlagen. Bitte versuche es erneut.";
       setInternalError(message);
     }
   };
@@ -103,7 +105,7 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
   const handleCreateList = async () => {
     const trimmed = newListName.trim();
     if (trimmed.length === 0) {
-      setCreateError('Listenname ist erforderlich.');
+      setCreateError("Listenname ist erforderlich.");
       return;
     }
 
@@ -112,10 +114,13 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
     try {
       const newList = await onCreateList(trimmed);
       setCreateMode(false);
-      setNewListName('');
+      setNewListName("");
       setSelectedListId(newList.id);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Liste konnte nicht erstellt werden.';
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Liste konnte nicht erstellt werden.";
       setCreateError(message);
     } finally {
       setCreateLoading(false);
@@ -144,8 +149,12 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
       >
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Zu Liste hinzufügen</h2>
-            <p className="text-sm text-slate-500">{selectedCount} Gegenstände werden hinzugefügt.</p>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Zu Liste hinzufügen
+            </h2>
+            <p className="text-sm text-slate-500">
+              {selectedCount} Gegenstände werden hinzugefügt.
+            </p>
           </div>
           <button
             type="button"
@@ -166,7 +175,12 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               <div className="flex items-start justify-between gap-3">
                 <span>{error}</span>
-                <Button type="button" variant="ghost" size="sm" onClick={onReload}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onReload}
+                >
                   Erneut laden
                 </Button>
               </div>
@@ -174,10 +188,19 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
           )}
 
           <div>
-            <label htmlFor="assign-search" className="block text-sm font-medium text-slate-700">
+            <label
+              htmlFor="assign-search"
+              className="block text-sm font-medium text-slate-700"
+            >
               Listen durchsuchen
             </label>
-            <div className="mt-1 flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-200/60">
+            <div
+              className={[
+                "mt-1 flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2",
+                "text-sm text-slate-900 shadow-sm focus-within:border-brand-300",
+                "focus-within:ring-2 focus-within:ring-brand-200/60",
+              ].join(" ")}
+            >
               <svg
                 aria-hidden="true"
                 className="mr-2 h-4 w-4 text-slate-400"
@@ -186,7 +209,11 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
                 stroke="currentColor"
                 strokeWidth="1.8"
               >
-                <path d="M12.5 12.5 17 17" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M12.5 12.5 17 17"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
                 <circle cx="8.5" cy="8.5" r="4.5" />
               </svg>
               <input
@@ -203,9 +230,16 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Deine Listen</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Deine Listen
+              </h3>
               {!createMode && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setCreateMode(true)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCreateMode(true)}
+                >
                   Neue Liste
                 </Button>
               )}
@@ -213,7 +247,10 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
 
             {createMode && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <label htmlFor="assign-new-list" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label
+                  htmlFor="assign-new-list"
+                  className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                >
                   Listenname
                 </label>
                 <input
@@ -222,24 +259,30 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
                   value={newListName}
                   onChange={(event) => setNewListName(event.target.value)}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
+                    if (event.key === "Enter") {
                       event.preventDefault();
                       void handleCreateList();
                     }
-                    if (event.key === 'Escape') {
+                    if (event.key === "Escape") {
                       event.preventDefault();
                       if (!createLoading) {
                         setCreateMode(false);
-                        setNewListName('');
+                        setNewListName("");
                         setCreateError(null);
                       }
                     }
                   }}
-                  className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
+                  className={[
+                    "mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm",
+                    "text-slate-900 shadow-sm focus:border-brand-300 focus:outline-none focus:ring-2",
+                    "focus:ring-brand-200/60",
+                  ].join(" ")}
                   disabled={createLoading}
                   placeholder="z. B. Umzug Küche"
                 />
-                {createError && <p className="mt-2 text-xs text-red-600">{createError}</p>}
+                {createError && (
+                  <p className="mt-2 text-xs text-red-600">{createError}</p>
+                )}
                 <div className="mt-3 flex gap-2">
                   <Button
                     type="button"
@@ -248,7 +291,7 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
                     onClick={() => {
                       if (!createLoading) {
                         setCreateMode(false);
-                        setNewListName('');
+                        setNewListName("");
                         setCreateError(null);
                       }
                     }}
@@ -277,8 +320,14 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
               )}
 
               {!loading && filteredLists.length === 0 && (
-                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                  Keine Listen gefunden. Erstelle eine neue Liste, um zu starten.
+                <div
+                  className={[
+                    "rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm",
+                    "text-slate-500",
+                  ].join(" ")}
+                >
+                  Keine Listen gefunden. Erstelle eine neue Liste, um zu
+                  starten.
                 </div>
               )}
 
@@ -290,23 +339,32 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
                     type="button"
                     onClick={() => setSelectedListId(list.id)}
                     className={clsx(
-                      'w-full rounded-xl border px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-brand-200/60',
-                      checked ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:border-brand-200 hover:bg-slate-50',
+                      "w-full rounded-xl border px-4 py-3 text-left transition " +
+                        "focus:outline-none focus:ring-2 focus:ring-brand-200/60",
+                      checked
+                        ? "border-brand-500 bg-brand-50"
+                        : "border-slate-200 hover:border-brand-200 hover:bg-slate-50",
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={clsx(
-                          'flex h-5 w-5 items-center justify-center rounded-full border text-xs font-semibold',
-                          checked ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-300 bg-white text-slate-400',
+                          "flex h-5 w-5 items-center justify-center rounded-full border text-xs font-semibold",
+                          checked
+                            ? "border-brand-500 bg-brand-500 text-white"
+                            : "border-slate-300 bg-white text-slate-400",
                         )}
                         aria-hidden="true"
                       >
-                        {checked ? '✓' : ''}
+                        {checked ? "✓" : ""}
                       </div>
                       <div className="flex flex-1 items-center justify-between">
-                        <span className="font-medium text-slate-900">{list.name}</span>
-                        <span className="text-xs text-slate-500">{list.items.length} Items</span>
+                        <span className="font-medium text-slate-900">
+                          {list.name}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {list.items.length} Items
+                        </span>
                       </div>
                     </div>
                   </button>
@@ -316,7 +374,9 @@ const AssignToListSheet: React.FC<AssignToListSheetProps> = ({
           </div>
 
           {internalError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{internalError}</div>
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {internalError}
+            </div>
           )}
         </div>
 

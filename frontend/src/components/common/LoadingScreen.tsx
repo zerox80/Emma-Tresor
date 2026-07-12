@@ -3,7 +3,7 @@
 // This component displays a loading screen with a spinning animation
 // and loading message. Used during initial app startup and route transitions.
 
-import React from 'react';                                       // Import React for JSX
+import React from "react"; // Import React for JSX
 
 /**
  * Loading Screen Component.
@@ -45,4 +45,4 @@ const LoadingScreen: React.FC = () => (
   </div>
 );
 
-export default LoadingScreen;                                  // Export as default
+export default LoadingScreen; // Export as default
