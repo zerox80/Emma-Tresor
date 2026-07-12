@@ -94,7 +94,7 @@ class CookieJWTCSRFSecurityTests(APITestCase):
 class ItemListViewSetTests(APITestCase):
 
     def setUp(self):
-        
+
         self.client = APIClient()
         self.user = User.objects.create_user('collector', 'collector@example.com', 'StrongPass123!')
         self.other_user = User.objects.create_user('visitor', 'visitor@example.com', 'StrongPass123!')
@@ -107,7 +107,7 @@ class ItemListViewSetTests(APITestCase):
         self.other_list.items.set([self.other_item])
 
     def test_list_requires_authentication(self):
-        
+
         url = reverse('itemlist-list')
 
         response = self.client.get(url)
@@ -115,7 +115,7 @@ class ItemListViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_returns_only_user_lists(self):
-        
+
         url = reverse('itemlist-list')
         self.client.force_authenticate(user=self.user)
 
@@ -127,7 +127,7 @@ class ItemListViewSetTests(APITestCase):
         self.assertEqual(response.data[0]['owner'], self.user.id)
 
     def test_create_list_assigns_owner_and_items(self):
-        
+
         url = reverse('itemlist-list')
         self.client.force_authenticate(user=self.user)
         payload = {'name': 'Tech', 'items': [self.user_item_one.id, self.user_item_two.id]}
@@ -141,7 +141,7 @@ class ItemListViewSetTests(APITestCase):
         self.assertSetEqual(set(item_list.items.all()), {self.user_item_one, self.user_item_two})
 
     def test_create_rejects_other_users_items(self):
-        
+
         url = reverse('itemlist-list')
         self.client.force_authenticate(user=self.user)
         payload = {'name': 'Invalid', 'items': [self.other_item.id]}
@@ -152,7 +152,7 @@ class ItemListViewSetTests(APITestCase):
         self.assertIn('items', response.data)
 
     def test_update_replaces_items(self):
-        
+
         url = reverse('itemlist-detail', args=[self.user_list.id])
         self.client.force_authenticate(user=self.user)
         payload = {'name': 'Office Updated', 'items': [self.user_item_two.id]}
@@ -165,7 +165,7 @@ class ItemListViewSetTests(APITestCase):
         self.assertSetEqual(set(self.user_list.items.all()), {self.user_item_two})
 
     def test_cannot_access_other_users_list(self):
-        
+
         url = reverse('itemlist-detail', args=[self.other_list.id])
         self.client.force_authenticate(user=self.user)
 
@@ -176,11 +176,11 @@ class ItemListViewSetTests(APITestCase):
 class CurrentUserViewTests(APITestCase):
 
     def setUp(self):
-        
+
         self.user = User.objects.create_user('profileuser', 'profile@example.com', 'StrongPass123!')
 
     def test_requires_authentication(self):
-        
+
         url = reverse('current_user')
 
         response = self.client.get(url)
@@ -188,7 +188,7 @@ class CurrentUserViewTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_returns_current_user_payload(self):
-        
+
         url = reverse('current_user')
         self.client.force_authenticate(user=self.user)
 
@@ -202,7 +202,7 @@ class CurrentUserViewTests(APITestCase):
 class ItemImageViewSetTests(APITestCase):
 
     def setUp(self):
-        
+
         self.temp_media = tempfile.mkdtemp()
         override = override_settings(MEDIA_ROOT=self.temp_media)
         override.enable()
@@ -223,7 +223,7 @@ class ItemImageViewSetTests(APITestCase):
         return SimpleUploadedFile(name, buffer.getvalue(), content_type='image/png')
 
     def test_cannot_create_image_for_other_users_item(self):
-        
+
         url = reverse('itemimage-list')
         payload = {'item': self.other_item.id, 'image': self._image_file()}
 
@@ -234,7 +234,7 @@ class ItemImageViewSetTests(APITestCase):
         self.assertEqual(ItemImage.objects.count(), 0)
 
     def test_create_image_for_own_item(self):
-        
+
         url = reverse('itemimage-list')
         payload = {'item': self.item.id, 'image': self._image_file('own.png')}
 
@@ -244,7 +244,7 @@ class ItemImageViewSetTests(APITestCase):
         self.assertEqual(ItemImage.objects.filter(item=self.item).count(), 1)
 
     def test_cannot_update_image_to_other_users_item(self):
-        
+
         image = ItemImage.objects.create(item=self.item, image=self._image_file('original.png'))
         url = reverse('itemimage-detail', args=[image.id])
 
@@ -255,7 +255,7 @@ class ItemImageViewSetTests(APITestCase):
         self.assertEqual(image.item, self.item)
 
     def test_perform_create_raises_permission_denied_for_foreign_item(self):
-        
+
         view = ItemImageViewSet()
         factory = APIRequestFactory()
         request = factory.post(reverse('itemimage-list'), {'item': self.other_item.id})

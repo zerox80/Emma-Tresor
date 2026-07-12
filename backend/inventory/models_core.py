@@ -2,7 +2,7 @@
 # ===========================
 # This module defines the core data models for the EmmaTresor inventory management system.
 # It includes models for items, images, tags, locations, change tracking, and user lists.
-# 
+#
 # The models implement:
 # - User data isolation (each user only sees their own data)
 # - Comprehensive audit trails with change logging
@@ -315,7 +315,7 @@ class Item(TimeStampedModel):
             # Value cannot be negative
             if self.value < 0:
                 raise ValidationError({'value': 'Der Wert darf nicht negativ sein.'})
-            
+
             # Value has reasonable upper bound (prevents data entry errors)
             if self.value > 999999999.99:
                 raise ValidationError({'value': 'Der Wert ist zu hoch. Maximal 999.999.999,99 € erlaubt.'})
@@ -341,7 +341,7 @@ class Item(TimeStampedModel):
         # Extract max attempts from kwargs (default to 5 if not specified)
         max_attempts = kwargs.pop('max_uuid_attempts', 5)
         attempt = 0
-        
+
         while True:
             # Validate all fields before saving
             self.full_clean()
@@ -354,13 +354,13 @@ class Item(TimeStampedModel):
                 if 'asset_tag' not in str(exc).lower():
                     # If it's a different integrity error, re-raise it
                     raise
-                
+
                 # If it's a UUID collision, retry with a new UUID
                 attempt += 1
                 if attempt >= max_attempts:
                     # If we've exceeded max attempts, give up and raise the error
                     raise
-                
+
                 # Generate a new UUID and try again
                 self.asset_tag = uuid.uuid4()
 

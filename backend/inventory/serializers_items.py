@@ -38,7 +38,7 @@ User = get_user_model()
 from .serializers_catalog import ItemImageSerializer
 
 class ItemSerializer(serializers.ModelSerializer):
-    
+
     tags = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Tag.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
     description = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=10000)
@@ -67,7 +67,7 @@ class ItemSerializer(serializers.ModelSerializer):
     images = ItemImageSerializer(many=True, read_only=True)
 
     class Meta:
-        
+
         model = Item
         fields = [
             'id',
@@ -114,7 +114,7 @@ class ItemSerializer(serializers.ModelSerializer):
             location_field.queryset = empty_locations
 
     def _require_user(self) -> User:
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -122,7 +122,7 @@ class ItemSerializer(serializers.ModelSerializer):
         return user
 
     def validate(self, attrs):
-        
+
         user = self._require_user()
 
         location = attrs.get('location')
@@ -134,12 +134,12 @@ class ItemSerializer(serializers.ModelSerializer):
             invalid_tags = [tag for tag in tags if tag.user_id != user.id]
             if invalid_tags:
                 raise serializers.ValidationError(
-                    {'tags': 'Mindestens eines der ausgew?hlten Tags geh?rt einem anderen Benutzer.'}
+                    {'tags': 'Mindestens eines der ausgewählten Tags gehört einem anderen Benutzer.'}
                 )
         return attrs
 
     def validate_purchase_date(self, value):
-        
+
         if value is None:
             return value
 
@@ -155,7 +155,7 @@ class ItemSerializer(serializers.ModelSerializer):
         return value
 
     def validate_value(self, value):
-        
+
         if value is None:
             return value
         if value < 0:
@@ -198,7 +198,7 @@ class ItemSerializer(serializers.ModelSerializer):
                     attributes=allowed_attributes,
                     strip=True
                 )
-        
+
         if 'purchase_date' in data and (data['purchase_date'] is None or data['purchase_date'] == ''):
             data['purchase_date'] = None
         if 'value' in data and (data['value'] is None or data['value'] == ''):
@@ -229,7 +229,7 @@ class ItemSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        
+
         user = self._require_user()
         tags = validated_data.pop('tags', [])
         validated_data.pop('owner', None)
@@ -240,7 +240,7 @@ class ItemSerializer(serializers.ModelSerializer):
         return item
 
     def update(self, instance, validated_data):
-        
+
         user = self._require_user()
         tags = validated_data.pop('tags', None)
         old_tag_ids = sorted(instance.tags.values_list('id', flat=True)) if tags is not None else None

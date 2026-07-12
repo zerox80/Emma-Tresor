@@ -1,7 +1,5 @@
 """Stable public exports for authentication API views and helpers."""
 
-import time
-
 from .auth_support import (
     _build_cookie_options,
     _clear_token_cookies,

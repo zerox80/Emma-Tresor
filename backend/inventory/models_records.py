@@ -96,7 +96,7 @@ class ItemImage(TimeStampedModel):
         # === CONTENT VALIDATION ===
         # Get file object for content validation
         file_obj = self.image.file
-        
+
         # Remember current position to restore later
         pos = file_obj.tell()
 
@@ -108,7 +108,7 @@ class ItemImage(TimeStampedModel):
         try:
             # Seek to beginning of file
             file_obj.seek(0)
-            
+
             # Read first 16 bytes for file type detection
             header = file_obj.read(16)
             file_obj.seek(0)
@@ -118,7 +118,7 @@ class ItemImage(TimeStampedModel):
                 # Check if file starts with PDF signature
                 if not header.startswith(b'%PDF'):
                     raise ValidationError('Die Datei ist kein gültiges PDF-Dokument.')
-            
+
             # === IMAGE VALIDATION ===
             else:
                 try:
@@ -170,21 +170,21 @@ class ItemImage(TimeStampedModel):
                                         raise ValidationError(
                                             f'Farbmodus {img_final.mode} für Format {ext} nicht unterstützt.'
                                         )
-                        
+
                         except MemoryError:
                             # Handle memory exhaustion during image processing
                             raise ValidationError(
                                 'Bild zu groß für Verarbeitung (Speicherlimit überschritten). '
                                 f'Maximum: {MAX_DIMENSION}x{MAX_DIMENSION} Pixel.'
                             )
-                        
+
                         except Image.DecompressionBombError:
                             # Handle PIL's built-in decompression bomb detection
                             raise ValidationError(
                                 'Potenzieller Decompression-Bomb-Angriff erkannt. '
                                 f'Bild überschreitet Sicherheitslimit von {MAX_PIXELS} Pixeln.'
                             )
-                        
+
                         except Exception as processing_error:
                             # Handle unexpected image processing errors
                             import logging
@@ -193,15 +193,15 @@ class ItemImage(TimeStampedModel):
                             raise ValidationError(
                                 'Bildverarbeitung fehlgeschlagen. Bitte verwende ein anderes Bild.'
                             ) from processing_error
-                                
+
                 except (UnidentifiedImageError, OSError) as exc:
                     # Handle cases where file is not a valid image
                     raise ValidationError('Die Datei ist kein gültiges Bild.') from exc
-                
+
                 finally:
                     # Always reset file position
                     file_obj.seek(0)
-        
+
         finally:
             # Ensure file position is restored even if validation fails
             file_obj.seek(pos)
@@ -295,10 +295,10 @@ class ItemChangeLog(TimeStampedModel):
         indexes = [
             # Index for item-specific change history queries
             models.Index(fields=['item', '-created_at']),
-            
+
             # Index for user-specific activity queries
             models.Index(fields=['user', '-created_at']),
-            
+
             # Index for action-type filtering
             models.Index(fields=['action', '-created_at']),
         ]
@@ -308,10 +308,10 @@ class ItemChangeLog(TimeStampedModel):
         Validate action field to ensure only valid actions are recorded.
         """
         super().clean()
-        
+
         # Get list of valid action values from choices
         valid_actions = [choice[0] for choice in self.ACTION_CHOICES]
-        
+
         # Validate that the action is one of the allowed values
         if self.action not in valid_actions:
             raise ValidationError(

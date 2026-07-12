@@ -3,7 +3,7 @@ from .view_test_base import *  # noqa: F403
 class UserScopedViewSetTests(APITestCase):
 
     def setUp(self):
-        
+
         self.user1 = User.objects.create_user('user1', 'user1@example.com', 'password')
         self.user2 = User.objects.create_user('user2', 'user2@example.com', 'password')
 
@@ -17,7 +17,7 @@ class UserScopedViewSetTests(APITestCase):
         self.client.force_authenticate(user=self.user1)
 
     def test_list_tags_returns_only_own_tags(self):
-        
+
         url = reverse('tag-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -25,26 +25,26 @@ class UserScopedViewSetTests(APITestCase):
         self.assertEqual(response.data[0]['name'], self.tag1.name)
 
     def test_cannot_retrieve_other_user_tag(self):
-        
+
         url = reverse('tag-detail', args=[self.tag2.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_cannot_update_other_user_tag(self):
-        
+
         url = reverse('tag-detail', args=[self.tag2.id])
         response = self.client.put(url, {'name': 'Updated Tag'})
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_cannot_delete_other_user_tag(self):
-        
+
         url = reverse('tag-detail', args=[self.tag2.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Tag.objects.filter(pk=self.tag2.id).exists())
 
     def test_list_locations_returns_only_own_locations(self):
-        
+
         url = reverse('location-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -52,19 +52,19 @@ class UserScopedViewSetTests(APITestCase):
         self.assertEqual(response.data[0]['name'], self.location1.name)
 
     def test_cannot_retrieve_other_user_location(self):
-        
+
         url = reverse('location-detail', args=[self.location2.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_cannot_update_other_user_location(self):
-        
+
         url = reverse('location-detail', args=[self.location2.id])
         response = self.client.put(url, {'name': 'Updated Location'})
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_cannot_delete_other_user_location(self):
-        
+
         url = reverse('location-detail', args=[self.location2.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -73,7 +73,7 @@ class UserScopedViewSetTests(APITestCase):
 class ItemViewSetCustomActionsTests(APITestCase):
 
     def setUp(self):
-        
+
         self.user1 = User.objects.create_user('user1', 'user1@example.com', 'password')
         self.user2 = User.objects.create_user('user2', 'user2@example.com', 'password')
 
@@ -84,46 +84,46 @@ class ItemViewSetCustomActionsTests(APITestCase):
         self.client.force_authenticate(user=self.user1)
 
     def test_lookup_by_asset_tag_success(self):
-        
+
         url = reverse('item-lookup-by-asset-tag', kwargs={'asset_tag': self.item1.asset_tag})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], self.item1.name)
 
     def test_lookup_by_asset_tag_not_found(self):
-        
+
         url = reverse('item-lookup-by-asset-tag', kwargs={'asset_tag': self.item2.asset_tag})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_lookup_by_invalid_asset_tag(self):
-        
+
         url = reverse('item-lookup-by-asset-tag', kwargs={'asset_tag': 'invalid-uuid'})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_generate_qr_code_success(self):
-        
+
         url = reverse('item-generate-qr-code', kwargs={'pk': self.item1.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response['Content-Type'], 'image/png')
 
     def test_generate_qr_code_for_other_user_item_not_found(self):
-        
+
         url = reverse('item-generate-qr-code', kwargs={'pk': self.item2.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_generate_qr_code_download(self):
-        
+
         url = reverse('item-generate-qr-code', kwargs={'pk': self.item1.pk})
         response = self.client.get(url, {'download': 'true'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('attachment', response['Content-Disposition'])
 
     def test_generate_qr_code_not_available(self):
-        
+
         with mock.patch.dict('sys.modules', {'qrcode': None}):
             url = reverse('item-generate-qr-code', kwargs={'pk': self.item1.pk})
             response = self.client.get(url)
@@ -132,7 +132,7 @@ class ItemViewSetCustomActionsTests(APITestCase):
 class AuthSecurityTests(TimedAPITestCase):
 
     def setUp(self):
-        
+
         self.user = User.objects.create_user('auth_user', 'auth@example.com', 'password123')
 
     def test_login_identifier_cache_key_ignores_spoofed_xff(self):
@@ -172,7 +172,7 @@ class AuthSecurityTests(TimedAPITestCase):
 
         with mock.patch.object(LoginRateThrottle, 'THROTTLE_RATES', throttle_rates):
             with mock.patch.object(LoginIPRateThrottle, 'THROTTLE_RATES', throttle_rates):
-                with mock.patch('inventory.api.auth.time.sleep', return_value=None):
+                with mock.patch('inventory.api.auth_tokens.time.sleep', return_value=None):
                     first_response = self.client.post(
                         url,
                         payload,
@@ -210,7 +210,7 @@ class AuthSecurityTests(TimedAPITestCase):
             self.assertEqual(LoginIPRateThrottle().get_ident(request), '203.0.113.25')
 
     def test_login_with_nonexistent_email_is_slowed(self):
-        
+
         url = reverse('token_obtain_pair')
         with self.assertLogs('security', level='WARNING') as cm:
             with self.assertTiming(min_seconds=0.1):
@@ -219,7 +219,7 @@ class AuthSecurityTests(TimedAPITestCase):
         self.assertTrue(any('Authentication failed' in message for message in cm.output))
 
     def test_login_with_wrong_password_is_slowed(self):
-        
+
         url = reverse('token_obtain_pair')
         with self.assertTiming(min_seconds=0.15):
             response = self.client.post(url, {'email': self.user.email, 'password': 'wrong-password'})
@@ -238,7 +238,7 @@ class AuthSecurityTests(TimedAPITestCase):
         self.assertTrue(response.data['rotated'])
 
     def test_remember_me_sets_long_lived_refresh_token(self):
-        
+
         login_url = reverse('token_obtain_pair')
         response = self.client.post(login_url, {'email': self.user.email, 'password': 'password123', 'remember': True})
 
@@ -250,7 +250,7 @@ class AuthSecurityTests(TimedAPITestCase):
 
     @override_settings(JWT_COOKIE_SECURE=True, JWT_COOKIE_SAMESITE='None')
     def test_secure_cookies_are_set_correctly(self):
-        
+
         login_url = reverse('token_obtain_pair')
         response = self.client.post(login_url, {'email': self.user.email, 'password': 'password123'})
 

@@ -9,8 +9,6 @@ from __future__ import annotations
 import logging
 import random
 import secrets
-import time
-
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.decorators import method_decorator

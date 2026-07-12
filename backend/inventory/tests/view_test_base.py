@@ -70,7 +70,7 @@ class TimedAPITestCase(APITestCase):
 
     @contextmanager
     def assertTiming(self, min_seconds):
-        
+
         start = time.perf_counter()
         yield
         end = time.perf_counter()

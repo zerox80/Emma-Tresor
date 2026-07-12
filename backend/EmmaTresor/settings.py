@@ -67,7 +67,7 @@ insecure_secret_key = (
 )
 if not DEBUG and insecure_secret_key:
     raise ImproperlyConfigured(
-        'Bitte setze eine sichere DJANGO_SECRET_KEY (mindestens 50 Zeichen) f?r Produktionsumgebungen.'
+        'Bitte setze eine sichere DJANGO_SECRET_KEY (mindestens 50 Zeichen) für Produktionsumgebungen.'
     )
 
 # Allowed hosts for Django's Host header validation

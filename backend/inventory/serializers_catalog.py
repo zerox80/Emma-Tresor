@@ -183,7 +183,7 @@ class LocationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def validate_name(self, value):
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         normalised = value.strip()
@@ -200,7 +200,7 @@ class LocationSerializer(serializers.ModelSerializer):
         return normalised
 
     def create(self, validated_data):
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -211,7 +211,7 @@ class LocationSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or instance.user_id != user.id:
@@ -221,7 +221,7 @@ class LocationSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class ItemImageSerializer(serializers.ModelSerializer):
-    
+
     download_url = serializers.SerializerMethodField()
     preview_url = serializers.SerializerMethodField()
     filename = serializers.SerializerMethodField()
@@ -229,7 +229,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
     size = serializers.SerializerMethodField()
 
     class Meta:
-        
+
         model = ItemImage
         fields = [
             'id',
@@ -264,7 +264,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
             self.fields['item'].queryset = Item.objects.filter(owner=request.user)
         else:
             self.fields['item'].queryset = Item.objects.none()
-    
+
     def validate_image(self, value):
 
         max_size = 8 * 1024 * 1024
@@ -283,7 +283,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
             'image/heif',
             'application/pdf',
         }
-        
+
         content_type = value.content_type
         if content_type not in allowed_types:
             raise serializers.ValidationError(
@@ -319,7 +319,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
             'image/heif': {'.heif'},
             'application/pdf': {'.pdf'},
         }
-        
+
         expected_exts = content_to_ext.get(content_type, set())
         if ext not in expected_exts:
             raise serializers.ValidationError(
@@ -330,7 +330,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
         return value
 
     def validate_item(self, value: Item) -> Item:
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -340,28 +340,28 @@ class ItemImageSerializer(serializers.ModelSerializer):
         return value
 
     def _build_download_url(self, obj: ItemImage, *, disposition: str | None = None) -> str:
-        
+
         url = reverse('itemimage-download', args=[obj.pk])
         if disposition:
             return f"{url}?disposition={disposition}"
         return url
 
     def get_download_url(self, obj: ItemImage) -> str:
-        
+
         return self._build_download_url(obj, disposition='attachment')
 
     def get_preview_url(self, obj: ItemImage) -> str:
-        
+
         return self._build_download_url(obj, disposition='inline')
 
     def get_filename(self, obj: ItemImage) -> str:
-        
+
         if not obj.image or not obj.image.name:
             return ''
         return os.path.basename(obj.image.name)
 
     def get_content_type(self, obj: ItemImage) -> str:
-        
+
         if not obj.image or not obj.image.name:
             return 'application/octet-stream'
         try:
@@ -375,7 +375,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
         return guessed or 'application/octet-stream'
 
     def get_size(self, obj: ItemImage) -> int:
-        
+
         if not obj.image or not obj.image.name:
             return 0
         try:

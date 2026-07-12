@@ -121,18 +121,18 @@ class DuplicateQuarantineSerializer(serializers.ModelSerializer):
         return attrs
 
 class ItemListSerializer(serializers.ModelSerializer):
-    
+
     items = serializers.PrimaryKeyRelatedField(many=True, required=False, queryset=Item.objects.none())
     owner = serializers.ReadOnlyField(source='owner.id')
 
     class Meta:
-        
+
         model = ItemList
         fields = ['id', 'name', 'owner', 'items', 'created_at', 'updated_at']
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
 
     def validate_name(self, value):
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         normalised = value.strip()
@@ -149,7 +149,7 @@ class ItemListSerializer(serializers.ModelSerializer):
         return normalised
 
     def _require_user(self):
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
@@ -172,7 +172,7 @@ class ItemListSerializer(serializers.ModelSerializer):
                 items_field.child_relation.queryset = empty_items
 
     def create(self, validated_data):
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         user = self._require_user()
@@ -187,7 +187,7 @@ class ItemListSerializer(serializers.ModelSerializer):
         return item_list
 
     def update(self, instance, validated_data):
-        
+
         items = validated_data.pop('items', None)
         if 'name' in validated_data:
             validated_data['name'] = validated_data['name'].strip()
@@ -201,7 +201,7 @@ class ItemListSerializer(serializers.ModelSerializer):
         return instance
 
     def validate_items(self, value):
-        
+
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if user:
@@ -211,7 +211,7 @@ class ItemListSerializer(serializers.ModelSerializer):
         return value
 
 class ItemChangeLogSerializer(serializers.ModelSerializer):
-    
+
     user_username = serializers.CharField(source='user.username', read_only=True, default=None)
     action_display = serializers.CharField(source='get_action_display', read_only=True)
 
@@ -268,7 +268,7 @@ class ItemChangeLogSerializer(serializers.ModelSerializer):
         return self._resolve_tag_name(value)
 
     def to_representation(self, instance):
-        
+
         data = super().to_representation(instance)
         changes = data.get('changes')
         if isinstance(changes, dict):
@@ -288,7 +288,7 @@ class ItemChangeLogSerializer(serializers.ModelSerializer):
         return data
 
     class Meta:
-        
+
         model = ItemChangeLog
         fields = [
             'id',
