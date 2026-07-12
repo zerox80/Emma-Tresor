@@ -61,26 +61,6 @@ export default defineConfig(({ mode }) => {
           comments: false, // Remove comments from output
         },
       },
-      rollupOptions: {
-        output: {
-          // Manual chunk splitting for better caching
-          manualChunks: (moduleId) => {
-            if (!moduleId.includes("node_modules")) {
-              return undefined;
-            }
-            if (moduleId.includes("react-router")) {
-              return "router";
-            }
-            if (
-              moduleId.includes("/react/") ||
-              moduleId.includes("/react-dom/")
-            ) {
-              return "react";
-            }
-            return "vendor";
-          },
-        },
-      },
     },
   };
 });
