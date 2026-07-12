@@ -109,7 +109,7 @@ const SettingsPage: React.FC = () => {
     setTagError(null);
     const validation = nameSchema.safeParse(tagName.trim());
     if (!validation.success) {
-      setTagError(validation.error.errors[0]?.message ?? 'Der Tag ist nicht gültig. Bitte passe deine Eingabe an.');
+      setTagError(validation.error.issues[0]?.message ?? 'Der Tag ist nicht gültig. Bitte passe deine Eingabe an.');
       return;
     }
     try {
@@ -143,7 +143,7 @@ const SettingsPage: React.FC = () => {
     setLocationError(null);
     const validation = nameSchema.safeParse(locationName.trim());
     if (!validation.success) {
-      setLocationError(validation.error.errors[0]?.message ?? 'Der Standort ist nicht gültig. Bitte überprüfe deine Eingabe.');
+      setLocationError(validation.error.issues[0]?.message ?? 'Der Standort ist nicht gültig. Bitte überprüfe deine Eingabe.');
       return;
     }
     try {

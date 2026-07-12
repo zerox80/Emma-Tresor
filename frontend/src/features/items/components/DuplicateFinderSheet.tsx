@@ -238,7 +238,7 @@ const DuplicateFinderSheet: React.FC<DuplicateFinderSheetProps> = ({
                     <select
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:outline-none sm:w-auto"
                       value={sortPreference}
-                      onChange={(e) => setSortPreference(e.target.value as any)}
+                      onChange={(event) => setSortPreference(event.target.value as typeof sortPreference)}
                     >
                       <option value="default">Standard (Keine)</option>
                       <option value="description">Beschreibung vorhanden</option>

@@ -111,7 +111,7 @@ const TagSelector: FC<TagSelectorProps> = ({
   }, [dropdownItems.length, isOpen]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: globalThis.MouseEvent) => {
       if (!containerRef.current) {
         return;
       }
@@ -120,9 +120,9 @@ const TagSelector: FC<TagSelectorProps> = ({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside as EventListener);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside as EventListener);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [closeDropdown]);
 

@@ -34,7 +34,14 @@ interface UseDuplicateFinderResult {
   releaseQuarantineEntry: (entryId: number) => Promise<void>;
 }
 
-const buildFiltersFromArgs = ({ searchTerm, selectedLocationIds, selectedTagIds, ordering }: UseDuplicateFinderArgs): FetchItemsOptions => ({
+type DuplicateFinderFilters = Omit<UseDuplicateFinderArgs, 'finderParams'>;
+
+const buildFiltersFromArgs = ({
+  searchTerm,
+  selectedLocationIds,
+  selectedTagIds,
+  ordering,
+}: DuplicateFinderFilters): FetchItemsOptions => ({
   query: searchTerm || undefined,
   locations: selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
   tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,

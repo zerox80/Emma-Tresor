@@ -64,9 +64,17 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           // Manual chunk splitting for better caching
-          manualChunks: {
-            vendor: ['react', 'react-dom'],                  // Core React libraries
-            router: ['react-router-dom'],                   // Routing library
+          manualChunks: (moduleId) => {
+            if (!moduleId.includes('node_modules')) {
+              return undefined;
+            }
+            if (moduleId.includes('react-router')) {
+              return 'router';
+            }
+            if (moduleId.includes('/react/') || moduleId.includes('/react-dom/')) {
+              return 'react';
+            }
+            return 'vendor';
           },
         },
       },

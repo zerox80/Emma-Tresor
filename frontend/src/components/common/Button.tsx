@@ -16,7 +16,7 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
  * Available button sizes for different use cases.
  * Controls padding and text size for appropriate hierarchy.
  */
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 
 /**
  * Props interface for the Button component.
@@ -66,6 +66,7 @@ const variantStyles: Record<ButtonVariant, string> = {
  * All buttons maintain consistent border radius and font weight.
  */
 const sizeStyles: Record<ButtonSize, string> = {
+  xs: 'px-2 py-1 text-xs',                                      // Extra small: Inline actions
   sm: 'px-3 py-1.5 text-xs',                                      // Small: Compact padding for tight spaces
   md: 'px-4 py-2 text-sm',                                        // Medium: Standard size for most use cases
   lg: 'px-6 py-3 text-base',                                      // Large: Prominent buttons with more padding

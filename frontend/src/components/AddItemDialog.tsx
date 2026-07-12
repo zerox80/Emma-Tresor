@@ -3,9 +3,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-import Button from './common/Button.tsx';
-import TagSelector from './TagSelector.tsx';
-import type { TagSelectorOption } from './TagSelector.tsx';
+import Button from './common/Button';
+import TagSelector from './TagSelector';
+import type { TagSelectorOption } from './TagSelector';
 import {
   createItem,
   updateItem,
@@ -46,7 +46,7 @@ const itemSchema = z.object({
     .max(120, 'Wodis Inventarnummer darf maximal 120 Zeichen enthalten.')
     .optional(),
   quantity: z
-    .number({ invalid_type_error: 'Menge muss eine Zahl sein.' })
+    .number({ error: 'Menge muss eine Zahl sein.' })
     .finite('Menge muss eine Zahl sein.')
     .int('Menge muss eine ganze Zahl sein.')
     .min(1, 'Menge muss mindestens 1 sein.'),

@@ -179,7 +179,7 @@ const ItemDetailView: React.FC<ItemDetailViewProps> = ({
       return [];
     }
 
-    return item.images.map((attachment: any, index: number) => {
+    return item.images.map((attachment, index) => {
       if (typeof attachment === 'string') {
         return {
           key: `img-${index}`,
