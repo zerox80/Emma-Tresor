@@ -3,9 +3,9 @@
 // This React hook provides convenient access to authentication state
 // and automatically initializes the auth store on component mount.
 
-import { useEffect } from 'react';                              // React effect hook for lifecycle management
+import { useEffect } from "react"; // React effect hook for lifecycle management
 
-import { useAuthStore } from '../store/authStore';           // Import authentication store
+import { useAuthStore } from "../store/authStore"; // Import authentication store
 
 /**
  * Custom hook for accessing authentication state and actions.

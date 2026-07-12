@@ -96,7 +96,11 @@ def get_venv_python() -> Path:
     bin_dir = VENV_DIR / ("Scripts" if IS_WINDOWS else "bin")
     
     # List of possible Python executable names (platform-specific)
-    candidates = ["python.exe"] if IS_WINDOWS else ["python3", "python", f"python{sys.version_info.major}.{sys.version_info.minor}"]
+    candidates = (
+        ["python.exe"]
+        if IS_WINDOWS
+        else ["python3", "python", f"python{sys.version_info.major}.{sys.version_info.minor}"]
+    )
     
     # Try each candidate and return the first one that exists
     for name in candidates:
@@ -151,7 +155,13 @@ def load_env_file() -> dict[str, str]:
     
     return env_vars
 
-def run(command: list[str], *, cwd: Path | None = None, allow_failure: bool = False, env: dict[str, str] | None = None) -> None:
+def run(
+    command: list[str],
+    *,
+    cwd: Path | None = None,
+    allow_failure: bool = False,
+    env: dict[str, str] | None = None,
+) -> None:
     """
     Execute a shell command with proper error handling.
     

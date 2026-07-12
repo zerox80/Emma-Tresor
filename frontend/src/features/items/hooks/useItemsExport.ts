@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
-import type { AxiosError } from 'axios';
+import { useCallback, useState } from "react";
+import type { AxiosError } from "axios";
 
-import { exportItems } from '../../../api/inventory';
-import { extractDetailMessage } from '../utils/itemHelpers';
+import { exportItems } from "../../../api/inventory";
+import { extractDetailMessage } from "../utils/itemHelpers";
 
 interface UseItemsExportArgs {
   debouncedSearchTerm: string;
@@ -20,8 +20,11 @@ interface UseItemsExportResult {
 
 const downloadBlob = (blob: Blob) => {
   const url = URL.createObjectURL(blob);
-  const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
-  const link = document.createElement('a');
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[:T]/g, "-")
+    .split(".")[0];
+  const link = document.createElement("a");
   link.href = url;
   link.download = `inventar-export-${timestamp}.csv`;
   document.body.appendChild(link);
@@ -46,13 +49,16 @@ export const useItemsExport = ({
       const blob = await exportItems({
         query: debouncedSearchTerm || undefined,
         tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
-        locations: selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
+        locations:
+          selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
         ordering: ordering.trim().length > 0 ? ordering : undefined,
       });
       downloadBlob(blob);
     } catch (error) {
       const axiosError = error as AxiosError;
-      const message = extractDetailMessage(axiosError) ?? 'Export fehlgeschlagen. Bitte versuche es erneut.';
+      const message =
+        extractDetailMessage(axiosError) ??
+        "Export fehlgeschlagen. Bitte versuche es erneut.";
       setExportError(message);
     } finally {
       setExportingItems(false);

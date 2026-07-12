@@ -113,7 +113,7 @@ export interface Item {
   tags: number[];
 
   /** Array of uploaded images associated with the item */
-  images: ItemImage[];
+  images: Array<ItemImage | string>;
 
   /** WODIS system inventory number (optional external reference) */
   wodis_inventory_number: string | null;
@@ -243,7 +243,7 @@ export interface ItemChangeLog {
   user_username: string | null;
 
   /** Detailed record of what fields were changed and their new/old values */
-  changes: Record<string, any>;
+  changes: Record<string, unknown>;
 }
 
 // ==================

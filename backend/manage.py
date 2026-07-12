@@ -30,7 +30,8 @@ def main():
         # If Django can't be imported, provide a helpful error message
         # This usually means Django isn't installed or virtual environment isn't activated
         raise ImportError(
-            "Couldn't import Django. Are you sure it's installed and available on your PYTHONPATH environment variable? Did you forget to activate a virtual environment?"
+            "Couldn't import Django. Are you sure it's installed and available on your "
+            "PYTHONPATH environment variable? Did you forget to activate a virtual environment?"
         ) from exc  # Preserve the original exception for debugging
 
     # Execute the management command with the provided command line arguments

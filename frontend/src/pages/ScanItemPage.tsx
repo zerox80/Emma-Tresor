@@ -1,10 +1,20 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import type { AxiosError } from 'axios';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import type { AxiosError } from "axios";
 
-import ItemScanView from '../components/ItemScanView';
-import { fetchItemByAssetTag, fetchItems, fetchLocations, fetchTags } from '../api/inventory';
-import type { Item, Location, PaginatedResponse, Tag } from '../types/inventory';
+import ItemScanView from "../components/ItemScanView";
+import {
+  fetchItemByAssetTag,
+  fetchItems,
+  fetchLocations,
+  fetchTags,
+} from "../api/inventory";
+import type {
+  Item,
+  Location,
+  PaginatedResponse,
+  Tag,
+} from "../types/inventory";
 
 type RouteParams = {
   assetTag?: string;
@@ -22,17 +32,20 @@ const ScanItemPage: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [reloadToken, setReloadToken] = useState(0);
   const [contextItems, setContextItems] = useState<Item[]>([]);
-  const [contextPagination, setContextPagination] = useState<PaginatedResponse<Item> | null>(null);
+  const [contextPagination, setContextPagination] =
+    useState<PaginatedResponse<Item> | null>(null);
   const [contextPage, setContextPage] = useState(1);
   const [contextReady, setContextReady] = useState(false);
   const [contextError, setContextError] = useState<string | null>(null);
-  const [navigationDirection, setNavigationDirection] = useState<'next' | 'previous' | null>(null);
+  const [navigationDirection, setNavigationDirection] = useState<
+    "next" | "previous" | null
+  >(null);
 
   useEffect(() => {
     let active = true;
 
     if (!assetTag) {
-      setError('Ungültiger QR-Code.');
+      setError("Ungültiger QR-Code.");
       setLoading(false);
       return () => {
         active = false;
@@ -64,8 +77,8 @@ const ScanItemPage: React.FC = () => {
         const status = axiosError?.response?.status;
         const fallbackMessage =
           status === 404
-            ? 'Gegenstand wurde nicht gefunden.'
-            : 'Der Gegenstand konnte nicht geladen werden.';
+            ? "Gegenstand wurde nicht gefunden."
+            : "Der Gegenstand konnte nicht geladen werden.";
         setError(detailMessage ?? fallbackMessage);
         setItem(null);
       } finally {
@@ -87,7 +100,7 @@ const ScanItemPage: React.FC = () => {
       fetchItems({
         page: pageNumber,
         pageSize: PAGE_SIZE,
-        ordering: '-purchase_date',
+        ordering: "-purchase_date",
       }),
     [],
   );
@@ -122,9 +135,10 @@ const ScanItemPage: React.FC = () => {
           if (!active) {
             return;
           }
-          const index = response.results.findIndex((entry) => entry.id === item.id);
+          const index = response.results.findIndex(
+            (entry) => entry.id === item.id,
+          );
           if (index !== -1) {
-
             setContextItems(response.results);
             setContextPagination(response);
             setContextPage(pageNumber);
@@ -132,7 +146,6 @@ const ScanItemPage: React.FC = () => {
           }
 
           if (!response.next) {
-
             setContextItems(response.results);
             setContextPagination(response);
             setContextPage(pageNumber);
@@ -145,7 +158,7 @@ const ScanItemPage: React.FC = () => {
         if (active) {
           setContextItems([]);
           setContextPagination(null);
-          setContextError('Inventarliste konnte nicht geladen werden.');
+          setContextError("Inventarliste konnte nicht geladen werden.");
         }
       } finally {
         if (active) {
@@ -165,14 +178,17 @@ const ScanItemPage: React.FC = () => {
     () => Object.fromEntries(tags.map((tag) => [tag.id, tag.name])),
     [tags],
   );
-  
+
   const locationMap = useMemo(
-    () => Object.fromEntries(locations.map((location) => [location.id, location.name])),
+    () =>
+      Object.fromEntries(
+        locations.map((location) => [location.id, location.name]),
+      ),
     [locations],
   );
 
   const handleClose = useCallback(() => {
-    navigate('/items', { replace: true });
+    navigate("/items", { replace: true });
   }, [navigate]);
 
   const handleRetry = useCallback(() => {
@@ -181,10 +197,10 @@ const ScanItemPage: React.FC = () => {
 
   const handleEdit = useCallback(() => {
     if (item) {
-      navigate('/items', { state: { focusItemId: item.id } });
+      navigate("/items", { state: { focusItemId: item.id } });
       return;
     }
-    navigate('/items');
+    navigate("/items");
   }, [item, navigate]);
 
   const currentItemIndex = useMemo(() => {
@@ -201,8 +217,17 @@ const ScanItemPage: React.FC = () => {
     if (currentItemIndex === -1) {
       return false;
     }
-    return currentItemIndex < contextItems.length - 1 || Boolean(contextPagination?.next);
-  }, [contextItems.length, contextPagination, contextReady, currentItemIndex, item]);
+    return (
+      currentItemIndex < contextItems.length - 1 ||
+      Boolean(contextPagination?.next)
+    );
+  }, [
+    contextItems.length,
+    contextPagination,
+    contextReady,
+    currentItemIndex,
+    item,
+  ]);
 
   const canNavigatePrevious = useMemo(() => {
     if (!contextReady || !item) {
@@ -215,7 +240,12 @@ const ScanItemPage: React.FC = () => {
   }, [contextPagination, contextReady, currentItemIndex, item]);
 
   const positionInfo = useMemo(() => {
-    if (!contextReady || !item || currentItemIndex === -1 || !contextPagination) {
+    if (
+      !contextReady ||
+      !item ||
+      currentItemIndex === -1 ||
+      !contextPagination
+    ) {
       return null;
     }
     return {
@@ -239,20 +269,20 @@ const ScanItemPage: React.FC = () => {
   );
 
   const loadAdjacentPage = useCallback(
-    async (targetPage: number, direction: 'next' | 'previous') => {
+    async (targetPage: number, direction: "next" | "previous") => {
       try {
         const response = await fetchItemsPage(targetPage);
         setContextItems(response.results);
         setContextPagination(response);
         setContextPage(targetPage);
         const targetItem =
-          direction === 'next'
-            ? response.results[0] ?? null
-            : response.results[response.results.length - 1] ?? null;
+          direction === "next"
+            ? (response.results[0] ?? null)
+            : (response.results[response.results.length - 1] ?? null);
         handleNavigateToItem(targetItem);
       } catch (err) {
         setNavigationDirection(null);
-        setContextError('Inventarliste konnte nicht geladen werden.');
+        setContextError("Inventarliste konnte nicht geladen werden.");
       }
     },
     [fetchItemsPage, handleNavigateToItem],
@@ -266,7 +296,7 @@ const ScanItemPage: React.FC = () => {
       return;
     }
 
-    setNavigationDirection('next');
+    setNavigationDirection("next");
 
     if (currentItemIndex < contextItems.length - 1) {
       handleNavigateToItem(contextItems[currentItemIndex + 1]);
@@ -274,12 +304,21 @@ const ScanItemPage: React.FC = () => {
     }
 
     if (contextPagination?.next) {
-      void loadAdjacentPage(contextPage + 1, 'next');
+      void loadAdjacentPage(contextPage + 1, "next");
       return;
     }
 
     setNavigationDirection(null);
-  }, [contextItems, contextPage, contextPagination, contextReady, currentItemIndex, handleNavigateToItem, item, loadAdjacentPage]);
+  }, [
+    contextItems,
+    contextPage,
+    contextPagination,
+    contextReady,
+    currentItemIndex,
+    handleNavigateToItem,
+    item,
+    loadAdjacentPage,
+  ]);
 
   const handleNavigatePrevious = useCallback(() => {
     if (!item || !contextReady) {
@@ -289,7 +328,7 @@ const ScanItemPage: React.FC = () => {
       return;
     }
 
-    setNavigationDirection('previous');
+    setNavigationDirection("previous");
 
     if (currentItemIndex > 0) {
       handleNavigateToItem(contextItems[currentItemIndex - 1]);
@@ -297,12 +336,21 @@ const ScanItemPage: React.FC = () => {
     }
 
     if (contextPagination?.previous && contextPage > 1) {
-      void loadAdjacentPage(contextPage - 1, 'previous');
+      void loadAdjacentPage(contextPage - 1, "previous");
       return;
     }
 
     setNavigationDirection(null);
-  }, [contextItems, contextPage, contextPagination, contextReady, currentItemIndex, handleNavigateToItem, item, loadAdjacentPage]);
+  }, [
+    contextItems,
+    contextPage,
+    contextPagination,
+    contextReady,
+    currentItemIndex,
+    handleNavigateToItem,
+    item,
+    loadAdjacentPage,
+  ]);
 
   useEffect(() => {
     if (!loading && navigationDirection) {

@@ -80,7 +80,11 @@ def get_venv_python() -> Path:
     bin_dir = VENV_DIR / ("Scripts" if IS_WINDOWS else "bin")
     
     # List of possible Python executable names (platform-specific)
-    candidates = ["python.exe"] if IS_WINDOWS else ["python3", "python", f"python{sys.version_info.major}.{sys.version_info.minor}"]
+    candidates = (
+        ["python.exe"]
+        if IS_WINDOWS
+        else ["python3", "python", f"python{sys.version_info.major}.{sys.version_info.minor}"]
+    )
     
     # Try each candidate and return the first one that exists
     for name in candidates:

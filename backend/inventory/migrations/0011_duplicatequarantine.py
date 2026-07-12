@@ -19,9 +19,30 @@ class Migration(migrations.Migration):
                 ('reason', models.CharField(blank=True, max_length=255)),
                 ('notes', models.TextField(blank=True)),
                 ('is_active', models.BooleanField(default=True)),
-                ('item_a', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='duplicate_quarantined_primary', to='inventory.item')),
-                ('item_b', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='duplicate_quarantined_secondary', to='inventory.item')),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='duplicate_quarantines', to=settings.AUTH_USER_MODEL)),
+                (
+                    'item_a',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='duplicate_quarantined_primary',
+                        to='inventory.item',
+                    ),
+                ),
+                (
+                    'item_b',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='duplicate_quarantined_secondary',
+                        to='inventory.item',
+                    ),
+                ),
+                (
+                    'owner',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='duplicate_quarantines',
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
                 'ordering': ['-created_at'],

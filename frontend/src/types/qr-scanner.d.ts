@@ -9,8 +9,8 @@
  * This modern QR scanner library provides a React component for scanning
  * QR codes using device cameras with customizable constraints and styling.
  */
-declare module '@yudiel/react-qr-scanner' {
-  import * as React from 'react';                             // Import React types
+declare module "@yudiel/react-qr-scanner" {
+  import * as React from "react"; // Import React types
 
   /**
    * Props interface for the QrScanner component.
@@ -43,4 +43,4 @@ declare module '@yudiel/react-qr-scanner' {
  * is imported somewhere in the codebase. The package has been replaced
  * by @yudiel/react-qr-scanner but this ensures compatibility.
  */
-declare module 'react-qr-reader';
+declare module "react-qr-reader";

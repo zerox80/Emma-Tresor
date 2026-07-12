@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { Item } from '../../../types/inventory';
+import type { Item } from "../../../types/inventory";
 
 interface UseItemSelectionResult {
   selectionMode: boolean;
@@ -24,9 +24,13 @@ export const useItemSelection = (items: Item[]): UseItemSelectionResult => {
     }
   }, [selectionMode]);
 
-  const selectedItemsSet = useMemo(() => new Set(selectedItemIds), [selectedItemIds]);
+  const selectedItemsSet = useMemo(
+    () => new Set(selectedItemIds),
+    [selectedItemIds],
+  );
   const areAllSelectedOnPage = useMemo(
-    () => items.length > 0 && items.every((item) => selectedItemsSet.has(item.id)),
+    () =>
+      items.length > 0 && items.every((item) => selectedItemsSet.has(item.id)),
     [items, selectedItemsSet],
   );
 
@@ -41,16 +45,24 @@ export const useItemSelection = (items: Item[]): UseItemSelectionResult => {
   }, []);
 
   const toggleItemSelected = useCallback((itemId: number) => {
-    setSelectedItemIds((prev) => (prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]));
+    setSelectedItemIds((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId],
+    );
   }, []);
 
   const selectAllCurrentPage = useCallback(() => {
     if (areAllSelectedOnPage) {
-      setSelectedItemIds((prev) => prev.filter((id) => !items.some((item) => item.id === id)));
+      setSelectedItemIds((prev) =>
+        prev.filter((id) => !items.some((item) => item.id === id)),
+      );
       return;
     }
     const currentItemIds = items.map((item) => item.id);
-    setSelectedItemIds((prev) => Array.from(new Set<number>([...prev, ...currentItemIds])));
+    setSelectedItemIds((prev) =>
+      Array.from(new Set<number>([...prev, ...currentItemIds])),
+    );
   }, [areAllSelectedOnPage, items]);
 
   const clearSelection = useCallback(() => {

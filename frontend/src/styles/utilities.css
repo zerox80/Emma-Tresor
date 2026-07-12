@@ -8,24 +8,24 @@
 /* Screen reader only text - visually hidden but accessible */
 .tag-select__aria-live,
 .tag-select__a11yText {
-    position: absolute;
-    /* Remove from normal document flow */
-    width: 1px;
-    /* Collapse to single pixel */
-    height: 1px;
-    /* Collapse to single pixel */
-    padding: 0;
-    /* Remove padding */
-    margin: -1px;
-    /* Negative margin to fully hide */
-    overflow: hidden;
-    /* Hide any content that might overflow */
-    clip: rect(0 0 0 0);
-    /* Old-school clipping method */
-    white-space: nowrap;
-    /* Prevent text wrapping */
-    border: 0;
-    /* Remove border */
-    clip-path: inset(50%);
-    /* Modern clipping method */
+  position: absolute;
+  /* Remove from normal document flow */
+  width: 1px;
+  /* Collapse to single pixel */
+  height: 1px;
+  /* Collapse to single pixel */
+  padding: 0;
+  /* Remove padding */
+  margin: -1px;
+  /* Negative margin to fully hide */
+  overflow: hidden;
+  /* Hide any content that might overflow */
+  clip: rect(0 0 0 0);
+  /* Old-school clipping method */
+  white-space: nowrap;
+  /* Prevent text wrapping */
+  border: 0;
+  /* Remove border */
+  clip-path: inset(50%);
+  /* Modern clipping method */
 }

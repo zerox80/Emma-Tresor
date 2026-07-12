@@ -92,7 +92,8 @@ else:
     print(f"Superuser '{username}' created.")
 PY
 else
-    echo "Skipping automatic superuser creation. Set AUTO_CREATE_SUPERUSER=true with secure DJANGO_SUPERUSER_* values, or run createsuperuser interactively."
+    echo "Skipping automatic superuser creation. Set AUTO_CREATE_SUPERUSER=true with secure "
+    echo "DJANGO_SUPERUSER_* values, or run createsuperuser interactively."
 fi
 
 echo "=== Deployment completed successfully! ==="

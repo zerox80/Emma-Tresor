@@ -1,7 +1,7 @@
-import React from 'react';
+import React from "react";
 
-import Button from '../../../components/common/Button';
-import type { PaginatedResponse } from '../../../types/inventory';
+import Button from "../../../components/common/Button";
+import type { PaginatedResponse } from "../../../types/inventory";
 
 interface ItemsPaginationControlsProps {
   page: number;
@@ -23,7 +23,12 @@ const ItemsPaginationControls: React.FC<ItemsPaginationControlsProps> = ({
   }
 
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+    <div
+      className={[
+        "flex items-center justify-between rounded-2xl border border-slate-200 bg-white",
+        "px-4 py-3 text-sm text-slate-600 shadow-sm",
+      ].join(" ")}
+    >
       <span>
         Seite {page} - {pagination.count} Ergebnisse insgesamt
       </span>
@@ -37,7 +42,13 @@ const ItemsPaginationControls: React.FC<ItemsPaginationControlsProps> = ({
         >
           Zurueck
         </Button>
-        <Button type="button" variant="primary" size="sm" onClick={onNext} disabled={!pagination.next || loading}>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={onNext}
+          disabled={!pagination.next || loading}
+        >
           Weiter
         </Button>
       </div>

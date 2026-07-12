@@ -1,12 +1,22 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import type { AxiosError } from 'axios';
+import React, { useEffect, useMemo, useState } from "react";
+import type { AxiosError } from "axios";
 
-import Button from '../components/common/Button';
-import ManageListItemsSheet, { type ManageableItem } from '../components/ManageListItemsSheet';
-import { fetchAllItems, fetchLists, createList, updateListItems, deleteList, exportListItems } from '../api/inventory';
-import type { Item, ItemList } from '../types/inventory';
+import Button from "../components/common/Button";
+import ManageListItemsSheet, {
+  type ManageableItem,
+} from "../components/ManageListItemsSheet";
+import {
+  fetchAllItems,
+  fetchLists,
+  createList,
+  updateListItems,
+  deleteList,
+  exportListItems,
+} from "../api/inventory";
+import type { Item, ItemList } from "../types/inventory";
+import ListsContent from "./ListsContent";
 
-interface ListWithItems extends ItemList {
+export interface ListWithItems extends ItemList {
   resolvedItems: Item[];
 }
 
@@ -16,10 +26,11 @@ const ListsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newListName, setNewListName] = useState('');
+  const [newListName, setNewListName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [manageListTarget, setManageListTarget] = useState<ListWithItems | null>(null);
+  const [manageListTarget, setManageListTarget] =
+    useState<ListWithItems | null>(null);
   const [manageSaving, setManageSaving] = useState(false);
   const [manageError, setManageError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -42,19 +53,25 @@ const ListsPage: React.FC = () => {
           return;
         }
         setAllItems(items);
-        const itemMap = new Map<number, Item>(items.map((item: Item) => [item.id, item]));
-        const mappedLists: ListWithItems[] = listsResponse.map((list: ItemList): ListWithItems => ({
-          ...list,
-          resolvedItems: list.items
-            .map((itemId: number) => itemMap.get(itemId))
-            .filter((entry?: Item): entry is Item => Boolean(entry)),
-        }));
+        const itemMap = new Map<number, Item>(
+          items.map((item: Item) => [item.id, item]),
+        );
+        const mappedLists: ListWithItems[] = listsResponse.map(
+          (list: ItemList): ListWithItems => ({
+            ...list,
+            resolvedItems: list.items
+              .map((itemId: number) => itemMap.get(itemId))
+              .filter((entry?: Item): entry is Item => Boolean(entry)),
+          }),
+        );
         setLists(mappedLists);
       } catch (err) {
         if (!isMounted) {
           return;
         }
-        setError('Die Listen konnten nicht synchronisiert werden. Prüfe deine Verbindung und versuche es in Kürze erneut.');
+        setError(
+          "Die Listen konnten nicht synchronisiert werden. Prüfe deine Verbindung und versuche es in Kürze erneut.",
+        );
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -78,17 +95,23 @@ const ListsPage: React.FC = () => {
         fetchAllItems(),
       ]);
       setAllItems(items);
-      const itemMap = new Map<number, Item>(items.map((item: Item) => [item.id, item]));
-      const mappedLists: ListWithItems[] = listsResponse.map((list: ItemList): ListWithItems => ({
-        ...list,
-        resolvedItems: list.items
-          .map((itemId: number) => itemMap.get(itemId))
-          .filter((entry?: Item): entry is Item => Boolean(entry)),
-      }));
+      const itemMap = new Map<number, Item>(
+        items.map((item: Item) => [item.id, item]),
+      );
+      const mappedLists: ListWithItems[] = listsResponse.map(
+        (list: ItemList): ListWithItems => ({
+          ...list,
+          resolvedItems: list.items
+            .map((itemId: number) => itemMap.get(itemId))
+            .filter((entry?: Item): entry is Item => Boolean(entry)),
+        }),
+      );
       setLists(mappedLists);
       setError(null);
     } catch (err) {
-      setError('Aktualisieren fehlgeschlagen. Bitte versuche es gleich erneut.');
+      setError(
+        "Aktualisieren fehlgeschlagen. Bitte versuche es gleich erneut.",
+      );
     } finally {
       setLoading(false);
     }
@@ -96,7 +119,7 @@ const ListsPage: React.FC = () => {
 
   const handleCreateList = async () => {
     if (!newListName.trim()) {
-      setCreateError('Listenname ist erforderlich.');
+      setCreateError("Listenname ist erforderlich.");
       return;
     }
 
@@ -110,9 +133,11 @@ const ListsPage: React.FC = () => {
       };
       setLists((prev) => [...prev, listWithItems]);
       setShowCreateModal(false);
-      setNewListName('');
+      setNewListName("");
     } catch (err) {
-      setCreateError('Liste konnte nicht erstellt werden. Bitte versuche es erneut.');
+      setCreateError(
+        "Liste konnte nicht erstellt werden. Bitte versuche es erneut.",
+      );
     } finally {
       setIsCreating(false);
     }
@@ -120,17 +145,23 @@ const ListsPage: React.FC = () => {
 
   const handleCancelCreate = () => {
     setShowCreateModal(false);
-    setNewListName('');
+    setNewListName("");
     setCreateError(null);
   };
 
-  const itemMap = useMemo(() => new Map<number, Item>(allItems.map((item: Item) => [item.id, item])), [allItems]);
+  const itemMap = useMemo(
+    () => new Map<number, Item>(allItems.map((item: Item) => [item.id, item])),
+    [allItems],
+  );
 
   const manageableItems = useMemo<ManageableItem[]>(() => {
     const assignmentCountMap = new Map<number, number>();
     lists.forEach((list: ListWithItems) => {
       list.items.forEach((itemId: number) => {
-        assignmentCountMap.set(itemId, (assignmentCountMap.get(itemId) ?? 0) + 1);
+        assignmentCountMap.set(
+          itemId,
+          (assignmentCountMap.get(itemId) ?? 0) + 1,
+        );
       });
     });
 
@@ -186,10 +217,14 @@ const ListsPage: React.FC = () => {
       setManageError(null);
     } catch (err) {
       const axiosError = err as AxiosError;
-      const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
-        ? (axiosError.response.data as { detail?: string }).detail
-        : null;
-      setManageError(fallback ?? 'Änderungen konnten nicht gespeichert werden.');
+      const fallback =
+        axiosError.response?.data &&
+        typeof axiosError.response.data === "object"
+          ? (axiosError.response.data as { detail?: string }).detail
+          : null;
+      setManageError(
+        fallback ?? "Änderungen konnten nicht gespeichert werden.",
+      );
     } finally {
       setManageSaving(false);
     }
@@ -206,8 +241,10 @@ const ListsPage: React.FC = () => {
     }
 
     let confirmed = true;
-    if (typeof window !== 'undefined') {
-      confirmed = window.confirm(`Liste "${target.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`);
+    if (typeof window !== "undefined") {
+      confirmed = window.confirm(
+        `Liste "${target.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
+      );
     }
     if (!confirmed) {
       return;
@@ -217,17 +254,24 @@ const ListsPage: React.FC = () => {
     setDeletingListId(listId);
     try {
       await deleteList(listId);
-      setLists((prev: ListWithItems[]) => prev.filter((list: ListWithItems) => list.id !== listId));
+      setLists((prev: ListWithItems[]) =>
+        prev.filter((list: ListWithItems) => list.id !== listId),
+      );
       if (manageListTarget?.id === listId) {
         setManageListTarget(null);
         setManageError(null);
       }
     } catch (err) {
       const axiosError = err as AxiosError;
-      const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
-        ? (axiosError.response.data as { detail?: string }).detail
-        : null;
-      setDeleteError(fallback ?? 'Liste konnte nicht gelöscht werden. Bitte versuche es erneut.');
+      const fallback =
+        axiosError.response?.data &&
+        typeof axiosError.response.data === "object"
+          ? (axiosError.response.data as { detail?: string }).detail
+          : null;
+      setDeleteError(
+        fallback ??
+          "Liste konnte nicht gelöscht werden. Bitte versuche es erneut.",
+      );
     } finally {
       setDeletingListId(null);
     }
@@ -239,16 +283,19 @@ const ListsPage: React.FC = () => {
     try {
       const blob = await exportListItems(listId);
       const url = URL.createObjectURL(blob);
-      const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:T]/g, "-")
+        .split(".")[0];
       const safeName = listName
         .trim()
         .toLowerCase()
-        .replace(/[^a-z0-9]+/gi, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
       const fallbackName = `liste-${listId}`;
       const filename = `inventarliste-${safeName || fallbackName}-${timestamp}.csv`;
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
@@ -257,218 +304,49 @@ const ListsPage: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch (err) {
       const axiosError = err as AxiosError;
-      const fallback = axiosError.response?.data && typeof axiosError.response.data === 'object'
-        ? (axiosError.response.data as { detail?: string }).detail
-        : null;
-      setExportError(fallback ?? 'Export der Liste fehlgeschlagen. Bitte versuche es erneut.');
+      const fallback =
+        axiosError.response?.data &&
+        typeof axiosError.response.data === "object"
+          ? (axiosError.response.data as { detail?: string }).detail
+          : null;
+      setExportError(
+        fallback ??
+          "Export der Liste fehlgeschlagen. Bitte versuche es erneut.",
+      );
     } finally {
       setExportingListId(null);
     }
   };
 
   return (
-    <div className="space-y-6 text-slate-700">
-      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white/60 px-6 py-5 shadow-sm backdrop-blur">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-semibold text-slate-900">Benutzerdefinierte Listen</h2>
-            <p className="text-sm text-slate-600">
-              Struktur für jedes Vorhaben: Plane Umzüge, Projekte oder Reparaturen mit wenigen Klicks. Drag & Drop folgt bald.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
-              Neue Liste erstellen
-            </Button>
-            <Button type="button" variant="secondary" size="sm" loading={loading} onClick={handleRefresh}>
-              Aktualisieren
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {loading && lists.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500">
-              Lade Listen …
-            </div>
-          )}
-
-          {!loading && lists.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-500">
-              Noch keine Listen erstellt. Starte mit deiner ersten Sammlung und gruppiere Gegenstände nach Räumen oder Projekten.
-            </div>
-          )}
-
-          {lists.map((list: ListWithItems) => {
-            const itemCount = list.items.length;
-            const itemCountLabel = itemCount === 1 ? '1 Item' : `${itemCount} Items`;
-            return (
-              <article
-                key={list.id}
-                className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 p-6 shadow-sm"
-              >
-                <header className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-500">{itemCountLabel}</p>
-                    <h3 className="text-xl font-semibold text-slate-900">{list.name}</h3>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" variant="secondary" size="sm" onClick={() => handleOpenManageItems(list.id)}>
-                      Items bearbeiten
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      loading={exportingListId === list.id}
-                      onClick={() => void handleExportList(list.id, list.name)}
-                    >
-                      CSV exportieren
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-600"
-                      onClick={() => handleDeleteList(list.id)}
-                      disabled={deletingListId === list.id}
-                    >
-                      {deletingListId === list.id ? (
-                        <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-transparent" />
-                      ) : (
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0h8l-.447-2.236A2 2 0 0014.618 3H9.382a2 2 0 00-1.965 1.764L7 7" />
-                        </svg>
-                      )}
-                    </Button>
-                  </div>
-                </header>
-
-                <ul className="space-y-3 text-sm text-slate-700">
-                  {list.resolvedItems.slice(0, 6).map((item: Item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm"
-                    >
-                      <span className="font-medium text-slate-900">{item.name}</span>
-                      <span className="text-xs font-semibold text-slate-400">{item.quantity}×</span>
-                    </li>
-                  ))}
-                  {list.resolvedItems.length === 0 && (
-                    <li className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                      Noch keine Items zugeordnet – füge später beliebige Gegenstände hinzu.
-                    </li>
-                  )}
-                </ul>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
-      )}
-      {deleteError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{deleteError}</div>
-      )}
-      {exportError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          <div className="flex items-start justify-between gap-3">
-            <span>{exportError}</span>
-            <Button variant="ghost" size="sm" onClick={() => setExportError(null)}>
-              Schließen
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-3 py-6 sm:px-6">
-          <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={handleCancelCreate} />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-list-heading"
-            className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-slate-900/10 sm:p-8"
-          >
-            <div className="mb-6">
-              <h3 id="create-list-heading" className="text-xl font-semibold text-slate-900">
-                Neue Liste erstellen
-              </h3>
-              <p className="text-sm text-slate-600">
-                Erstelle eine neue Liste, um deine Gegenstände zu organisieren.
-              </p>
-            </div>
-
-            {createError && (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {createError}
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="list-name" className="block text-sm font-medium text-slate-700">
-                  Listenname
-                </label>
-                <input
-                  id="list-name"
-                  type="text"
-                  value={newListName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewListName(e.target.value)}
-                  placeholder="z.B. Umzug Küche, Werkzeuge, …"
-                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-800 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200/60"
-                  disabled={isCreating}
-                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === 'Enter') {
-                      void handleCreateList();
-                    } else if (e.key === 'Escape') {
-                      handleCancelCreate();
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                size="md"
-                onClick={handleCancelCreate}
-                disabled={isCreating}
-                className="flex-1"
-              >
-                Abbrechen
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                size="md"
-                onClick={handleCreateList}
-                loading={isCreating}
-                className="flex-1"
-              >
-                Liste erstellen
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <ManageListItemsSheet
-        open={Boolean(manageListTarget)}
-        onClose={handleCloseManageItems}
-        listName={manageListTarget?.name ?? ''}
-        items={manageableItems}
-        initialSelectedIds={manageListTarget?.items ?? []}
-        saving={manageSaving}
-        error={manageError}
-        onSave={handleSaveManageItems}
-      />
-    </div>
+    <ListsContent
+      lists={lists}
+      loading={loading}
+      error={error}
+      handleRefresh={handleRefresh}
+      setShowCreateModal={setShowCreateModal}
+      handleOpenManageItems={handleOpenManageItems}
+      exportingListId={exportingListId}
+      handleExportList={handleExportList}
+      deletingListId={deletingListId}
+      handleDeleteList={handleDeleteList}
+      deleteError={deleteError}
+      exportError={exportError}
+      setExportError={setExportError}
+      showCreateModal={showCreateModal}
+      handleCancelCreate={handleCancelCreate}
+      createError={createError}
+      newListName={newListName}
+      setNewListName={setNewListName}
+      isCreating={isCreating}
+      handleCreateList={handleCreateList}
+      manageListTarget={manageListTarget}
+      handleCloseManageItems={handleCloseManageItems}
+      manageableItems={manageableItems}
+      manageSaving={manageSaving}
+      manageError={manageError}
+      handleSaveManageItems={handleSaveManageItems}
+    />
   );
 };
 

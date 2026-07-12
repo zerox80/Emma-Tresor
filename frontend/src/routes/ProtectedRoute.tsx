@@ -3,11 +3,11 @@
 // This route guard component protects routes that require authentication.
 // Unauthenticated users are redirected to the login page.
 
-import React from 'react';                                  // React core library
-import { Navigate, useLocation } from 'react-router-dom';   // React Router navigation utilities
+import React from "react"; // React core library
+import { Navigate, useLocation } from "react-router-dom"; // React Router navigation utilities
 
-import LoadingScreen from '../components/common/LoadingScreen'; // Loading indicator component
-import { useAuth } from '../hooks/useAuth';                 // Authentication state hook
+import LoadingScreen from "../components/common/LoadingScreen"; // Loading indicator component
+import { useAuth } from "../hooks/useAuth"; // Authentication state hook
 
 /**
  * Props interface for ProtectedRoute component.
