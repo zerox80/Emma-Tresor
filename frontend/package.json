@@ -14,7 +14,7 @@
     "@hookform/resolvers": "^5.4.0",
     "@types/react-select": "^5.0.1",
     "@yudiel/react-qr-scanner": "^2.6.0",
-    "@zxing/browser": "^0.2.0",
+    "@zxing/browser": "^0.2.1",
     "axios": "^1.18.1",
     "clsx": "^2.1.1",
     "jwt-decode": "^4.0.0",
