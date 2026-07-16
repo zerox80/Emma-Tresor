@@ -402,6 +402,10 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
 
   const onSubmit = handleSubmit(submitHandler);
 
+  const handleSave = useCallback(() => {
+    void onSubmit();
+  }, [onSubmit]);
+
   const handleAddAnother = useCallback(() => {
     resetState(null);
     const nameInput = document.getElementById("add-item-name");
@@ -444,7 +448,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
       formError={formError}
       isSubmitting={isSubmitting}
       onRequestClose={handleRequestClose}
-      onSubmit={onSubmit}
+      onSave={handleSave}
       onPreviousStep={handlePreviousStep}
       onNextStep={handleNextStep}
     >

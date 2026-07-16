@@ -9,7 +9,7 @@ interface AddItemDialogLayoutProps {
   formError: string | null;
   isSubmitting: boolean;
   onRequestClose: () => void;
-  onSubmit: React.FormEventHandler<HTMLFormElement>;
+  onSave: () => void;
   onPreviousStep: () => void;
   onNextStep: () => void;
   children: React.ReactNode;
@@ -22,7 +22,7 @@ const AddItemDialogLayout: React.FC<AddItemDialogLayoutProps> = ({
   formError,
   isSubmitting,
   onRequestClose,
-  onSubmit,
+  onSave,
   onPreviousStep,
   onNextStep,
   children,
@@ -69,7 +69,11 @@ const AddItemDialogLayout: React.FC<AddItemDialogLayoutProps> = ({
             ))}
           </nav>
         </header>
-        <form className="flex flex-col" onSubmit={onSubmit} noValidate>
+        <form
+          className="flex flex-col"
+          onSubmit={(event) => event.preventDefault()}
+          noValidate
+        >
           <div className="px-4 py-5 sm:px-6 lg:px-8">
             {formError && (
               <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -90,7 +94,12 @@ const AddItemDialogLayout: React.FC<AddItemDialogLayoutProps> = ({
                 {currentStep < 2 ? (
                   <Button type="button" variant="primary" onClick={onNextStep}>Weiter</Button>
                 ) : (
-                  <Button type="submit" variant="primary" loading={isSubmitting}>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    loading={isSubmitting}
+                    onClick={onSave}
+                  >
                     {isEditMode ? "Änderungen speichern" : "Gegenstand anlegen"}
                   </Button>
                 )}
