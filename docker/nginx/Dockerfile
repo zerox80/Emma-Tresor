@@ -10,7 +10,7 @@ RUN npm ci --legacy-peer-deps
 COPY frontend/ ./
 RUN npm run build
 
-FROM nginx:1.31.2-alpine
+FROM nginx:1.31.3-alpine
 
 # Copy custom site configuration
 COPY nginx/emmatresor.conf /etc/nginx/conf.d/default.conf
