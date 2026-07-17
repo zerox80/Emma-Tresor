@@ -14,6 +14,8 @@ export const createItem = (id: number, name = `Item ${id}`): Item => ({
   wodis_inventory_number: null,
   employee_name: null,
   room_number: null,
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
 });
 
 export const createPage = (items: Item[]): PaginatedResponse<Item> => ({

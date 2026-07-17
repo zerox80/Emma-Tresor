@@ -5,10 +5,13 @@ Inventory item API: filters, pagination, and the main ItemViewSet implementation
 from __future__ import annotations
 
 import io
+from decimal import Decimal
 from typing import Literal, cast
 from uuid import UUID
 
 from django.conf import settings
+from django.db.models import Count, DecimalField, IntegerField, Subquery, Sum, Value
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from rest_framework import filters, serializers, status, viewsets
 from rest_framework.decorators import action
@@ -28,6 +31,7 @@ from .export import _prepare_items_csv_response, _write_items_to_csv
 from .throttles import (
     ItemCreateRateThrottle,
     ItemDeleteRateThrottle,
+    DuplicateFinderRateThrottle,
     ItemExportRateThrottle,
     ItemReadRateThrottle,
     ItemUpdateRateThrottle,
@@ -57,6 +61,7 @@ class ItemFilter(django_filters.FilterSet):
 
     tags = NumberInFilter(field_name='tags__id')
     location = NumberInFilter(field_name='location__id')
+    ids = NumberInFilter(field_name='id')
 
     class Meta:
         """FilterSet metadata."""
@@ -161,9 +166,62 @@ class ItemViewSet(DuplicateFinderMixin, ItemResourceActionsMixin, viewsets.Model
             throttles.append(ItemDeleteRateThrottle())
         elif self.action == 'generate_qr_code':
             throttles.append(QRGenerateRateThrottle())
-        elif self.action in ['list', 'retrieve']:
+        elif self.action in ['list', 'retrieve', 'stats', 'dashboard']:
             throttles.append(ItemReadRateThrottle())
+        elif self.action == 'find_duplicates':
+            throttles.append(DuplicateFinderRateThrottle())
         elif self.action == 'export_items':
             throttles.append(ItemExportRateThrottle())
 
         return throttles
+
+    def _filtered_items_without_join_duplicates(self):
+        filtered_ids = (
+            self.filter_queryset(self.get_queryset())
+            .order_by()
+            .values('pk')
+            .distinct()
+        )
+        return Item.objects.filter(owner=self.request.user, pk__in=Subquery(filtered_ids))
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Return exact aggregates for the complete filtered result set."""
+
+        queryset = self._filtered_items_without_join_duplicates()
+        aggregates = queryset.aggregate(
+            total_items=Count('pk'),
+            total_quantity=Coalesce(Sum('quantity'), Value(0), output_field=IntegerField()),
+            total_value=Coalesce(
+                Sum('value'),
+                Value(Decimal('0.00')),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            ),
+        )
+        return Response(aggregates)
+
+    @action(detail=False, methods=['get'])
+    def dashboard(self, request):
+        """Return dashboard aggregates and a bounded recent-item preview."""
+
+        queryset = Item.objects.filter(owner=request.user)
+        aggregates = queryset.aggregate(
+            total_items=Count('pk'),
+            total_quantity=Coalesce(Sum('quantity'), Value(0), output_field=IntegerField()),
+            total_value=Coalesce(
+                Sum('value'),
+                Value(Decimal('0.00')),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            ),
+        )
+        recent_items = (
+            self.get_queryset()
+            .order_by('-created_at', '-pk')[:5]
+        )
+        return Response({
+            **aggregates,
+            'list_count': request.user.item_lists.count(),
+            'tag_count': request.user.tags.count(),
+            'location_count': request.user.locations.count(),
+            'recent_items': self.get_serializer(recent_items, many=True).data,
+        })

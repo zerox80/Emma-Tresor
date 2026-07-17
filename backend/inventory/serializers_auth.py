@@ -13,6 +13,7 @@
 from django.contrib.auth import get_user_model                      # Get configured User model
 from django.contrib.auth.password_validation import validate_password  # Django password validators
 from django.core.exceptions import ValidationError                  # Django validation errors
+from django.db import IntegrityError, transaction
 from rest_framework import serializers                              # DRF serializers
 from rest_framework.validators import UniqueValidator               # Unique field validators
 from rest_framework.reverse import reverse                          # URL generation
@@ -64,6 +65,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )],
     )
 
+    username = serializers.CharField(
+        max_length=User._meta.get_field('username').max_length,
+        validators=[
+            *User._meta.get_field('username').validators,
+            UniqueValidator(
+                queryset=User.objects.all(),
+                lookup='iexact',
+                message='Dieser Benutzername wird bereits verwendet.',
+            ),
+        ],
+    )
+
     # Password field (write-only for security)
     password = serializers.CharField(write_only=True)
 
@@ -111,7 +124,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Validate password strength using Django's validators
         # This checks for: minimum length, common passwords, numeric-only, similarity to user attributes
         try:
-            validate_password(password)
+            candidate_user = User(
+                username=attrs.get('username', ''),
+                email=attrs.get('email', ''),
+            )
+            validate_password(password, user=candidate_user)
         except ValidationError as e:
             # Django validation errors - convert to DRF format
             raise serializers.ValidationError({'password': list(e.messages)})
@@ -148,12 +165,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         user.set_password(password)
 
         try:
-            # Save user to database
-            user.save()
-        except Exception:
-            # If save fails, clean up sensitive data from memory
-            user = None
-            password = None
-            raise  # Re-raise the exception
+            with transaction.atomic():
+                user.save()
+        except IntegrityError as exc:
+            # The database constraint is the final authority and closes the
+            # race between validation and insertion.
+            errors = {}
+            if User.objects.filter(username__iexact=user.username).exists():
+                errors['username'] = 'Dieser Benutzername wird bereits verwendet.'
+            if user.email and User.objects.filter(email__iexact=user.email).exists():
+                errors['email'] = 'Ein Konto mit dieser E-Mail-Adresse existiert bereits.'
+            if not errors:
+                errors['non_field_errors'] = 'Das Konto konnte wegen eines Datenkonflikts nicht erstellt werden.'
+            raise serializers.ValidationError(errors) from exc
 
         return user

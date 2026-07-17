@@ -123,6 +123,27 @@ export interface Item {
 
   /** Room number where the item is located (optional) */
   room_number: string | null;
+
+  /** Timestamp when the item was created */
+  created_at: string;
+
+  /** Timestamp when the item was last updated */
+  updated_at: string;
+}
+
+/** Exact aggregates for an item result set. */
+export interface ItemStats {
+  total_items: number;
+  total_quantity: number;
+  total_value: string;
+}
+
+/** Bounded data required for the dashboard overview. */
+export interface DashboardSummary extends ItemStats {
+  list_count: number;
+  tag_count: number;
+  location_count: number;
+  recent_items: Item[];
 }
 
 /**

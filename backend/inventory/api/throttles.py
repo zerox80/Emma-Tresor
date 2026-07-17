@@ -88,7 +88,14 @@ class ItemExportRateThrottle(throttling.UserRateThrottle):
     scope = 'item_export'
 
 
+class DuplicateFinderRateThrottle(throttling.UserRateThrottle):
+    """Protect the CPU-intensive duplicate analysis endpoint."""
+
+    scope = 'duplicate_find'
+
+
 __all__ = [
+    'DuplicateFinderRateThrottle',
     'ItemCreateRateThrottle',
     'ItemDeleteRateThrottle',
     'ItemExportRateThrottle',

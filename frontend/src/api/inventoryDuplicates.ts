@@ -62,6 +62,18 @@ export const createDuplicateQuarantineEntry = async (
   return data;
 };
 
+export const createDuplicateQuarantineEntries = async (
+  pairs: Array<Pick<CreateDuplicateQuarantinePayload, "item_a_id" | "item_b_id">>,
+  reason = "",
+  notes = "",
+): Promise<DuplicateQuarantineEntry[]> => {
+  const { data } = await apiClient.post<DuplicateQuarantineEntry[]>(
+    "/duplicate-quarantine/batch/",
+    { pairs, reason, notes },
+  );
+  return data;
+};
+
 export const fetchDuplicateQuarantineEntries = async (
   options: { is_active?: boolean } = { is_active: true },
 ): Promise<DuplicateQuarantineEntry[]> => {
@@ -78,6 +90,14 @@ export const releaseDuplicateQuarantineEntry = async (
   entryId: number,
 ): Promise<void> => {
   await apiClient.delete(`/duplicate-quarantine/${entryId}/`);
+};
+
+export const releaseDuplicateQuarantineEntries = async (
+  entryIds: number[],
+): Promise<void> => {
+  await apiClient.post("/duplicate-quarantine/batch-release/", {
+    ids: entryIds,
+  });
 };
 
 export const restoreDuplicateQuarantineEntry = async (

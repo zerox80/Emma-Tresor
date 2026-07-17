@@ -6,7 +6,7 @@ import os
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import IntegrityError, models
+from django.db import IntegrityError, models, transaction
 from django.db.models import Q
 from PIL import Image, UnidentifiedImageError
 
@@ -215,8 +215,9 @@ class ItemImage(TimeStampedModel):
         """
         # Run all validations before saving
         self.full_clean()
-        # Call parent save method
-        super().save(*args, **kwargs)
+        # Keep attachment persistence and its audit event indivisible.
+        with transaction.atomic():
+            super().save(*args, **kwargs)
 
 class ItemChangeLog(TimeStampedModel):
     """

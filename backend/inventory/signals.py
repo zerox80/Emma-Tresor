@@ -1,408 +1,267 @@
-# Django Signals for Audit Trail and Change Tracking
-# ==================================================
-# This module implements automatic audit logging for all Item model changes.
-# It uses Django signals to capture create, update, and delete operations
-# and stores them in the ItemChangeLog model for compliance and debugging.
-#
-# Key Features:
-# - Automatic change tracking without modifying model code
-# - Field-level change detection (old value vs new value)
-# - User attribution for all changes
-# - Thread-safe user deletion tracking
-# - Migration-safe signal handlers (won't break during migrations)
+"""Fail-closed, model-level audit logging for inventory changes."""
 
-from __future__ import annotations        # Enable forward references for type hints
+from __future__ import annotations
 
-from dataclasses import dataclass          # Data class for structured change snapshots
-from typing import Any, Iterable           # Type hints for better code documentation
-import logging                             # Logging framework for error handling
-from threading import Lock                 # Thread synchronization for concurrent safety
+from dataclasses import dataclass
+from typing import Any, Iterable
 
-from django.contrib.auth import get_user_model                      # Get User model
-from django.db import transaction                                   # Database transactions
-from django.db.models.signals import post_delete, post_save, pre_delete, pre_save  # Django signals
-from django.dispatch import receiver                                # Signal decorator
-from django.db.migrations.executor import MigrationExecutor        # Migration detection
-from django.db import connection                                    # Database connection
+from django.contrib.auth import get_user_model
+from django.db.models.signals import m2m_changed, post_delete, post_save, pre_delete, pre_save
+from django.dispatch import receiver
 
-from .models import Item, ItemChangeLog    # Import models for signal handlers
+from .audit import get_audit_actor, tag_audit_is_suppressed
+from .models import Item, ItemChangeLog, ItemImage, Location, Tag
 
-# Get the configured User model (either Django's default or a custom one)
+
 User = get_user_model()
 
-# Logger for error and debug messages
-logger = logging.getLogger(__name__)
-
-# Thread-safe tracking of users being deleted
-# ==========================================
-# This prevents trying to log changes to items when the owning user is being deleted,
-# which would cause database constraint errors.
-_users_pending_deletion: set[int] = set()           # Set of user IDs currently being deleted
-_users_pending_deletion_lock = Lock()                # Lock for thread-safe access to the set
-
-def _is_migrating() -> bool:
-    """
-    Check if database migrations are currently running.
-
-    This prevents signal handlers from executing during migrations, which could cause
-    errors if the database schema isn't yet complete.
-
-    Returns:
-        bool: True if migrations are in progress, False otherwise
-    """
-    try:
-        # Create migration executor to check for pending migrations
-        executor = MigrationExecutor(connection)
-        # Get the migration plan (list of migrations to apply)
-        plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
-        # If there are any migrations in the plan, we're migrating
-        return len(plan) > 0
-    except Exception:
-        # If we can't determine migration status, assume we're not migrating
-        # This is safer than blocking all signals on error
-        return False
-
-def _safe_signal_handler(func):
-    """
-    Decorator to make signal handlers safe during migrations and errors.
-
-    This wrapper provides several safety features:
-    1. Skips execution during database migrations
-    2. Skips execution if ItemChangeLog table doesn't exist yet
-    3. Catches and logs exceptions without breaking the application
-    4. Re-raises critical exceptions (keyboard interrupt, system exit, memory error)
-
-    Args:
-        func: The signal handler function to wrap
-
-    Returns:
-        function: Wrapped signal handler with safety features
-    """
-    def wrapper(*args, **kwargs):
-        # Safety check 1: Skip if migrations are running
-        if _is_migrating():
-            logger.debug(f"Skipping {func.__name__} during migration")
-            return
-
-        # Safety check 2: Skip if ItemChangeLog table doesn't exist yet
-        # This can happen during initial migrations
-        try:
-            ItemChangeLog._meta.get_field('id')
-        except Exception:
-            logger.debug(f"Skipping {func.__name__} - ItemChangeLog table not ready")
-            return
-
-        # Execute the signal handler with error handling
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            # Log the error for debugging
-            logger.error(f"Error in signal handler {func.__name__}: {e}")
-
-            # Re-raise critical exceptions that should stop execution
-            if isinstance(e, (KeyboardInterrupt, SystemExit, MemoryError)):
-                raise
-            # For other exceptions, we log them but don't break the application
-
-    return wrapper
-
-# =========================
-# DATA STRUCTURES
-# =========================
 
 @dataclass
 class ItemSnapshot:
-    """
-    Data structure representing a single field change.
+    field: str
+    old_value: Any
+    new_value: Any
 
-    Used to track before/after values for item field modifications.
-    This allows detailed audit logging showing exactly what changed.
 
-    Attributes:
-        field: Name of the field that changed (e.g., 'name', 'quantity')
-        old_value: The value before the change
-        new_value: The value after the change
-    """
-    field: str           # Field name (e.g., 'name', 'quantity', 'value')
-    old_value: Any       # Previous value before the change
-    new_value: Any       # New value after the change
-
-# Fields to track in the audit log
-# ================================
-# These are the Item model fields that will be monitored for changes
-# Changes to these fields will be recorded in ItemChangeLog
 AUDITED_FIELDS: tuple[str, ...] = (
-    'name',              # Item name
-    'description',       # Item description
-    'quantity',          # Number of items
-    'purchase_date',     # Date item was purchased
-    'value',             # Monetary value
-    'location_id',       # Foreign key to Location (tracked by ID not object)
-    'wodis_inventory_number',
-    'employee_name',
-    'room_number',
+    'name', 'description', 'quantity', 'purchase_date', 'value',
+    'owner_id', 'location_id', 'wodis_inventory_number', 'employee_name', 'room_number',
 )
 
-# =========================
-# HELPER FUNCTIONS
-# =========================
 
 def _format_value(value: Any) -> Any:
-    """
-    Format a value for JSON serialization in the change log.
-
-    Converts complex objects to simple types that can be stored in JSON:
-    - Primitives (int, float, str, None) are returned as-is
-    - Django model instances are converted to their primary key
-    - Iterables (except strings) are converted to lists
-    - Everything else is converted to string
-
-    Args:
-        value: The value to format
-
-    Returns:
-        Any: JSON-serializable version of the value
-    """
-    # Primitives can be stored directly in JSON
     if isinstance(value, (int, float, str)) or value is None:
         return value
-    # Django model instances - store their primary key
     if hasattr(value, 'pk'):
         return value.pk
-    # Iterables (lists, sets, etc.) - convert to list
     if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
         return list(value)
-    # Fallback: convert to string representation
     return str(value)
 
-def _capture_changes(previous: Item, current: Item) -> list[ItemSnapshot]:
-    """
-    Compare two Item instances and capture all field-level changes.
 
-    Iterates through all audited fields and creates snapshots for any
-    that have changed between the previous and current state.
+def _capture_changes(
+    previous: Item,
+    current: Item,
+    update_fields: frozenset[str] | None = None,
+) -> list[ItemSnapshot]:
+    audited_fields = AUDITED_FIELDS
+    if update_fields is not None:
+        audited_fields = tuple(
+            field
+            for field in AUDITED_FIELDS
+            if field in update_fields or field.removesuffix('_id') in update_fields
+        )
+    return [
+        ItemSnapshot(field, _format_value(getattr(previous, field)), _format_value(getattr(current, field)))
+        for field in audited_fields
+        if getattr(previous, field) != getattr(current, field)
+    ]
 
-    Args:
-        previous: The Item instance before changes
-        current: The Item instance after changes
 
-    Returns:
-        list[ItemSnapshot]: List of field changes (empty if nothing changed)
-    """
-    diffs: list[ItemSnapshot] = []
-    # Compare each audited field
-    for field in AUDITED_FIELDS:
-        old = getattr(previous, field)
-        new = getattr(current, field)
-        # Only record if the value actually changed
-        if old != new:
-            diffs.append(ItemSnapshot(
-                field=field,
-                old_value=_format_value(old),
-                new_value=_format_value(new)
-            ))
-    return diffs
-
-def _resolve_actor(instance: Item) -> User | None:
-    """
-    Determine which user should be credited with an item change.
-
-    Attempts to get the item's owner as the actor, but handles the case
-    where the user is being deleted (which would cause errors).
-
-    Args:
-        instance: The Item instance being changed
-
-    Returns:
-        User | None: The user who made the change, or None if user is being deleted
-    """
-    # Get the owner of the item
-    owner = getattr(instance, 'owner', None)
-    if owner is not None:
-        owner_id = getattr(owner, 'pk', None)
-        if owner_id is not None:
-            # Thread-safe check: is this user currently being deleted?
-            with _users_pending_deletion_lock:
-                if owner_id in _users_pending_deletion:
-                    # User is being deleted - don't try to reference them
-                    return None
-        return owner
+def _resolve_actor():
+    actor = get_audit_actor()
+    actor_id = getattr(actor, 'pk', None)
+    if actor_id is not None and getattr(actor, 'is_authenticated', False):
+        return actor
     return None
 
-# =========================
-# SIGNAL HANDLERS
-# =========================
-# These functions are automatically called when Item or User objects are saved/deleted
+
+def _deletion_started_by(origin, model) -> bool:
+    """Return whether a delete cascade originated from a model instance/queryset."""
+
+    return isinstance(origin, model) or getattr(origin, 'model', None) is model
+
+
+def _write_update(item: Item, changes: dict) -> None:
+    ItemChangeLog.objects.create(
+        item=item,
+        action=ItemChangeLog.ACTION_UPDATE,
+        user=_resolve_actor(),
+        item_name=item.name,
+        changes=changes,
+    )
+
 
 @receiver(pre_save, sender=Item)
-@_safe_signal_handler
 def _cache_previous_state(sender, instance: Item, **kwargs):
-    """
-    Signal handler: Cache the previous state of an Item before it's saved.
-
-    This runs BEFORE save() is called on an Item. It loads the existing version
-    from the database and stores it on the instance for comparison after save.
-
-    This two-step process (pre_save + post_save) allows us to detect exactly
-    what changed during an update operation.
-
-    Args:
-        sender: The model class (Item)
-        instance: The Item instance being saved
-        **kwargs: Additional signal arguments
-    """
-    # If this is a new item (no primary key yet), there's no previous state
     if not instance.pk:
         instance._previous_state = None
         return
-
     try:
-        # Load the current state from database before changes are saved
-        previous = Item.objects.get(pk=instance.pk)
+        instance._previous_state = Item.objects.get(pk=instance.pk)
     except Item.DoesNotExist:
-        # Item was deleted between check and save (rare edge case)
         instance._previous_state = None
-    except Exception as e:
-        # Database error or other unexpected issue
-        logger.warning(f"Could not fetch previous state for Item {instance.pk}: {e}")
-        instance._previous_state = None
-    else:
-        # Successfully loaded - store for comparison in post_save
-        instance._previous_state = previous
+
 
 @receiver(post_save, sender=Item)
-@_safe_signal_handler
 def _log_item_changes(sender, instance: Item, created: bool, **kwargs):
-    """
-    Signal handler: Log item creation or updates to the audit trail.
-
-    This runs AFTER save() completes. It compares the previous state (cached
-    in pre_save) with the current state and creates a change log entry.
-
-    For new items: Creates a 'create' log entry
-    For updates: Creates an 'update' log entry with field-level changes
-
-    Args:
-        sender: The model class (Item)
-        instance: The Item instance that was saved
-        created: True if this is a new item, False if it's an update
-        **kwargs: Additional signal arguments
-    """
-    # Get the previous state that was cached in pre_save
-    previous: Item | None = getattr(instance, '_previous_state', None)
-    # Determine which user made the change
-    user = _resolve_actor(instance)
-
-    # Handle new item creation
+    previous = getattr(instance, '_previous_state', None)
     if created:
         ItemChangeLog.objects.create(
             item=instance,
-            action='create',
-            user=user,
+            action=ItemChangeLog.ACTION_CREATE,
+            user=_resolve_actor(),
             item_name=instance.name,
             changes={'created': True},
         )
-        # Clean up the cached previous state
-        if hasattr(instance, '_previous_state'):
-            delattr(instance, '_previous_state')
-        return
-
-    # Handle updates: if we don't have a previous state, we can't log changes
-    if previous is None:
-        if hasattr(instance, '_previous_state'):
-            delattr(instance, '_previous_state')
-        return
-
-    # Compare previous and current state to find what changed
-    changes = _capture_changes(previous, instance)
-
-    # If nothing actually changed, don't create a log entry
-    if not changes:
-        if hasattr(instance, '_previous_state'):
-            delattr(instance, '_previous_state')
-        return
-
-    # Create change log entry with field-level details
-    ItemChangeLog.objects.create(
-        item=instance,
-        action='update',
-        user=user,
-        item_name=instance.name,
-        # Convert list of snapshots to dict format: {field: {old: ..., new: ...}}
-        changes={snapshot.field: {'old': snapshot.old_value, 'new': snapshot.new_value} for snapshot in changes},
-    )
-
-    # Clean up the cached previous state
+    elif previous is not None:
+        snapshots = _capture_changes(previous, instance, kwargs.get('update_fields'))
+        if snapshots:
+            _write_update(instance, {
+                change.field: {'old': change.old_value, 'new': change.new_value}
+                for change in snapshots
+            })
     if hasattr(instance, '_previous_state'):
         delattr(instance, '_previous_state')
 
+
 @receiver(post_delete, sender=Item)
-@_safe_signal_handler
-def _log_item_deletion(sender, instance: Item, **kwargs):
-    """
-    Signal handler: Log item deletion to the audit trail.
-
-    This runs AFTER an Item is deleted from the database. It creates a
-    change log entry to record the deletion. Note that the foreign key
-    to the deleted item is set to None, but we preserve the item name
-    for historical records.
-
-    Args:
-        sender: The model class (Item)
-        instance: The Item instance that was deleted
-        **kwargs: Additional signal arguments
-    """
-    # Determine which user deleted the item
-    user = _resolve_actor(instance)
-
-    # Create deletion log entry
-    # Note: item=None because the item no longer exists
+def _log_item_deletion(sender, instance: Item, origin=None, **kwargs):
     ItemChangeLog.objects.create(
-        item=None,                                    # Item is deleted, can't reference it
-        action='delete',
-        user=user,
-        item_name=getattr(instance, 'name', ''),      # Preserve name for audit trail
+        item=None,
+        action=ItemChangeLog.ACTION_DELETE,
+        # Do not create a fresh FK to a user that the same Collector is about
+        # to delete; Django cannot discover new related rows mid-cascade.
+        user=None if _deletion_started_by(origin, User) else _resolve_actor(),
+        item_name=instance.name,
         changes={'deleted': True},
     )
 
-# =========================
-# USER DELETION TRACKING
-# =========================
-# These handlers prevent errors when users are deleted while their items exist
 
-@receiver(pre_delete, sender=User)
-def _mark_user_for_deletion(sender, instance: User, **kwargs):
-    """
-    Signal handler: Mark user as pending deletion.
+@receiver(m2m_changed, sender=Item.tags.through)
+def _log_tag_changes(sender, instance, action: str, reverse: bool, pk_set=None, **kwargs):
+    if tag_audit_is_suppressed():
+        return
 
-    This runs BEFORE a User is deleted. It adds the user's ID to a tracking
-    set so that item change logs won't try to reference this user during
-    the cascade deletion of their items.
+    if reverse:
+        _log_reverse_tag_changes(instance, action, pk_set)
+        return
 
-    Args:
-        sender: The User model class
-        instance: The User instance being deleted
-        **kwargs: Additional signal arguments
-    """
-    if instance.pk is not None:
-        # Thread-safe addition to the pending deletion set
-        with _users_pending_deletion_lock:
-            _users_pending_deletion.add(instance.pk)
+    if not isinstance(instance, Item):
+        return
+    if action.startswith('pre_'):
+        instance._previous_tag_ids = sorted(instance.tags.values_list('id', flat=True))
+        return
+    if not action.startswith('post_'):
+        return
+    previous = getattr(instance, '_previous_tag_ids', None)
+    current = sorted(instance.tags.values_list('id', flat=True))
+    if previous is not None and previous != current:
+        _write_update(instance, {'tags': {'old': previous, 'new': current}})
+    if hasattr(instance, '_previous_tag_ids'):
+        delattr(instance, '_previous_tag_ids')
 
-@receiver(post_delete, sender=User)
-def _unmark_user_for_deletion(sender, instance: User, **kwargs):
-    """
-    Signal handler: Remove user from pending deletion tracking.
 
-    This runs AFTER a User is deleted. It removes the user's ID from the
-    tracking set to clean up memory and prevent false positives.
+def _log_reverse_tag_changes(tag, action: str, pk_set) -> None:
+    """Audit changes made through ``tag.items`` as well as ``item.tags``."""
 
-    Args:
-        sender: The User model class
-        instance: The User instance that was deleted
-        **kwargs: Additional signal arguments
-    """
-    if instance.pk is not None:
-        # Thread-safe removal from the pending deletion set
-        with _users_pending_deletion_lock:
-            _users_pending_deletion.discard(instance.pk)
+    if action.startswith('pre_'):
+        affected_items = (
+            tag.items.all()
+            if action == 'pre_clear'
+            else Item.objects.filter(pk__in=pk_set or ())
+        )
+        tag._previous_item_tags = {
+            item.pk: sorted(item.tags.values_list('id', flat=True))
+            for item in affected_items
+        }
+        return
+    if not action.startswith('post_'):
+        return
+
+    previous_by_item = getattr(tag, '_previous_item_tags', {})
+    for item in Item.objects.filter(pk__in=previous_by_item).select_related('owner'):
+        previous = previous_by_item[item.pk]
+        current = sorted(item.tags.values_list('id', flat=True))
+        if previous != current:
+            _write_update(item, {'tags': {'old': previous, 'new': current}})
+    if hasattr(tag, '_previous_item_tags'):
+        delattr(tag, '_previous_item_tags')
+
+
+@receiver(pre_delete, sender=Tag)
+def _log_tag_deletion(sender, instance: Tag, origin=None, **kwargs):
+    """Record relation changes that Django's delete collector applies directly."""
+
+    if _deletion_started_by(origin, User):
+        return
+    items = instance.items.select_related('owner').prefetch_related('tags')
+    for item in items:
+        previous = sorted(tag.pk for tag in item.tags.all())
+        current = [tag_id for tag_id in previous if tag_id != instance.pk]
+        if previous != current:
+            _write_update(item, {'tags': {'old': previous, 'new': current}})
+
+
+@receiver(pre_delete, sender=Location)
+def _log_location_deletion(sender, instance: Location, origin=None, **kwargs):
+    """Audit implicit ``SET_NULL`` item updates caused by location deletion."""
+
+    if _deletion_started_by(origin, User):
+        return
+    for item in instance.items.select_related('owner'):
+        _write_update(item, {
+            'location_id': {'old': instance.pk, 'new': None},
+        })
+
+
+@receiver(pre_save, sender=ItemImage)
+def _cache_previous_image(sender, instance: ItemImage, **kwargs):
+    if not instance.pk:
+        instance._previous_image_state = None
+        return
+    try:
+        instance._previous_image_state = ItemImage.objects.values_list('item_id', 'image').get(pk=instance.pk)
+    except ItemImage.DoesNotExist:
+        instance._previous_image_state = None
+
+
+@receiver(post_save, sender=ItemImage)
+def _log_image_save(sender, instance: ItemImage, created: bool, **kwargs):
+    previous_state = getattr(instance, '_previous_image_state', None)
+    current_item_id = instance.item_id
+    current_name = instance.image.name
+    update_fields = kwargs.get('update_fields')
+    if previous_state is not None and update_fields is not None:
+        previous_item_id, previous_name = previous_state
+        if 'item' not in update_fields and 'item_id' not in update_fields:
+            current_item_id = previous_item_id
+        if 'image' not in update_fields:
+            current_name = previous_name
+
+    if created:
+        _write_update(instance.item, {
+            'images': {
+                'action': 'create',
+                'id': instance.pk,
+                'old': None,
+                'new': current_name,
+            }
+        })
+    elif previous_state is not None:
+        previous_item_id, previous_name = previous_state
+        if previous_item_id != current_item_id:
+            previous_item = Item.objects.get(pk=previous_item_id)
+            current_item = Item.objects.get(pk=current_item_id)
+            _write_update(previous_item, {
+                'images': {'action': 'detach', 'id': instance.pk, 'old': previous_name, 'new': None}
+            })
+            _write_update(current_item, {
+                'images': {'action': 'attach', 'id': instance.pk, 'old': None, 'new': current_name}
+            })
+        elif previous_name != current_name:
+            current_item = Item.objects.get(pk=current_item_id)
+            _write_update(current_item, {
+                'images': {'action': 'update', 'id': instance.pk, 'old': previous_name, 'new': current_name}
+            })
+    if hasattr(instance, '_previous_image_state'):
+        delattr(instance, '_previous_image_state')
+
+
+@receiver(post_delete, sender=ItemImage)
+def _log_image_delete(sender, instance: ItemImage, origin=None, **kwargs):
+    if _deletion_started_by(origin, Item) or _deletion_started_by(origin, User):
+        return
+    _write_update(instance.item, {
+        'images': {'action': 'delete', 'id': instance.pk, 'old': instance.image.name, 'new': None}
+    })

@@ -21,6 +21,8 @@ import os                                                           # File path 
 import bleach                                                       # HTML sanitization
 from django.utils.html import strip_tags                            # HTML tag removal
 
+from .audit import audit_actor, suppress_tag_audit
+
 # Import models and constants
 from .models import (
     Item,
@@ -234,9 +236,11 @@ class ItemSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags', [])
         validated_data.pop('owner', None)
         normalised = self._normalise_payload(validated_data)
-        item = Item.objects.create(owner=user, **normalised)
-        if tags:
-            item.tags.set([tag for tag in tags if tag.user_id == user.id])
+        from django.db import transaction
+        with transaction.atomic(), audit_actor(user):
+            item = Item.objects.create(owner=user, **normalised)
+            if tags:
+                item.tags.set([tag for tag in tags if tag.user_id == user.id])
         return item
 
     def update(self, instance, validated_data):
@@ -261,20 +265,23 @@ class ItemSerializer(serializers.ModelSerializer):
             if field not in allowed_fields:
                 normalised.pop(field)
 
-        for attr, value in normalised.items():
-            setattr(instance, attr, value)
-        instance.save()
+        from django.db import transaction
+        with transaction.atomic(), audit_actor(user):
+            for attr, value in normalised.items():
+                setattr(instance, attr, value)
+            instance.save()
 
-        if tags is not None:
-            own_tags = [tag for tag in tags if tag.user_id == user.id]
-            instance.tags.set(own_tags)
-            new_tag_ids = sorted(instance.tags.values_list('id', flat=True))
-            if old_tag_ids != new_tag_ids:
-                ItemChangeLog.objects.create(
-                    item=instance,
-                    action='update',
-                    user=user,
-                    item_name=instance.name,
-                    changes={'tags': {'old': old_tag_ids, 'new': new_tag_ids}},
-                )
+            if tags is not None:
+                own_tags = [tag for tag in tags if tag.user_id == user.id]
+                with suppress_tag_audit():
+                    instance.tags.set(own_tags)
+                new_tag_ids = sorted(instance.tags.values_list('id', flat=True))
+                if old_tag_ids != new_tag_ids:
+                    ItemChangeLog.objects.create(
+                        item=instance,
+                        action='update',
+                        user=user,
+                        item_name=instance.name,
+                        changes={'tags': {'old': old_tag_ids, 'new': new_tag_ids}},
+                    )
         return instance

@@ -1,10 +1,9 @@
 // Authentication State Management Store
 // ==================================
-// This module uses Zustand with persistence to manage user authentication state.
-// It handles login, logout, registration, token refresh, and session persistence.
+// This module uses Zustand to manage server-verified authentication state.
+// HttpOnly cookies are the only persisted source of session truth.
 
 import { create, type StateCreator } from "zustand"; // State management library
-import { persist, type PersistOptions } from "zustand/middleware"; // Persistence middleware
 
 import apiClient, { ensureCSRFToken } from "../api/client"; // Configured API client
 import type {
@@ -73,14 +72,7 @@ const resetState = (set: AuthStoreSetter) => {
   });
 };
 
-/** Type definition for Zustand persist middleware mutators */
-type PersistMutators = [["zustand/persist", unknown]];
-
-/** Persisted subset of authentication state. */
-type PersistedAuthState = Pick<
-  AuthState,
-  "user" | "isAuthenticated" | "hasInitialised" | "remembering"
->;
+let initialisationPromise: Promise<void> | null = null;
 
 /**
  * Create authentication store with all state and actions.
@@ -88,10 +80,7 @@ type PersistedAuthState = Pick<
  * This store creator defines the complete authentication state management
  * including login, logout, registration, and token refresh functionality.
  */
-const authStoreCreator: StateCreator<AuthState, PersistMutators> = (
-  set,
-  get,
-) => ({
+const authStoreCreator: StateCreator<AuthState> = (set, get) => ({
   // Initial state values
   user: null,
   isAuthenticated: false,
@@ -100,55 +89,47 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (
   remembering: false,
 
   /**
-   * Initialize authentication state from stored session.
+   * Initialize authentication state from the server-owned cookie session.
    *
    * Attempts to restore user session by fetching current user profile
-   * from the backend. If user is not remembered, skips initialization.
+   * from the backend. Local browser state is never trusted as authentication.
    */
   initialise: async () => {
-    const currentState = get();
-
-    // Skip initialization if user is not authenticated and not remembered
-    if (!currentState.isAuthenticated && !currentState.remembering) {
-      set({
-        hasInitialised: true,
-      });
+    if (get().hasInitialised) {
       return;
     }
 
-    // Function to fetch user profile from backend
-    const fetchProfile = async () => {
-      const { data } = await apiClient.get<UserProfile>("/auth/me/");
-      set({
-        user: data,
-        isAuthenticated: true,
-        hasInitialised: true,
-        accessExpiresAt: null,
-      });
-    };
+    if (!initialisationPromise) {
+      initialisationPromise = (async () => {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        }
+        try {
+          const { data } = await apiClient.get<UserProfile>("/auth/me/");
+          set({
+            user: data,
+            isAuthenticated: true,
+            hasInitialised: true,
+            accessExpiresAt: null,
+          });
+        } catch (error) {
+          const status = (error as { response?: { status?: number } }).response
+            ?.status;
+          if (status && status !== 401) {
+            console.error("Failed to initialise authentication state:", error);
+          }
+          resetState(set);
+        }
+      })();
+    }
 
     try {
-      // Attempt to fetch user profile
-      await fetchProfile();
-      return;
-    } catch (error) {
-      // Handle authentication errors gracefully
-      const status = (error as { response?: { status?: number } }).response
-        ?.status;
-
-      // Only log errors that aren't authentication failures
-      if (status && status !== 401) {
-        console.error("Failed to initialise authentication state:", error);
+      await initialisationPromise;
+    } finally {
+      if (get().hasInitialised) {
+        initialisationPromise = null;
       }
-
-      // Reset to logged-out state on error
-      set({
-        user: null,
-        isAuthenticated: false,
-        hasInitialised: true,
-        accessExpiresAt: null,
-        remembering: false,
-      });
     }
   },
 
@@ -170,7 +151,7 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (
       payload.username = username.trim();
     }
 
-    // Send login request to backend
+    await ensureCSRFToken();
     const { data } = await apiClient.post<LoginResponse>("/token/", payload);
     const profile = data.user ?? null;
 
@@ -190,6 +171,7 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (
    * @param payload - Registration data including username, email, and password
    */
   register: async (payload: RegisterRequest) => {
+    await ensureCSRFToken();
     await apiClient.post("/users/", payload);
   },
 
@@ -258,30 +240,6 @@ const authStoreCreator: StateCreator<AuthState, PersistMutators> = (
 });
 
 /**
- * Configuration for Zustand persistence middleware.
- *
- * Persists the authentication state to localStorage/sessionStorage
- * based on the user's "remember me" preference.
- */
-const persistOptions: PersistOptions<AuthState, PersistedAuthState> = {
-  name: AUTH_STORAGE_KEY,
-  partialize: (state: AuthState) => ({
-    user: state.user,
-    isAuthenticated: state.isAuthenticated,
-    hasInitialised: state.hasInitialised,
-    remembering: state.remembering,
-  }),
-};
-
-/**
  * Create and export the authentication store.
- *
- * Combines the store creator with the persistence middleware
- * to create a fully functional authentication state store.
  */
-export const useAuthStore = create<AuthState>()(
-  persist<AuthState, [], [], PersistedAuthState>(
-    authStoreCreator,
-    persistOptions,
-  ),
-);
+export const useAuthStore = create<AuthState>()(authStoreCreator);

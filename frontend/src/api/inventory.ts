@@ -7,11 +7,13 @@ import apiClient from "./client"; // Import configured API client
 import type {
   DuplicateFinderResponse,
   DuplicateQuarantineEntry,
+  DashboardSummary,
   Item,
   ItemChangeLog,
   ItemImage,
   ItemList,
   ItemPayload,
+  ItemStats,
   Location,
   PaginatedResponse,
   Tag,
@@ -42,6 +44,28 @@ export interface FetchItemsOptions {
   ordering?: string;
 }
 
+type ItemFilterOptions = Omit<FetchItemsOptions, "page" | "pageSize">;
+
+const buildItemParams = ({
+  query,
+  page,
+  pageSize,
+  tags,
+  locations,
+  ordering,
+}: FetchItemsOptions): Record<string, string | number> => {
+  const params: Record<string, string | number> = {};
+  if (query) params.search = query;
+  if (page) params.page = page;
+  if (pageSize) params.page_size = pageSize;
+  if (tags && tags.length > 0) params.tags = tags.join(",");
+  if (locations && locations.length > 0) {
+    params.location = locations.join(",");
+  }
+  if (ordering) params.ordering = ordering;
+  return params;
+};
+
 /**
  * Fetch a paginated list of items from the API.
  *
@@ -56,22 +80,36 @@ export const fetchItems = async ({
   locations, // Location IDs for filtering
   ordering, // Sort order for results
 }: FetchItemsOptions = {}): Promise<PaginatedResponse<Item>> => {
-  // Build query parameters object
-  const params: Record<string, string | number> = {};
-  if (query) params.search = query; // Add search parameter
-  if (page) params.page = page; // Add pagination
-  if (pageSize) params.page_size = pageSize; // Add page size
-  if (tags && tags.length > 0) params.tags = tags.join(","); // Add tag filter as comma-separated string
-  if (locations && locations.length > 0) {
-    params.location = locations.join(",");
-  }
-  if (ordering) params.ordering = ordering; // Add sorting parameter
+  const params = buildItemParams({
+    query,
+    page,
+    pageSize,
+    tags,
+    locations,
+    ordering,
+  });
 
   // Make GET request to items endpoint with query parameters
   const { data } = await apiClient.get<PaginatedResponse<Item>>("/items/", {
     params,
   });
   return data; // Return paginated response
+};
+
+/** Fetch exact aggregates for the complete filtered item result set. */
+export const fetchItemStats = async (
+  options: ItemFilterOptions = {},
+): Promise<ItemStats> => {
+  const { data } = await apiClient.get<ItemStats>("/items/stats/", {
+    params: buildItemParams(options),
+  });
+  return data;
+};
+
+/** Fetch bounded dashboard aggregates without downloading the item catalog. */
+export const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
+  const { data } = await apiClient.get<DashboardSummary>("/items/dashboard/");
+  return data;
 };
 
 /**
@@ -147,24 +185,24 @@ export const fetchItemQrCode = async (
  * @returns {Promise<Item[]>} Array containing all items
  */
 export const fetchAllItems = async (query?: string): Promise<Item[]> => {
-  const collected: Item[] = []; // Array to store all items
-  let currentPage = 1; // Start with first page
-  let hasNext = true; // Flag to continue pagination
+  const pageSize = 100;
+  const firstPage = await fetchItems({ query, page: 1, pageSize });
+  const collected = [...firstPage.results];
+  const pageCount = Math.ceil(firstPage.count / pageSize);
 
-  // Continue fetching pages while there are more results
-  while (hasNext) {
-    // Fetch a page with 100 items (max page size for efficiency)
-    const response = await fetchItems({
-      query,
-      page: currentPage,
-      pageSize: 100,
-    });
-    collected.push(...response.results); // Add items to collection
-    hasNext = Boolean(response.next); // Check if there's a next page
-    currentPage += 1; // Move to next page
+  // Fetch a few pages concurrently to reduce latency without flooding the API.
+  for (let first = 2; first <= pageCount; first += 4) {
+    const pages = Array.from(
+      { length: Math.min(4, pageCount - first + 1) },
+      (_, index) => first + index,
+    );
+    const responses = await Promise.all(
+      pages.map((page) => fetchItems({ query, page, pageSize })),
+    );
+    responses.forEach((response) => collected.push(...response.results));
   }
 
-  return collected; // Return all collected items
+  return collected;
 };
 
 /**

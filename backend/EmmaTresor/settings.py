@@ -288,6 +288,7 @@ REST_FRAMEWORK = {
         'item_read': '200/hour',
         'item_export': '10/hour',
         'image_download': '100/hour',
+        'duplicate_find': '20/minute',
     },
 }
 

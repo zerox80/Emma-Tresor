@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
-  createDuplicateQuarantineEntry,
+  createDuplicateQuarantineEntries,
   fetchDuplicateFinder,
   fetchDuplicateQuarantineEntries,
   releaseDuplicateQuarantineEntry,
+  releaseDuplicateQuarantineEntries,
   type DuplicateFinderParams,
   type FetchItemsOptions,
 } from "../../../api/inventory";
@@ -14,6 +15,7 @@ import type {
 } from "../../../types/inventory";
 
 interface UseDuplicateFinderArgs {
+  enabled: boolean;
   searchTerm: string;
   selectedTagIds: number[];
   selectedLocationIds: number[];
@@ -37,9 +39,13 @@ interface UseDuplicateFinderResult {
   quarantineError: string | null;
   loadQuarantine: () => Promise<void>;
   releaseQuarantineEntry: (entryId: number) => Promise<void>;
+  releaseQuarantineEntries: (entryIds: number[]) => Promise<void>;
 }
 
-type DuplicateFinderFilters = Omit<UseDuplicateFinderArgs, "finderParams">;
+type DuplicateFinderFilters = Omit<
+  UseDuplicateFinderArgs,
+  "enabled" | "finderParams"
+>;
 
 const buildFiltersFromArgs = ({
   searchTerm,
@@ -62,6 +68,7 @@ export const useDuplicateFinder = (
     selectedTagIds,
     ordering,
     finderParams,
+    enabled,
   } = args;
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
   const [duplicatesLoading, setDuplicatesLoading] = useState(false);
@@ -122,16 +129,25 @@ export const useDuplicateFinder = (
     }
   }, []);
 
-  const createQuarantineEntry = useCallback(
-    async (itemAId: number, itemBId: number) => {
+  const markGroupAsFalsePositive = useCallback(
+    async (group: DuplicateGroup) => {
+      if (group.items.length < 2) {
+        return [];
+      }
+      const anchor = group.items[0];
       try {
-        const entry = await createDuplicateQuarantineEntry({
-          item_a_id: itemAId,
-          item_b_id: itemBId,
-          reason: "False Positive",
-        });
-        setQuarantineEntries((prev) => [entry, ...prev]);
-        return entry;
+        const createdEntries = await createDuplicateQuarantineEntries(
+          group.items.slice(1).map((target) => ({
+            item_a_id: anchor.id,
+            item_b_id: target.id,
+          })),
+          "False Positive",
+        );
+        setQuarantineEntries((prev) => [...createdEntries, ...prev]);
+        setDuplicates((prev) =>
+          prev.filter((candidate) => candidate.group_id !== group.group_id),
+        );
+        return createdEntries;
       } catch (error) {
         throw new Error(
           "Eintrag konnte nicht in die Quarantäne verschoben werden.",
@@ -139,26 +155,6 @@ export const useDuplicateFinder = (
       }
     },
     [],
-  );
-
-  const markGroupAsFalsePositive = useCallback(
-    async (group: DuplicateGroup) => {
-      if (group.items.length < 2) {
-        return [];
-      }
-      const anchor = group.items[0];
-      const createdEntries: DuplicateQuarantineEntry[] = [];
-      for (let i = 1; i < group.items.length; i += 1) {
-        const target = group.items[i];
-        const entry = await createQuarantineEntry(anchor.id, target.id);
-        createdEntries.push(entry);
-      }
-      setDuplicates((prev) =>
-        prev.filter((candidate) => candidate.group_id !== group.group_id),
-      );
-      return createdEntries;
-    },
-    [createQuarantineEntry],
   );
 
   const releaseQuarantineEntry = useCallback(async (entryId: number) => {
@@ -172,9 +168,23 @@ export const useDuplicateFinder = (
     }
   }, []);
 
+  const releaseQuarantineEntries = useCallback(async (entryIds: number[]) => {
+    try {
+      await releaseDuplicateQuarantineEntries(entryIds);
+      const released = new Set(entryIds);
+      setQuarantineEntries((prev) =>
+        prev.filter((entry) => !released.has(entry.id)),
+      );
+    } catch (error) {
+      throw new Error("Einträge konnten nicht entfernt werden.");
+    }
+  }, []);
+
   useEffect(() => {
-    void loadDuplicates();
-  }, [loadDuplicates]);
+    if (enabled) {
+      void loadDuplicates();
+    }
+  }, [enabled, loadDuplicates]);
 
   return {
     duplicates,
@@ -190,5 +200,6 @@ export const useDuplicateFinder = (
     quarantineError,
     loadQuarantine,
     releaseQuarantineEntry,
+    releaseQuarantineEntries,
   };
 };

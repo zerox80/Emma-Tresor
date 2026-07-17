@@ -9,7 +9,7 @@ from .views import (                                                   # Import 
     CustomTokenObtainPairView, CustomTokenRefreshView, CurrentUserView,
     DuplicateQuarantineViewSet, GetCSRFTokenView, ItemImageDownloadView,
     ItemImageViewSet, ItemListViewSet, ItemViewSet, LocationViewSet,
-    LogoutView, TagViewSet, UserRegistrationViewSet
+    LogoutView, PublicConfigView, TagViewSet, UserRegistrationViewSet
 )
 
 # Create a DRF router for handling ViewSet-based endpoints
@@ -52,6 +52,9 @@ router.register('users', UserRegistrationViewSet, basename='user-registration')
 # These are custom endpoints that don't fit the standard CRUD pattern
 
 urlpatterns = [
+    # Public, non-sensitive runtime feature flags
+    path('config/', PublicConfigView.as_view(), name='public_config'),
+
     # CSRF Token endpoint
     # ==================
     # GET /api/csrf/ - Sets CSRF cookie for form security

@@ -155,6 +155,7 @@ class ItemSerializerTests(TestCase):
         item = Item.objects.create(name='Camera', owner=self.user, location
             =self.location_user)
         item.tags.set([self.tag_user])
+        ItemChangeLog.objects.filter(item=item, action='update').delete()
         data = {'name': 'Camera', 'description': '', 'quantity': 1, 'value':
             '', 'location': self.location_user.id, 'tags': [self.
             tag_user_2.id]}

@@ -7,14 +7,35 @@
 # - Inline editing capabilities for related objects
 
 from django.contrib import admin        # Django admin framework
+from .audit import audit_actor
 from .models import Item, ItemImage, ItemList, Location, Tag  # Import all models
+
+
+class AuditActorAdminMixin:
+    """Attribute admin model and relation changes to the acting staff user."""
+
+    def save_model(self, request, obj, form, change):
+        with audit_actor(request.user):
+            return super().save_model(request, obj, form, change)
+
+    def delete_model(self, request, obj):
+        with audit_actor(request.user):
+            return super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        with audit_actor(request.user):
+            return super().delete_queryset(request, queryset)
+
+    def save_related(self, request, form, formsets, change):
+        with audit_actor(request.user):
+            return super().save_related(request, form, formsets, change)
 
 # =========================
 # TAG ADMIN CONFIGURATION
 # =========================
 
 @admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
+class TagAdmin(AuditActorAdminMixin, admin.ModelAdmin):
     """
     Admin interface configuration for Tag model.
 
@@ -43,7 +64,7 @@ class TagAdmin(admin.ModelAdmin):
 # =========================
 
 @admin.register(Location)
-class LocationAdmin(admin.ModelAdmin):
+class LocationAdmin(AuditActorAdminMixin, admin.ModelAdmin):
     """
     Admin interface configuration for Location model.
 
@@ -92,7 +113,7 @@ class ItemImageInline(admin.TabularInline):
 # =========================
 
 @admin.register(Item)
-class ItemAdmin(admin.ModelAdmin):
+class ItemAdmin(AuditActorAdminMixin, admin.ModelAdmin):
     """
     Admin interface configuration for Item model.
 
@@ -165,7 +186,7 @@ class ItemListAdmin(admin.ModelAdmin):
 # =========================
 
 @admin.register(ItemImage)
-class ItemImageAdmin(admin.ModelAdmin):
+class ItemImageAdmin(AuditActorAdminMixin, admin.ModelAdmin):
     """
     Admin interface configuration for ItemImage model.
 

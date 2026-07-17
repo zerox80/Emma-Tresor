@@ -7,12 +7,14 @@ import os
 from urllib.parse import quote
 
 from django.http import FileResponse, Http404
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 
 from ..models import ItemImage
+from ..audit import audit_actor
 from ..serializers import ItemImageSerializer
 from .throttles import ItemImageDownloadRateThrottle
 
@@ -58,7 +60,8 @@ class ItemImageViewSet(viewsets.ModelViewSet):
         item = serializer.validated_data['item']
         if item.owner != self.request.user:
             raise PermissionDenied('Bilder können nur für eigene Gegenstände hinzugefügt werden.')
-        serializer.save()
+        with transaction.atomic(), audit_actor(self.request.user):
+            serializer.save()
 
     def perform_update(self, serializer):
         """
@@ -73,7 +76,12 @@ class ItemImageViewSet(viewsets.ModelViewSet):
         item = serializer.validated_data.get('item', serializer.instance.item)
         if item.owner != self.request.user:
             raise PermissionDenied('Bilder können nur für eigene Gegenstände bearbeitet werden.')
-        serializer.save()
+        with transaction.atomic(), audit_actor(self.request.user):
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        with transaction.atomic(), audit_actor(self.request.user):
+            instance.delete()
 
 
 class ItemImageDownloadView(APIView):

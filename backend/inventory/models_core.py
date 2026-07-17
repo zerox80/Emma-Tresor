@@ -14,7 +14,7 @@
 from django.conf import settings                    # Django settings for AUTH_USER_MODEL
 from django.core.exceptions import ValidationError # Custom validation exceptions
 from django.core.validators import MinValueValidator, MaxValueValidator  # Field validators
-from django.db import models, IntegrityError       # Django ORM and database integrity
+from django.db import models, IntegrityError, transaction  # Django ORM and database integrity
 from django.db.models import Q
 from datetime import date, timedelta               # Date operations for validation
 from PIL import Image, UnidentifiedImageError     # Image processing for validation
@@ -346,8 +346,10 @@ class Item(TimeStampedModel):
             # Validate all fields before saving
             self.full_clean()
             try:
-                # Attempt to save the item
-                super().save(*args, **kwargs)
+                # Keep the row write and its audit signal in one transaction so
+                # an audit failure cannot leave an unlogged change behind.
+                with transaction.atomic():
+                    super().save(*args, **kwargs)
                 return  # Success - exit the retry loop
             except IntegrityError as exc:
                 # Check if the error is related to asset_tag uniqueness

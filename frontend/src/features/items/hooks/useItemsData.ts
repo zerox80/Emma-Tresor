@@ -1,7 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 
-import { fetchItems } from "../../../api/inventory";
-import type { Item, PaginatedResponse } from "../../../types/inventory";
+import { fetchItems, fetchItemStats } from "../../../api/inventory";
+import type {
+  Item,
+  ItemStats,
+  PaginatedResponse,
+} from "../../../types/inventory";
 import { ITEMS_PAGE_SIZE } from "../constants";
 
 interface UseItemsDataArgs {
@@ -15,6 +19,7 @@ interface UseItemsDataArgs {
 interface UseItemsDataResult {
   items: Item[];
   pagination: PaginatedResponse<Item> | null;
+  stats: ItemStats | null;
   loadingItems: boolean;
   itemsError: string | null;
   loadItems: () => Promise<void>;
@@ -32,6 +37,7 @@ export const useItemsData = ({
   const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(
     null,
   );
+  const [stats, setStats] = useState<ItemStats | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
   const [itemsError, setItemsError] = useState<string | null>(null);
   const [itemsVersion, setItemsVersion] = useState(0);
@@ -43,18 +49,25 @@ export const useItemsData = ({
     setLoadingItems(true);
     setItemsError(null);
     try {
-      const response = await fetchItems({
+      const filters = {
         query: debouncedSearchTerm || undefined,
-        page,
-        pageSize: ITEMS_PAGE_SIZE,
         tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         locations:
           selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
         ordering: ordering.trim().length > 0 ? ordering : undefined,
-      });
+      };
+      const [response, aggregateStats] = await Promise.all([
+        fetchItems({
+          ...filters,
+          page,
+          pageSize: ITEMS_PAGE_SIZE,
+        }),
+        fetchItemStats(filters),
+      ]);
       if (requestId === latestRequestId.current) {
         setItems(response.results);
         setPagination(response);
+        setStats(aggregateStats);
         setItemsVersion((prev) => prev + 1);
       }
     } catch (error) {
@@ -79,6 +92,7 @@ export const useItemsData = ({
   return {
     items,
     pagination,
+    stats,
     loadingItems,
     itemsError,
     loadItems,

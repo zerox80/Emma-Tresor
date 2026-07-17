@@ -54,6 +54,7 @@ const ItemsPage: React.FC = () => {
   const {
     items,
     pagination,
+    stats,
     loadingItems,
     itemsError,
     loadItems,
@@ -264,24 +265,12 @@ const ItemsPage: React.FC = () => {
     details.closeDetails();
   }, [details]);
 
-  const totalItemsCount = pagination?.count ?? items.length;
-
-  const totalQuantity = useMemo(
-    () => items.reduce((sum, current) => sum + current.quantity, 0),
-    [items],
-  );
-
-  const totalValue = useMemo(
-    () =>
-      items.reduce((sum, current) => {
-        if (!current.value) {
-          return sum;
-        }
-        const numeric = Number.parseFloat(current.value);
-        return Number.isFinite(numeric) && numeric > 0 ? sum + numeric : sum;
-      }, 0),
-    [items],
-  );
+  const totalItemsCount = stats?.total_items ?? pagination?.count ?? items.length;
+  const totalQuantity =
+    stats?.total_quantity ??
+    items.reduce((sum, current) => sum + current.quantity, 0);
+  const parsedTotalValue = Number.parseFloat(stats?.total_value ?? "0");
+  const totalValue = Number.isFinite(parsedTotalValue) ? parsedTotalValue : 0;
 
   return (
     <div className="relative space-y-8">

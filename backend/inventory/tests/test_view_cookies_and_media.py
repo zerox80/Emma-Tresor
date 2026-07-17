@@ -1,4 +1,5 @@
 from .view_test_base import *  # noqa: F403
+from ..models import ItemChangeLog
 
 class CookieJWTCSRFSecurityTests(APITestCase):
 
@@ -242,6 +243,28 @@ class ItemImageViewSetTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(ItemImage.objects.filter(item=self.item).count(), 1)
+        image_log = next(
+            log
+            for log in ItemChangeLog.objects.filter(item=self.item, action='update')
+            if 'images' in log.changes
+        )
+        self.assertEqual(image_log.user, self.user)
+        self.assertEqual(image_log.changes['images']['action'], 'create')
+
+    def test_delete_image_is_audited(self):
+
+        image = ItemImage.objects.create(item=self.item, image=self._image_file('delete.png'))
+        url = reverse('itemimage-detail', args=[image.id])
+
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        image_log = next(
+            log
+            for log in ItemChangeLog.objects.filter(item=self.item, action='update')
+            if log.changes.get('images', {}).get('action') == 'delete'
+        )
+        self.assertEqual(image_log.user, self.user)
 
     def test_cannot_update_image_to_other_users_item(self):
 
@@ -253,6 +276,25 @@ class ItemImageViewSetTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         image.refresh_from_db()
         self.assertEqual(image.item, self.item)
+
+    def test_move_image_between_own_items_audits_both_sides(self):
+
+        target_item = Item.objects.create(name='Camera bag', owner=self.user)
+        image = ItemImage.objects.create(item=self.item, image=self._image_file('move.png'))
+        ItemChangeLog.objects.filter(item__in=[self.item, target_item], action='update').delete()
+        url = reverse('itemimage-detail', args=[image.id])
+
+        response = self.client.patch(url, {'item': target_item.id}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        image.refresh_from_db()
+        self.assertEqual(image.item, target_item)
+        source_log = ItemChangeLog.objects.get(item=self.item, action='update')
+        target_log = ItemChangeLog.objects.get(item=target_item, action='update')
+        self.assertEqual(source_log.user, self.user)
+        self.assertEqual(target_log.user, self.user)
+        self.assertEqual(source_log.changes['images']['action'], 'detach')
+        self.assertEqual(target_log.changes['images']['action'], 'attach')
 
     def test_perform_create_raises_permission_denied_for_foreign_item(self):
 

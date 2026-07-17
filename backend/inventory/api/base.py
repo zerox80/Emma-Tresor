@@ -1,7 +1,10 @@
 """Common base classes for inventory API viewsets."""
 
+from django.db import transaction
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
+
+from ..audit import audit_actor
 
 
 class UserScopedModelViewSet(viewsets.ModelViewSet):
@@ -67,6 +70,12 @@ class UserScopedModelViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Diese Ressource gehört nicht zu deinem Konto.')
 
         serializer.save()
+
+    def perform_destroy(self, instance):
+        """Keep cascading item audit events atomic and correctly attributed."""
+
+        with transaction.atomic(), audit_actor(self.request.user):
+            instance.delete()
 
 
 __all__ = ['UserScopedModelViewSet']

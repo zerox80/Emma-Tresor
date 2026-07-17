@@ -6,6 +6,7 @@ import io
 from uuid import UUID
 
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.decorators import action
@@ -13,6 +14,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from ..models import Item, ItemChangeLog
+from ..audit import audit_actor
 from ..serializers import ItemChangeLogSerializer
 from .export import _prepare_items_csv_response, _write_items_to_csv
 
@@ -48,7 +50,8 @@ class ItemResourceActionsMixin:
         Args:
             serializer: Validated item serializer
         """
-        serializer.save(owner=self.request.user)
+        with transaction.atomic(), audit_actor(self.request.user):
+            serializer.save(owner=self.request.user)
 
     def perform_update(self, serializer):
         """
@@ -63,7 +66,12 @@ class ItemResourceActionsMixin:
         instance = self.get_object()
         if instance.owner != self.request.user:
             raise PermissionDenied('Dieser Gegenstand gehört nicht zu deinem Konto.')
-        serializer.save(owner=instance.owner)
+        with transaction.atomic(), audit_actor(self.request.user):
+            serializer.save(owner=instance.owner)
+
+    def perform_destroy(self, instance):
+        with transaction.atomic(), audit_actor(self.request.user):
+            instance.delete()
 
     @action(detail=False, methods=['get'], url_path='lookup_by_tag/(?P<asset_tag>[^/]+)')
     def lookup_by_asset_tag(self, request, asset_tag=None):

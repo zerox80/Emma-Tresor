@@ -15,6 +15,8 @@ interface DashboardContentProps {
   loading: boolean;
   stats: DashboardStats | null;
   itemsTotalValue: number;
+  catalogLoading: boolean;
+  catalogReady: boolean;
   listsWithDetail: ListWithDetail[];
   showAllLists: boolean;
   setShowAllLists: React.Dispatch<React.SetStateAction<boolean>>;
@@ -46,6 +48,8 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
   loading,
   stats,
   itemsTotalValue,
+  catalogLoading,
+  catalogReady,
   listsWithDetail,
   showAllLists,
   setShowAllLists,
@@ -83,7 +87,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="text-sm font-medium text-slate-500">Gesamtbestand</h3>
           <p className="mt-2 text-3xl font-bold text-slate-900">
-            {loading ? "…" : (stats?.items.length ?? 0)}
+            {loading ? "…" : (stats?.summary.total_items ?? 0)}
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Alle erfassten Gegenstände deiner privaten EmmaTresor-Sammlung.
@@ -92,7 +96,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 className="text-sm font-medium text-slate-500">Listen</h3>
           <p className="mt-2 text-3xl font-bold text-slate-900">
-            {loading ? "…" : (stats?.lists.length ?? 0)}
+            {loading ? "…" : (stats?.summary.list_count ?? 0)}
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Smarte Sammlungen für Projekte, Umzüge und Übergaben.
@@ -119,7 +123,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
           <p className="mt-2 text-lg font-semibold text-slate-900">
             {loading
               ? "…"
-              : `${stats?.tags.length ?? 0} Tags · ${stats?.locations.length ?? 0} Orte`}
+              : `${stats?.summary.tag_count ?? 0} Tags · ${stats?.summary.location_count ?? 0} Orte`}
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Verleihe deinem Inventar Kontext – blitzschnell filterbar.
@@ -140,7 +144,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
           <ul className="mt-4 space-y-3 text-sm text-slate-700">
             {loading && <li className="text-slate-400">Lade Items …</li>}
             {!loading &&
-              stats?.items.slice(0, 5).map((item) => (
+              stats?.summary.recent_items.map((item) => (
                 <li
                   key={item.id}
                   className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2"
@@ -156,7 +160,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
                   </span>
                 </li>
               ))}
-            {!loading && stats?.items.length === 0 && (
+            {!loading && stats?.summary.recent_items.length === 0 && (
               <li className="text-slate-400">
                 Noch keine Gegenstände angelegt – starte mit deinem ersten
                 Eintrag in EmmaTresor.
@@ -269,7 +273,13 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
                           </div>
                         </div>
 
-                        {!hasItems && (
+                        {catalogLoading && (
+                          <p className="text-sm text-slate-400">
+                            Lade Inventardetails …
+                          </p>
+                        )}
+
+                        {!catalogLoading && catalogReady && !hasItems && (
                           <div
                             className={[
                               "rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm",
@@ -281,7 +291,13 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
                           </div>
                         )}
 
-                        {hasItems && (
+                        {!catalogLoading && !catalogReady && (
+                          <p className="text-sm text-red-600">
+                            Inventardetails konnten nicht geladen werden.
+                          </p>
+                        )}
+
+                        {!catalogLoading && hasItems && (
                           <ul className="space-y-2 text-sm text-slate-600">
                             {list.resolvedItems
                               .slice(0, 4)

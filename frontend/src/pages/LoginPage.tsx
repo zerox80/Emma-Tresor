@@ -49,7 +49,13 @@ type LoginSchema = z.infer<typeof loginSchema>;
  *
  * @returns {JSX.Element} The login page component
  */
-const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  registrationEnabled?: boolean;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({
+  registrationEnabled = false,
+}) => {
   // Navigation hooks for redirecting after login
   const navigate = useNavigate();
   const location = useLocation();
@@ -188,13 +194,14 @@ const LoginPage: React.FC = () => {
           />
           Eingeloggt bleiben (nur auf vertrauenswürdigen Geräten nutzen)
         </label>
-        {/* Link to registration page */}
-        <Link
-          to="/register"
-          className="text-xs font-medium text-brand-500 hover:text-brand-600"
-        >
-          Noch kein Konto? Jetzt registrieren
-        </Link>
+        {registrationEnabled && (
+          <Link
+            to="/register"
+            className="text-xs font-medium text-brand-500 hover:text-brand-600"
+          >
+            Noch kein Konto? Jetzt registrieren
+          </Link>
+        )}
       </div>
 
       {/* Submit button with loading state */}

@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { AxiosError } from "axios";
 
 import Button from "../components/common/Button";
@@ -9,18 +15,22 @@ import ManageListItemsSheet, {
 import {
   exportListItems,
   fetchAllItems,
+  fetchDashboardSummary,
   fetchLists,
   fetchLocations,
-  fetchTags,
   updateListItems,
 } from "../api/inventory";
-import type { Item, ItemList, Location, Tag } from "../types/inventory";
+import type {
+  DashboardSummary,
+  Item,
+  ItemList,
+  Location,
+} from "../types/inventory";
 import DashboardContent from "./DashboardContent";
 
 export interface DashboardStats {
-  items: Item[];
+  summary: DashboardSummary;
   lists: ItemList[];
-  tags: Tag[];
   locations: Location[];
 }
 
@@ -29,16 +39,34 @@ export interface ListWithDetail extends ItemList {
   isExpanded?: boolean;
 }
 
-const MAX_LISTS_DISPLAYED = 4;
+const resolveListDetails = (
+  lists: ItemList[],
+  items: Item[],
+  expandedLists: Set<number>,
+): ListWithDetail[] => {
+  const itemMap = new Map<number, Item>(
+    items.map((item: Item) => [item.id, item]),
+  );
+  return lists.map((list) => ({
+    ...list,
+    resolvedItems: list.items
+      .map((itemId) => itemMap.get(itemId))
+      .filter((entry): entry is Item => Boolean(entry))
+      .sort((a: Item, b: Item) => a.name.localeCompare(b.name)),
+    isExpanded: expandedLists.has(list.id),
+  }));
+};
 
 const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [catalogItems, setCatalogItems] = useState<Item[] | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const catalogLoadPromise = useRef<Promise<Item[]> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedLists, setExpandedLists] = useState<Set<number>>(
     new Set<number>(),
   );
-  const [listsWithDetail, setListsWithDetail] = useState<ListWithDetail[]>([]);
   const [manageTarget, setManageTarget] = useState<ListWithDetail | null>(null);
   const [previewTarget, setPreviewTarget] = useState<ListWithDetail | null>(
     null,
@@ -57,13 +85,12 @@ const DashboardPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [items, lists, tags, locations] = await Promise.all([
-        fetchAllItems(),
+      const [summary, lists, locations] = await Promise.all([
+        fetchDashboardSummary(),
         fetchLists(),
-        fetchTags(),
         fetchLocations(),
       ]);
-      setStats({ items, lists, tags, locations });
+      setStats({ summary, lists, locations });
     } catch (err) {
       const axiosError = err as AxiosError;
       const detail =
@@ -84,25 +111,41 @@ const DashboardPage: React.FC = () => {
     void loadStats();
   }, [loadStats]);
 
-  useEffect(() => {
-    if (!stats) {
-      setListsWithDetail([]);
-      return;
+  const ensureCatalogItems = useCallback(async (): Promise<Item[]> => {
+    if (catalogItems) {
+      return catalogItems;
     }
-    const itemMap = new Map<number, Item>(
-      stats.items.map((item: Item) => [item.id, item]),
-    );
-    setListsWithDetail(
-      stats.lists.map((list) => ({
-        ...list,
-        resolvedItems: list.items
-          .map((itemId) => itemMap.get(itemId))
-          .filter((entry): entry is Item => Boolean(entry))
-          .sort((a: Item, b: Item) => a.name.localeCompare(b.name)),
-        isExpanded: expandedLists.has(list.id),
-      })),
-    );
-  }, [stats, expandedLists]);
+    if (catalogLoadPromise.current) {
+      return catalogLoadPromise.current;
+    }
+
+    setCatalogLoading(true);
+    const pending = fetchAllItems();
+    catalogLoadPromise.current = pending;
+    try {
+      const items = await pending;
+      setCatalogItems(items);
+      return items;
+    } catch (loadError) {
+      setError("Die Inventardetails konnten nicht geladen werden.");
+      throw loadError;
+    } finally {
+      if (catalogLoadPromise.current === pending) {
+        catalogLoadPromise.current = null;
+      }
+      setCatalogLoading(false);
+    }
+  }, [catalogItems]);
+
+  const listsWithDetail = useMemo(
+    () =>
+      resolveListDetails(
+        stats?.lists ?? [],
+        catalogItems ?? [],
+        expandedLists,
+      ),
+    [catalogItems, expandedLists, stats?.lists],
+  );
 
   const locationLookup = useMemo(() => {
     if (!stats) {
@@ -114,23 +157,12 @@ const DashboardPage: React.FC = () => {
   }, [stats]);
 
   const itemsTotalValue = useMemo(() => {
-    if (!stats) {
-      return 0;
-    }
-    return stats.items.reduce((total: number, item: Item) => {
-      if (!item.value) {
-        return total;
-      }
-      const numeric = Number.parseFloat(item.value);
-      if (Number.isNaN(numeric) || !Number.isFinite(numeric) || numeric < 0) {
-        return total;
-      }
-      return total + numeric;
-    }, 0);
+    const value = Number.parseFloat(stats?.summary.total_value ?? "0");
+    return Number.isFinite(value) && value >= 0 ? value : 0;
   }, [stats]);
 
   const manageableItems = useMemo<ManageableItem[]>(() => {
-    if (!stats) {
+    if (!stats || !catalogItems) {
       return [];
     }
     const assignmentCount = new Map<number, number>();
@@ -139,33 +171,46 @@ const DashboardPage: React.FC = () => {
         assignmentCount.set(itemId, (assignmentCount.get(itemId) ?? 0) + 1);
       });
     });
-    return stats.items.map((item) => ({
+    return catalogItems.map((item) => ({
       ...item,
       assignmentCount: assignmentCount.get(item.id) ?? 0,
     }));
-  }, [stats]);
+  }, [catalogItems, stats]);
 
-  const handleToggleList = useCallback((listId: number) => {
-    setExpandedLists((prev: Set<number>) => {
-      const next = new Set<number>(prev);
-      if (next.has(listId)) {
-        next.delete(listId);
-      } else {
-        next.add(listId);
+  const handleToggleList = useCallback(
+    (listId: number) => {
+      const isExpanding = !expandedLists.has(listId);
+      setExpandedLists((prev: Set<number>) => {
+        const next = new Set<number>(prev);
+        if (next.has(listId)) {
+          next.delete(listId);
+        } else {
+          next.add(listId);
+        }
+        return next;
+      });
+      if (isExpanding && !catalogItems) {
+        void ensureCatalogItems().catch(() => undefined);
       }
-      return next;
-    });
-  }, []);
+    },
+    [catalogItems, ensureCatalogItems, expandedLists],
+  );
 
   const handleOpenManage = useCallback(
-    (listId: number) => {
-      const target =
-        listsWithDetail.find((list: ListWithDetail) => list.id === listId) ??
-        null;
-      setManageTarget(target);
-      setManageError(null);
+    async (listId: number) => {
+      try {
+        const items = await ensureCatalogItems();
+        const target =
+          resolveListDetails(stats?.lists ?? [], items, expandedLists).find(
+            (list) => list.id === listId,
+          ) ?? null;
+        setManageTarget(target);
+        setManageError(null);
+      } catch {
+        setManageError("Inventar konnte nicht geladen werden.");
+      }
     },
-    [listsWithDetail],
+    [ensureCatalogItems, expandedLists, stats?.lists],
   );
 
   const handleCloseManage = useCallback(() => {
@@ -177,16 +222,22 @@ const DashboardPage: React.FC = () => {
   }, [manageSaving]);
 
   const handleOpenPreview = useCallback(
-    (listId: number) => {
-      const target =
-        listsWithDetail.find((list: ListWithDetail) => list.id === listId) ??
-        null;
-      setPreviewTarget(target);
-      setPreviewExportError(null);
-      setPreviewExporting(false);
-      setListExportError(null);
+    async (listId: number) => {
+      try {
+        const items = await ensureCatalogItems();
+        const target =
+          resolveListDetails(stats?.lists ?? [], items, expandedLists).find(
+            (list) => list.id === listId,
+          ) ?? null;
+        setPreviewTarget(target);
+        setPreviewExportError(null);
+        setPreviewExporting(false);
+        setListExportError(null);
+      } catch {
+        setPreviewExportError("Inventar konnte nicht geladen werden.");
+      }
     },
-    [listsWithDetail],
+    [ensureCatalogItems, expandedLists, stats?.lists],
   );
 
   const handleClosePreview = useCallback(() => {
@@ -341,6 +392,8 @@ const DashboardPage: React.FC = () => {
       loading={loading}
       stats={stats}
       itemsTotalValue={itemsTotalValue}
+      catalogLoading={catalogLoading}
+      catalogReady={catalogItems !== null}
       listsWithDetail={listsWithDetail}
       showAllLists={showAllLists}
       setShowAllLists={setShowAllLists}

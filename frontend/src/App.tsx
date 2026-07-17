@@ -1,4 +1,4 @@
-import React from "react"; // Import React library for JSX
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom"; // Import routing components
 
 // Import layout components
@@ -8,19 +8,41 @@ import AuthLayout from "./components/layout/AuthLayout"; // Authentication page 
 // Import route protection components
 import ProtectedRoute from "./routes/ProtectedRoute"; // Route guard for authenticated users
 import PublicRoute from "./routes/PublicRoute"; // Route guard for unauthenticated users
+import apiClient from "./api/client";
+import LoadingScreen from "./components/common/LoadingScreen";
 
-// Import page components
-import DashboardPage from "./pages/DashboardPage"; // Main dashboard page
-import ItemsPage from "./pages/ItemsPage"; // Inventory management page
-import ScanItemPage from "./pages/ScanItemPage"; // QR code scanning page
-import ListsPage from "./pages/ListsPage"; // Custom lists management page
-import LoginPage from "./pages/LoginPage"; // User login page
-import RegisterPage from "./pages/RegisterPage"; // User registration page
-import SettingsPage from "./pages/SettingsPage"; // Application settings page
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const ItemsPage = lazy(() => import("./pages/ItemsPage"));
+const ScanItemPage = lazy(() => import("./pages/ScanItemPage"));
+const ListsPage = lazy(() => import("./pages/ListsPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 
 // Main App component defining application routes
-const App: React.FC = () => (
-  <Routes>
+const App: React.FC = () => {
+  const [registrationEnabled, setRegistrationEnabled] = useState<
+    boolean | null
+  >(null);
+
+  useEffect(() => {
+    let active = true;
+    apiClient
+      .get<{ registration_enabled: boolean }>("/config/")
+      .then(({ data }) => {
+        if (active) setRegistrationEnabled(data.registration_enabled === true);
+      })
+      .catch(() => {
+        if (active) setRegistrationEnabled(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
     {/* Protected routes requiring authentication */}
     <Route
       element={
@@ -44,10 +66,13 @@ const App: React.FC = () => (
       path="/login"
       element={
         <PublicRoute>
-          <AuthLayout title="Anmelden">
+          <AuthLayout
+            title="Anmelden"
+            registrationEnabled={registrationEnabled === true}
+          >
             {" "}
             {/* German: "Login" */}
-            <LoginPage /> {/* Login form component */}
+            <LoginPage registrationEnabled={registrationEnabled === true} />
           </AuthLayout>
         </PublicRoute>
       }
@@ -55,20 +80,26 @@ const App: React.FC = () => (
     {/* Public registration route */}
     <Route
       path="/register"
-      element={
+      element={registrationEnabled === null ? (
+        <LoadingScreen />
+      ) : registrationEnabled ? (
         <PublicRoute>
-          <AuthLayout title="Registrieren">
+          <AuthLayout title="Registrieren" registrationEnabled={false}>
             {" "}
             {/* German: "Register" */}
             <RegisterPage /> {/* Registration form component */}
           </AuthLayout>
         </PublicRoute>
-      }
+      ) : (
+        <Navigate to="/login" replace />
+      )}
     />
     {/* Catch-all route for undefined paths */}
     <Route path="*" element={<Navigate to="/" replace />} />{" "}
     {/* Redirect to dashboard */}
-  </Routes>
-);
+      </Routes>
+    </Suspense>
+  );
+};
 
 export default App; // Export App component as default

@@ -13,6 +13,7 @@ from .auth_views import (
     CustomTokenRefreshView,
     GetCSRFTokenView,
     LogoutView,
+    PublicConfigView,
 )
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     "CustomTokenRefreshView",
     "GetCSRFTokenView",
     "LogoutView",
+    "PublicConfigView",
     "UserRegistrationViewSet",
     "_build_cookie_options",
     "_clear_token_cookies",

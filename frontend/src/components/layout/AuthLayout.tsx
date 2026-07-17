@@ -9,10 +9,15 @@ interface AuthLayoutProps {
   title: string;
   // Children prop to render nested components inside the layout
   children: React.ReactNode;
+  registrationEnabled?: boolean;
 }
 
 // Authentication layout component for login/register pages
-const AuthLayout: React.FC<AuthLayoutProps> = ({ title, children }) => (
+const AuthLayout: React.FC<AuthLayoutProps> = ({
+  title,
+  children,
+  registrationEnabled = false,
+}) => (
   // Main container with full screen height, background color and text styling
   <div className="relative min-h-screen overflow-hidden bg-slate-50 px-4 py-12 text-slate-900">
     {/* Decorative background gradient element */}
@@ -48,16 +53,17 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ title, children }) => (
           Oberfläche, die sich wie von selbst erklärt.
         </p>
         {/* Call-to-action for new users */}
-        <div className="mt-6 text-sm text-slate-600">
-          <span className="font-medium text-slate-800">Neu hier?</span>{" "}
-          {/* Link to registration page */}
-          <Link
-            to="/register"
-            className="font-semibold text-brand-600 hover:text-brand-500"
-          >
-            Jetzt kostenlos starten
-          </Link>
-        </div>
+        {registrationEnabled && (
+          <div className="mt-6 text-sm text-slate-600">
+            <span className="font-medium text-slate-800">Neu hier?</span>{" "}
+            <Link
+              to="/register"
+              className="font-semibold text-brand-600 hover:text-brand-500"
+            >
+              Jetzt kostenlos starten
+            </Link>
+          </div>
+        )}
       </div>
       {/* Right side authentication form container */}
       <div

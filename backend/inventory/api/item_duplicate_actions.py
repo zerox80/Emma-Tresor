@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+from itertools import combinations
 from typing import Literal, cast
 
 from rest_framework import serializers, status
@@ -240,16 +242,15 @@ class DuplicateFinderMixin:
         total = len(items)
         adjacency: list[list[tuple[int, set[str]]]] = [[] for _ in range(total)]
 
-        for idx in range(total - 1):
+        for idx, compare_index in self._candidate_pairs(items, options):
             base = items[idx]
-            for compare_index in range(idx + 1, total):
-                candidate = items[compare_index]
-                reasons = self._items_match(base, candidate, options)
-                if reasons:
-                    if self._is_quarantined_pair(base.id, candidate.id, quarantine_pairs):
-                        continue
-                    adjacency[idx].append((compare_index, reasons))
-                    adjacency[compare_index].append((idx, reasons))
+            candidate = items[compare_index]
+            reasons = self._items_match(base, candidate, options)
+            if reasons:
+                if self._is_quarantined_pair(base.id, candidate.id, quarantine_pairs):
+                    continue
+                adjacency[idx].append((compare_index, reasons))
+                adjacency[compare_index].append((idx, reasons))
 
         visited: set[int] = set()
         groups: list[dict[str, list]] = []
@@ -287,3 +288,57 @@ class DuplicateFinderMixin:
 
         groups.sort(key=lambda entry: len(entry['items']), reverse=True)
         return groups
+
+    def _candidate_pairs(self, items, options):
+        """Generate a lossless candidate set using mandatory-match buckets."""
+
+        if options['wodis_match'] == 'exact':
+            yield from self._pairs_by_key(
+                items,
+                lambda item: self._normalise_text(item.wodis_inventory_number),
+            )
+            return
+
+        tolerance = options['purchase_tolerance']
+        if tolerance is not None:
+            dated = sorted(
+                (item.purchase_date, index)
+                for index, item in enumerate(items)
+                if item.purchase_date is not None
+            )
+            window_start = 0
+            for current in range(len(dated)):
+                while (dated[current][0] - dated[window_start][0]).days > tolerance:
+                    window_start += 1
+                for previous in range(window_start, current):
+                    yield tuple(sorted((dated[previous][1], dated[current][1])))
+            return
+
+        if not options.get('require_any_text_match', False):
+            if options['name_match'] == 'exact':
+                yield from self._pairs_by_key(items, lambda item: self._normalise_text(item.name))
+                return
+            if options['name_match'] == 'prefix':
+                yield from self._pairs_by_key(
+                    items,
+                    lambda item: self._normalise_text(item.name)[:3],
+                )
+                return
+            if options['description_match'] == 'exact':
+                yield from self._pairs_by_key(
+                    items,
+                    lambda item: self._normalise_text(item.description),
+                )
+                return
+
+        yield from combinations(range(len(items)), 2)
+
+    @staticmethod
+    def _pairs_by_key(items, key_function):
+        buckets = defaultdict(list)
+        for index, item in enumerate(items):
+            key = key_function(item)
+            if key:
+                buckets[key].append(index)
+        for indices in buckets.values():
+            yield from combinations(indices, 2)

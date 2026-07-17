@@ -43,6 +43,7 @@ export const useItemsDuplicateController = ({
   }, [strictness]);
 
   const finder = useDuplicateFinder({
+    enabled: isOpen,
     searchTerm,
     selectedTagIds,
     selectedLocationIds,
@@ -96,8 +97,8 @@ export const useItemsDuplicateController = ({
     }
     try {
       setUndoInProgress(true);
-      await Promise.all(
-        undoEntries.map((entry) => finder.releaseQuarantineEntry(entry.id)),
+      await finder.releaseQuarantineEntries(
+        undoEntries.map((entry) => entry.id),
       );
       setUndoEntries(null);
       await finder.loadDuplicates();

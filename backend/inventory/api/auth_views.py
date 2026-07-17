@@ -66,6 +66,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         Returns:
             Response: User info and token metadata on success
         """
+        # Every response that installs authentication cookies must be bound to
+        # a same-origin request.  Requiring CSRF here prevents login-CSRF / session
+        # planting even though this endpoint itself is intentionally anonymous.
+        enforce_csrf(request)
+
         # Extract 'remember me' preference from various possible field names
         remember_preference = (
             request.data.get('remember')
@@ -123,6 +128,10 @@ class CustomTokenRefreshView(TokenRefreshView):
         Returns:
             Response: New token metadata with cookies set
         """
+        # Refresh always rotates/installs authentication cookies, regardless of
+        # whether the refresh token arrived in the body or an HttpOnly cookie.
+        enforce_csrf(request)
+
         # Get refresh token from cookie
         refresh_cookie = request.COOKIES.get(settings.JWT_REFRESH_COOKIE_NAME)
         remember_cookie = request.COOKIES.get(settings.JWT_REMEMBER_COOKIE_NAME)
@@ -130,7 +139,6 @@ class CustomTokenRefreshView(TokenRefreshView):
         # Prepare data for serializer
         data = request.data.copy()
         if 'refresh' not in data and refresh_cookie:
-            enforce_csrf(request)
             data['refresh'] = refresh_cookie
 
         # Extract remember preference
@@ -193,6 +201,15 @@ class CurrentUserView(APIView):
                 'email': user.email,
             }
         )
+
+
+class PublicConfigView(APIView):
+    """Expose non-sensitive runtime feature flags to anonymous clients."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        return Response({'registration_enabled': settings.ALLOW_USER_REGISTRATION})
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
@@ -275,6 +292,7 @@ __all__ = [
     'CustomTokenRefreshView',
     'GetCSRFTokenView',
     'LogoutView',
+    'PublicConfigView',
     'UserRegistrationViewSet',
     '_build_cookie_options',
     '_clear_token_cookies',

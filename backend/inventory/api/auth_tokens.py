@@ -176,7 +176,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             # Try to find user by email or username
             if email and not username:
                 # Login with email
-                user = User.objects.filter(email__iexact=lookup_email).first()
+                user = User.objects.get(email__iexact=lookup_email)
                 if user:
                     # Use constant-time comparison to prevent timing attacks
                     email_check = constant_time_compare(email.lower(), user.email.lower())
@@ -186,7 +186,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                         authentication_result = user
             elif username:
                 # Login with username
-                user = User.objects.filter(username__iexact=lookup_username).first()
+                user = User.objects.get(username__iexact=lookup_username)
                 if user:
                     # Use constant-time comparison
                     username_check = constant_time_compare(username.lower(), user.username.lower())
@@ -194,6 +194,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                         attrs[self.username_field] = getattr(user, self.username_field)
                         user_found = True
                         authentication_result = user
+        except User.DoesNotExist:
+            user = None
+        except User.MultipleObjectsReturned:
+            # A duplicate identity is a data-integrity incident. Fail closed;
+            # never choose an account based on database row order.
+            security_logger.critical('Ambiguous authentication identity detected')
+            user = None
         except Exception:
             # Log database errors without revealing details
             security_logger.error('Database error during authentication lookup')
