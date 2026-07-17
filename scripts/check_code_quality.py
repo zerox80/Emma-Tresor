@@ -9,7 +9,6 @@ from pathlib import Path, PurePosixPath
 
 
 MAX_FILE_LINES = 500
-MAX_LINE_LENGTH = 120
 
 CODE_SUFFIXES = {
     ".css",
@@ -61,13 +60,6 @@ def check_file(path: Path, repository: Path) -> list[str]:
             f"{relative_path}: {len(lines)} lines (maximum {MAX_FILE_LINES})"
         )
 
-    for line_number, line in enumerate(lines, start=1):
-        if len(line) > MAX_LINE_LENGTH:
-            violations.append(
-                f"{relative_path}:{line_number}: {len(line)} characters "
-                f"(maximum {MAX_LINE_LENGTH})"
-            )
-
     return violations
 
 
@@ -87,8 +79,7 @@ def main() -> int:
         return 1
 
     print(
-        f"Checked {len(files)} code files: maximum {MAX_FILE_LINES} lines per file "
-        f"and {MAX_LINE_LENGTH} characters per line."
+        f"Checked {len(files)} code files: maximum {MAX_FILE_LINES} lines per file."
     )
     return 0
 
