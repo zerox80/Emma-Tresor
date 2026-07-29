@@ -39,7 +39,7 @@
     "jsdom": "^29.1.1",
     "postcss": "^8.5.18",
     "tailwindcss": "^4.3.3",
-    "terser": "^5.48.0",
+    "terser": "^5.49.0",
     "typescript": "~7.0.2",
     "vite": "^8.1.4",
     "vitest": "^4.1.10"
