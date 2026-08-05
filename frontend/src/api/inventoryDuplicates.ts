@@ -32,6 +32,9 @@ export const fetchDuplicateFinder = async (
   if (filters?.locations && filters.locations.length > 0) {
     requestParams.location = filters.locations.join(",");
   }
+  if (filters?.employee) {
+    requestParams.employee = filters.employee;
+  }
   if (filters?.ordering) {
     requestParams.ordering = filters.ordering;
   }

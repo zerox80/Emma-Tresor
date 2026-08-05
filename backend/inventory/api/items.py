@@ -11,7 +11,7 @@ from uuid import UUID
 
 from django.conf import settings
 from django.db.models import Count, DecimalField, IntegerField, Subquery, Sum, Value
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Trim
 from django.http import HttpResponse
 from rest_framework import filters, serializers, status, viewsets
 from rest_framework.decorators import action
@@ -57,11 +57,23 @@ class ItemFilter(django_filters.FilterSet):
     Supports filtering by:
     - tags: One or more tag IDs (comma-separated)
     - location: One or more location IDs (comma-separated)
+    - employee: Exact employee name (case-insensitive)
     """
 
     tags = NumberInFilter(field_name='tags__id')
     location = NumberInFilter(field_name='location__id')
     ids = NumberInFilter(field_name='id')
+    employee = django_filters.CharFilter(method='filter_employee')
+
+    def filter_employee(self, queryset, name, value):
+        """Match employee names case-insensitively and ignore stray whitespace."""
+
+        cleaned_value = str(value).strip()
+        if not cleaned_value:
+            return queryset
+        return queryset.annotate(
+            _trimmed_employee_name=Trim('employee_name'),
+        ).filter(_trimmed_employee_name__iexact=cleaned_value)
 
     class Meta:
         """FilterSet metadata."""
@@ -110,7 +122,14 @@ class ItemViewSet(DuplicateFinderMixin, ItemResourceActionsMixin, viewsets.Model
     serializer_class = ItemSerializer
     filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ItemFilter
-    search_fields = ['name', 'description', 'location__name', 'tags__name', 'wodis_inventory_number']
+    search_fields = [
+        'name',
+        'description',
+        'location__name',
+        'tags__name',
+        'wodis_inventory_number',
+        'employee_name',
+    ]
     ordering_fields = ['name', 'quantity', 'value', 'purchase_date']
     ordering = ['-purchase_date', 'name']  # Default ordering
     pagination_class = ItemPagination
@@ -166,7 +185,7 @@ class ItemViewSet(DuplicateFinderMixin, ItemResourceActionsMixin, viewsets.Model
             throttles.append(ItemDeleteRateThrottle())
         elif self.action == 'generate_qr_code':
             throttles.append(QRGenerateRateThrottle())
-        elif self.action in ['list', 'retrieve', 'stats', 'dashboard']:
+        elif self.action in ['list', 'retrieve', 'stats', 'dashboard', 'employees']:
             throttles.append(ItemReadRateThrottle())
         elif self.action == 'find_duplicates':
             throttles.append(DuplicateFinderRateThrottle())
@@ -199,6 +218,43 @@ class ItemViewSet(DuplicateFinderMixin, ItemResourceActionsMixin, viewsets.Model
             ),
         )
         return Response(aggregates)
+
+    @action(detail=False, methods=['get'])
+    def employees(self, request):
+        """Return all assigned employee names with their item counts."""
+
+        rows = (
+            Item.objects.filter(owner=request.user)
+            .exclude(employee_name__isnull=True)
+            .exclude(employee_name='')
+            .values('employee_name')
+            .annotate(item_count=Count('pk'))
+            .order_by()
+        )
+
+        # Consolidate legacy spelling variants that only differ in casing or
+        # surrounding whitespace. The employee filter uses the same semantics.
+        grouped: dict[str, dict[str, str | int]] = {}
+        for row in rows:
+            employee_name = str(row['employee_name']).strip()
+            if not employee_name:
+                continue
+            key = employee_name.casefold()
+            if key in grouped:
+                grouped[key]['item_count'] = (
+                    int(grouped[key]['item_count']) + int(row['item_count'])
+                )
+                continue
+            grouped[key] = {
+                'name': employee_name,
+                'item_count': int(row['item_count']),
+            }
+
+        employees = sorted(
+            grouped.values(),
+            key=lambda employee: str(employee['name']).casefold(),
+        )
+        return Response(employees)
 
     @action(detail=False, methods=['get'])
     def dashboard(self, request):

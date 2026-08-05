@@ -39,6 +39,7 @@ describe("useItemsData", () => {
         page: 1,
         selectedLocationIds: [],
         selectedTagIds: [],
+        selectedEmployee: null,
       }),
     );
 

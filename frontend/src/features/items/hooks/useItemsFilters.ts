@@ -11,6 +11,8 @@ export interface ItemsFiltersState {
   toggleTag: (tagId: number) => void;
   selectedLocationIds: number[];
   toggleLocation: (locationId: number) => void;
+  selectedEmployee: string | null;
+  setSelectedEmployee: (employee: string | null) => void;
   ordering: string;
   setOrdering: (value: string) => void;
   viewMode: ViewMode;
@@ -26,13 +28,20 @@ export const useItemsFilters = (): ItemsFiltersState => {
   const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [selectedLocationIds, setSelectedLocationIds] = useState<number[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
   const [ordering, setOrdering] = useState<string>(DEFAULT_ITEM_ORDERING);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
+  }, [
+    debouncedSearchTerm,
+    ordering,
+    selectedEmployee,
+    selectedLocationIds,
+    selectedTagIds,
+  ]);
 
   const toggleId = useCallback((prev: number[], entryId: number) => {
     if (prev.includes(entryId)) {
@@ -58,6 +67,7 @@ export const useItemsFilters = (): ItemsFiltersState => {
   const clearFilters = useCallback(() => {
     setSelectedTagIds([]);
     setSelectedLocationIds([]);
+    setSelectedEmployee(null);
     setOrdering(DEFAULT_ITEM_ORDERING);
     setSearchTerm("");
   }, []);
@@ -67,8 +77,15 @@ export const useItemsFilters = (): ItemsFiltersState => {
       debouncedSearchTerm.length > 0 ||
       selectedTagIds.length > 0 ||
       selectedLocationIds.length > 0 ||
+      selectedEmployee !== null ||
       ordering !== DEFAULT_ITEM_ORDERING,
-    [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds],
+    [
+      debouncedSearchTerm,
+      ordering,
+      selectedEmployee,
+      selectedLocationIds,
+      selectedTagIds,
+    ],
   );
 
   return {
@@ -79,6 +96,8 @@ export const useItemsFilters = (): ItemsFiltersState => {
     toggleTag,
     selectedLocationIds,
     toggleLocation,
+    selectedEmployee,
+    setSelectedEmployee,
     ordering,
     setOrdering,
     viewMode,

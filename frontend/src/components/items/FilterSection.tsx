@@ -1,12 +1,13 @@
 // Filter Section Component
 // ======================
 // This component provides comprehensive filtering and sorting controls for the inventory items view.
-// It includes search, tag filtering, location filtering, view mode toggling, and sorting options.
+// It includes search, employee, tag and location filtering, view mode toggling, and sorting options.
 
 import React from "react";
 import clsx from "clsx";
 
-import type { Tag, Location } from "../../types/inventory";
+import type { EmployeeSummary, Tag, Location } from "../../types/inventory";
+import EmployeeFilter from "./EmployeeFilter";
 
 type ViewMode = "grid" | "table";
 type Props = {
@@ -18,11 +19,16 @@ type Props = {
   onSearchChange: (value: string) => void;
   tags: Tag[];
   locations: Location[];
+  employees: EmployeeSummary[];
   metaLoading: boolean;
+  metaError: string | null;
+  onReloadMeta: () => void;
   selectedTagIds: number[];
   onToggleTag: (tagId: number) => void;
   selectedLocationIds: number[];
   onToggleLocation: (locationId: number) => void;
+  selectedEmployee: string | null;
+  onEmployeeChange: (employee: string | null) => void;
   ordering: string;
   setOrdering: (ordering: string) => void;
 };
@@ -35,11 +41,16 @@ const FilterSection: React.FC<Props> = ({
   onSearchChange,
   tags,
   locations,
+  employees,
   metaLoading,
+  metaError,
+  onReloadMeta,
   selectedTagIds,
   onToggleTag,
   selectedLocationIds,
   onToggleLocation,
+  selectedEmployee,
+  onEmployeeChange,
   ordering,
   setOrdering,
 }) => {
@@ -51,8 +62,8 @@ const FilterSection: React.FC<Props> = ({
             Inventar filtern
           </h2>
           <p className="text-sm text-slate-600">
-            Nutze Suche, Tags und Standorte – auch nach der Wodis Inventarnummer
-            – um blitzschnell den richtigen Gegenstand zu finden.
+            Nutze Suche, Mitarbeiter, Tags und Standorte – auch nach der Wodis
+            Inventarnummer – um blitzschnell den richtigen Gegenstand zu finden.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -131,7 +142,7 @@ const FilterSection: React.FC<Props> = ({
             <input
               id="items-search"
               type="search"
-              placeholder="Name, Wodis-Nr., Beschreibung oder Standort …"
+              placeholder="Name, Mitarbeiter, Wodis-Nr. oder Standort …"
               className="w-full border-none bg-transparent text-sm text-slate-900 outline-none"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -202,6 +213,15 @@ const FilterSection: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      <EmployeeFilter
+        employees={employees}
+        loading={metaLoading}
+        error={metaError}
+        selectedEmployee={selectedEmployee}
+        onEmployeeChange={onEmployeeChange}
+        onRetry={onReloadMeta}
+      />
 
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">

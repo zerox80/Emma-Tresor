@@ -216,6 +216,15 @@ export interface Location {
   name: string;
 }
 
+/** A person assigned to one or more inventory items. */
+export interface EmployeeSummary {
+  /** Employee name as stored on the assigned items. */
+  name: string;
+
+  /** Number of inventory records assigned to this employee. */
+  item_count: number;
+}
+
 // =============
 // Lists Management
 // =============
@@ -306,7 +315,7 @@ export interface PaginatedResponse<T> {
  * @deprecated Use FetchItemsOptions from inventory API instead
  */
 export interface FetchItemsParams {
-  /** Search query to filter items by name, description, or asset tag */
+  /** Search query for names, descriptions, locations, WODIS numbers, or employees */
   query?: string;
 
   /** Page number for pagination (1-based) */
@@ -320,6 +329,9 @@ export interface FetchItemsParams {
 
   /** Array of location IDs to filter items by */
   locations?: number[];
+
+  /** Exact employee name to filter assigned items by */
+  employee?: string;
 
   /** Ordering string for sorting results (e.g., 'name', '-created_at') */
   ordering?: string;
@@ -342,6 +354,9 @@ export interface ExportItemsParams {
 
   /** Array of location IDs to filter exported items by */
   locations?: number[];
+
+  /** Exact employee name to filter exported items by */
+  employee?: string;
 
   /** Ordering string for sorting exported items */
   ordering?: string;

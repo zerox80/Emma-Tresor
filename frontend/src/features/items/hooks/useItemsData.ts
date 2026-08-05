@@ -14,6 +14,7 @@ interface UseItemsDataArgs {
   page: number;
   selectedLocationIds: number[];
   selectedTagIds: number[];
+  selectedEmployee: string | null;
 }
 
 interface UseItemsDataResult {
@@ -32,6 +33,7 @@ export const useItemsData = ({
   page,
   selectedLocationIds,
   selectedTagIds,
+  selectedEmployee,
 }: UseItemsDataArgs): UseItemsDataResult => {
   const [items, setItems] = useState<Item[]>([]);
   const [pagination, setPagination] = useState<PaginatedResponse<Item> | null>(
@@ -54,6 +56,7 @@ export const useItemsData = ({
         tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         locations:
           selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
+        employee: selectedEmployee ?? undefined,
         ordering: ordering.trim().length > 0 ? ordering : undefined,
       };
       const [response, aggregateStats] = await Promise.all([
@@ -85,6 +88,7 @@ export const useItemsData = ({
     debouncedSearchTerm,
     ordering,
     page,
+    selectedEmployee,
     selectedLocationIds,
     selectedTagIds,
   ]);

@@ -12,6 +12,7 @@ import { useDuplicateFinder } from "./useDuplicateFinder";
 interface UseItemsDuplicateControllerArgs {
   ordering: string;
   searchTerm: string;
+  selectedEmployee: string | null;
   selectedLocationIds: number[];
   selectedTagIds: number[];
 }
@@ -19,6 +20,7 @@ interface UseItemsDuplicateControllerArgs {
 export const useItemsDuplicateController = ({
   ordering,
   searchTerm,
+  selectedEmployee,
   selectedLocationIds,
   selectedTagIds,
 }: UseItemsDuplicateControllerArgs) => {
@@ -45,6 +47,7 @@ export const useItemsDuplicateController = ({
   const finder = useDuplicateFinder({
     enabled: isOpen,
     searchTerm,
+    selectedEmployee,
     selectedTagIds,
     selectedLocationIds,
     ordering,

@@ -41,6 +41,8 @@ const ItemsPage: React.FC = () => {
     toggleTag,
     selectedLocationIds,
     toggleLocation,
+    selectedEmployee,
+    setSelectedEmployee,
     ordering,
     setOrdering,
     viewMode,
@@ -65,12 +67,16 @@ const ItemsPage: React.FC = () => {
     page,
     selectedLocationIds,
     selectedTagIds,
+    selectedEmployee,
   });
 
   const {
     tags,
     locations,
+    employees,
     metaLoading,
+    metaError,
+    reloadMeta,
     handleCreateTag,
     handleCreateLocation,
   } = useItemsMetadata();
@@ -92,6 +98,7 @@ const ItemsPage: React.FC = () => {
       ordering,
       selectedTagIds,
       selectedLocationIds,
+      selectedEmployee,
     });
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -99,10 +106,14 @@ const ItemsPage: React.FC = () => {
   const [dialogItem, setDialogItem] = useState<Item | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
+  const reloadItemsAndMeta = useCallback(async () => {
+    await Promise.all([loadItems(), reloadMeta()]);
+  }, [loadItems, reloadMeta]);
+
   const details = useItemDetails({
     items,
     itemsVersion,
-    loadItems,
+    loadItems: reloadItemsAndMeta,
     page,
     pagination,
     setInfoMessage,
@@ -112,6 +123,7 @@ const ItemsPage: React.FC = () => {
   const duplicateController = useItemsDuplicateController({
     ordering,
     searchTerm: debouncedSearchTerm,
+    selectedEmployee,
     selectedLocationIds,
     selectedTagIds,
   });
@@ -175,7 +187,7 @@ const ItemsPage: React.FC = () => {
     setDialogMode("create");
     setDialogItem(null);
     setInfoMessage(`"${item.name}" wurde erfolgreich angelegt.`);
-    await loadItems();
+    await reloadItemsAndMeta();
   };
 
   const handleItemUpdated = async (item: Item, warning?: string | null) => {
@@ -184,7 +196,7 @@ const ItemsPage: React.FC = () => {
     setDialogItem(null);
     const baseMessage = `"${item.name}" wurde aktualisiert.`;
     setInfoMessage(warning ? `${baseMessage} ${warning}` : baseMessage);
-    await loadItems();
+    await reloadItemsAndMeta();
     details.updateVisibleItem(item);
   };
 
@@ -299,11 +311,16 @@ const ItemsPage: React.FC = () => {
         onSearchChange={setSearchTerm}
         tags={tags}
         locations={locations}
+        employees={employees}
         metaLoading={metaLoading}
+        metaError={metaError}
+        onReloadMeta={() => void reloadMeta()}
         selectedTagIds={selectedTagIds}
         onToggleTag={toggleTag}
         selectedLocationIds={selectedLocationIds}
         onToggleLocation={toggleLocation}
+        selectedEmployee={selectedEmployee}
+        onEmployeeChange={setSelectedEmployee}
         ordering={ordering}
         setOrdering={setOrdering}
       />

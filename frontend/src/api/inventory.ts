@@ -8,6 +8,7 @@ import type {
   DuplicateFinderResponse,
   DuplicateQuarantineEntry,
   DashboardSummary,
+  EmployeeSummary,
   Item,
   ItemChangeLog,
   ItemImage,
@@ -25,7 +26,7 @@ import type {
  * These options allow filtering, pagination, and sorting of item queries.
  */
 export interface FetchItemsOptions {
-  /** Search query to filter items by name, description, or asset tag */
+  /** Search query for names, descriptions, locations, WODIS numbers, or employees */
   query?: string;
 
   /** Page number for pagination (1-based) */
@@ -40,6 +41,9 @@ export interface FetchItemsOptions {
   /** Array of location IDs to filter items by */
   locations?: number[];
 
+  /** Exact employee name to filter assigned items by */
+  employee?: string;
+
   /** Ordering string for sorting results (e.g., 'name', '-created_at') */
   ordering?: string;
 }
@@ -52,6 +56,7 @@ const buildItemParams = ({
   pageSize,
   tags,
   locations,
+  employee,
   ordering,
 }: FetchItemsOptions): Record<string, string | number> => {
   const params: Record<string, string | number> = {};
@@ -62,6 +67,7 @@ const buildItemParams = ({
   if (locations && locations.length > 0) {
     params.location = locations.join(",");
   }
+  if (employee) params.employee = employee;
   if (ordering) params.ordering = ordering;
   return params;
 };
@@ -78,6 +84,7 @@ export const fetchItems = async ({
   pageSize, // Number of items per page
   tags, // Tag IDs for filtering
   locations, // Location IDs for filtering
+  employee, // Employee assignment filter
   ordering, // Sort order for results
 }: FetchItemsOptions = {}): Promise<PaginatedResponse<Item>> => {
   const params = buildItemParams({
@@ -86,6 +93,7 @@ export const fetchItems = async ({
     pageSize,
     tags,
     locations,
+    employee,
     ordering,
   });
 
@@ -224,6 +232,7 @@ export const exportItems = async ({
   query, // Search filter
   tags, // Tag filter
   locations, // Location filter
+  employee, // Employee assignment filter
   ordering, // Sort order
 }: ExportItemsOptions = {}): Promise<Blob> => {
   // Build query parameters (no pagination for exports)
@@ -231,6 +240,7 @@ export const exportItems = async ({
   if (query) params.search = query; // Add search parameter
   if (tags && tags.length > 0) params.tags = tags.join(","); // Add tag filter
   if (locations && locations.length > 0) params.location = locations.join(","); // Add location filter
+  if (employee) params.employee = employee; // Add employee filter
   if (ordering) params.ordering = ordering; // Add sorting parameter
 
   // Make GET request to export endpoint
@@ -290,6 +300,12 @@ export const fetchTags = async (): Promise<Tag[]> => {
 export const fetchLocations = async (): Promise<Location[]> => {
   const { data } = await apiClient.get<Location[]>("/locations/"); // GET request to locations endpoint
   return data; // Return locations array
+};
+
+/** Fetch all employee names currently assigned to inventory items. */
+export const fetchEmployees = async (): Promise<EmployeeSummary[]> => {
+  const { data } = await apiClient.get<EmployeeSummary[]>("/items/employees/");
+  return data;
 };
 
 /**

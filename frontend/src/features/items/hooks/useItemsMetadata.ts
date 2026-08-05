@@ -3,14 +3,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createLocation,
   createTag,
+  fetchEmployees,
   fetchLocations,
   fetchTags,
 } from "../../../api/inventory";
-import type { Location, Tag } from "../../../types/inventory";
+import type {
+  EmployeeSummary,
+  Location,
+  Tag,
+} from "../../../types/inventory";
 
 interface UseItemsMetadataResult {
   tags: Tag[];
   locations: Location[];
+  employees: EmployeeSummary[];
   metaLoading: boolean;
   metaError: string | null;
   reloadMeta: () => Promise<void>;
@@ -24,6 +30,7 @@ const sortByName = <T extends { name: string }>(entries: T[]): T[] =>
 export const useItemsMetadata = (): UseItemsMetadataResult => {
   const [tags, setTags] = useState<Tag[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
   const [metaLoading, setMetaLoading] = useState(true);
   const [metaError, setMetaError] = useState<string | null>(null);
   const mountedRef = useRef(false);
@@ -35,18 +42,17 @@ export const useItemsMetadata = (): UseItemsMetadataResult => {
     setMetaLoading(true);
     setMetaError(null);
     try {
-      const [fetchedTags, fetchedLocations] = await Promise.all([
-        fetchTags(),
-        fetchLocations(),
-      ]);
+      const [fetchedTags, fetchedLocations, fetchedEmployees] =
+        await Promise.all([fetchTags(), fetchLocations(), fetchEmployees()]);
       if (mountedRef.current && requestId === latestRequestId.current) {
         setTags(sortByName(fetchedTags));
         setLocations(sortByName(fetchedLocations));
+        setEmployees(sortByName(fetchedEmployees));
       }
     } catch (error) {
       if (mountedRef.current && requestId === latestRequestId.current) {
         setMetaError(
-          "Tags und Standorte konnten nicht geladen werden. Bitte versuche es erneut.",
+          "Filterdaten konnten nicht geladen werden. Bitte versuche es erneut.",
         );
       }
     } finally {
@@ -80,6 +86,7 @@ export const useItemsMetadata = (): UseItemsMetadataResult => {
   return {
     tags,
     locations,
+    employees,
     metaLoading,
     metaError,
     reloadMeta: loadMeta,

@@ -161,6 +161,24 @@ const ItemsTable: React.FC<Props> = ({
                       {item.description}
                     </p>
                   )}
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
+                    <span
+                      className={clsx(
+                        "h-1.5 w-1.5 rounded-full",
+                        item.employee_name ? "bg-sky-500" : "bg-slate-300",
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className={
+                        item.employee_name
+                          ? "font-medium text-sky-700"
+                          : undefined
+                      }
+                    >
+                      {item.employee_name || "Nicht zugeordnet"}
+                    </span>
+                  </p>
                 </td>
                 <td className="px-4 py-3 text-sm">
                   {item.location

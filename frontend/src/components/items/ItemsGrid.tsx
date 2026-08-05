@@ -146,6 +146,20 @@ const ItemsGrid: React.FC<Props> = ({
                   : "Kein Standort"}
               </dd>
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt>Mitarbeiter</dt>
+              <dd
+                className={clsx(
+                  "max-w-[70%] truncate rounded-full px-3 py-1 text-xs font-semibold",
+                  item.employee_name
+                    ? "bg-sky-100 text-sky-700"
+                    : "bg-slate-100 text-slate-500",
+                )}
+                title={item.employee_name || undefined}
+              >
+                {item.employee_name || "Nicht zugeordnet"}
+              </dd>
+            </div>
             <div className="flex items-center justify-between">
               <dt>Wert</dt>
               <dd className="font-semibold text-slate-900">

@@ -9,6 +9,7 @@ interface UseItemsExportArgs {
   ordering: string;
   selectedTagIds: number[];
   selectedLocationIds: number[];
+  selectedEmployee: string | null;
 }
 
 interface UseItemsExportResult {
@@ -38,6 +39,7 @@ export const useItemsExport = ({
   ordering,
   selectedTagIds,
   selectedLocationIds,
+  selectedEmployee,
 }: UseItemsExportArgs): UseItemsExportResult => {
   const [exportingItems, setExportingItems] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export const useItemsExport = ({
         tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         locations:
           selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
+        employee: selectedEmployee ?? undefined,
         ordering: ordering.trim().length > 0 ? ordering : undefined,
       });
       downloadBlob(blob);
@@ -63,7 +66,13 @@ export const useItemsExport = ({
     } finally {
       setExportingItems(false);
     }
-  }, [debouncedSearchTerm, ordering, selectedLocationIds, selectedTagIds]);
+  }, [
+    debouncedSearchTerm,
+    ordering,
+    selectedEmployee,
+    selectedLocationIds,
+    selectedTagIds,
+  ]);
 
   const dismissExportError = useCallback(() => {
     setExportError(null);

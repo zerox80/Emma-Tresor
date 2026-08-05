@@ -19,6 +19,7 @@ interface UseDuplicateFinderArgs {
   searchTerm: string;
   selectedTagIds: number[];
   selectedLocationIds: number[];
+  selectedEmployee: string | null;
   ordering: string;
   finderParams: DuplicateFinderParams;
 }
@@ -51,11 +52,13 @@ const buildFiltersFromArgs = ({
   searchTerm,
   selectedLocationIds,
   selectedTagIds,
+  selectedEmployee,
   ordering,
 }: DuplicateFinderFilters): FetchItemsOptions => ({
   query: searchTerm || undefined,
   locations: selectedLocationIds.length > 0 ? selectedLocationIds : undefined,
   tags: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+  employee: selectedEmployee ?? undefined,
   ordering: ordering.trim().length > 0 ? ordering : undefined,
 });
 
@@ -66,6 +69,7 @@ export const useDuplicateFinder = (
     searchTerm,
     selectedLocationIds,
     selectedTagIds,
+    selectedEmployee,
     ordering,
     finderParams,
     enabled,
@@ -89,9 +93,16 @@ export const useDuplicateFinder = (
         searchTerm,
         selectedLocationIds,
         selectedTagIds,
+        selectedEmployee,
         ordering,
       }),
-    [ordering, searchTerm, selectedLocationIds, selectedTagIds],
+    [
+      ordering,
+      searchTerm,
+      selectedEmployee,
+      selectedLocationIds,
+      selectedTagIds,
+    ],
   );
 
   const loadDuplicates = useCallback(
