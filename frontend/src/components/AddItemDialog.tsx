@@ -49,6 +49,24 @@ interface AddItemDialogProps {
   onUpdated?: (item: Item, warning?: string | null) => void;
 }
 
+const getApiFieldError = (error: unknown, field: string): string | null => {
+  const data = (error as { response?: { data?: unknown } })?.response?.data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return null;
+  }
+
+  const fieldError = (data as Record<string, unknown>)[field];
+  if (typeof fieldError === "string") {
+    return fieldError;
+  }
+  if (Array.isArray(fieldError)) {
+    return fieldError.find(
+      (message): message is string => typeof message === "string",
+    ) ?? null;
+  }
+  return null;
+};
+
 const AddItemDialog: React.FC<AddItemDialogProps> = ({
   open,
   onClose,
@@ -66,6 +84,7 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
     control,
     register,
     reset,
+    setError,
     handleSubmit,
     trigger,
     watch,
@@ -392,12 +411,18 @@ const AddItemDialog: React.FC<AddItemDialogProps> = ({
         setCompletedItem(enrichedItem);
         setCompletionMode("create");
       } catch (error) {
+        const valueError = getApiFieldError(error, "value");
+        if (valueError) {
+          setError("value", { type: "server", message: valueError });
+          setCurrentStep(0);
+          return;
+        }
         setFormError(
           "Der Gegenstand konnte nicht erstellt werden. Bitte versuche es erneut.",
         );
       }
     },
-    [files, onCreated, onUpdated, mode, item, closeDialog],
+    [files, onCreated, onUpdated, mode, item, closeDialog, setError],
   );
 
   const onSubmit = handleSubmit(submitHandler);

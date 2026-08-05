@@ -39,7 +39,15 @@ export const AddItemBasicsStep: React.FC<FormFieldsProps> = ({ register, errors 
         />
       </Field>
       <Field label="Wert (€)" error={errors.value?.message}>
-        <input id="add-item-value" type="number" min={0} step="0.01" className={inputClass} {...register("value")} />
+        <input
+          id="add-item-value"
+          type="text"
+          inputMode="decimal"
+          className={inputClass}
+          placeholder="z. B. 1,84"
+          aria-invalid={Boolean(errors.value)}
+          {...register("value")}
+        />
       </Field>
     </div>
     <Field label="Kaufdatum" error={errors.purchase_date?.message}>

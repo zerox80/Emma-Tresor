@@ -1,6 +1,49 @@
 import { z } from "zod";
 import type { ItemPayload } from "../types/inventory";
 
+/**
+ * Converts the German decimal separator to the API's canonical format.
+ * Empty optional values remain null so they are omitted by the backend.
+ */
+export const normaliseCurrencyValue = (
+  value: string | null | undefined,
+): string | null => {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed.replace(",", ".") : null;
+};
+
+const optionalCurrencyValue = z
+  .string()
+  .optional()
+  .refine(
+    (value) => {
+      const normalised = normaliseCurrencyValue(value);
+      return normalised === null || /^-?\d+(?:\.\d+)?$/.test(normalised);
+    },
+    "Bitte gib einen gültigen Wert ein, z. B. 1,84.",
+  )
+  .refine(
+    (value) => {
+      const normalised = normaliseCurrencyValue(value);
+      return normalised === null || Number(normalised) >= 0;
+    },
+    "Der Wert darf nicht negativ sein.",
+  )
+  .refine(
+    (value) => {
+      const decimalPart = normaliseCurrencyValue(value)?.split(".")[1];
+      return !decimalPart || decimalPart.length <= 2;
+    },
+    "Der Wert darf maximal 2 Nachkommastellen haben, z. B. 1,84.",
+  )
+  .refine(
+    (value) => {
+      const normalised = normaliseCurrencyValue(value);
+      return normalised === null || Number(normalised) <= 999999999.99;
+    },
+    "Der Wert ist zu hoch. Maximal 999.999.999,99 € erlaubt.",
+  );
+
 export const itemSchema = z.object({
   name: z.string().trim().min(1, "Name ist erforderlich").max(255, "Name darf höchstens 255 Zeichen enthalten."),
   description: z.string().max(2000, "Die Beschreibung ist zu lang (maximal 2000 Zeichen).").optional(),
@@ -20,16 +63,7 @@ export const itemSchema = z.object({
       (value) => !value || value.length === 0 || /^\d{4}-\d{2}-\d{2}$/.test(value),
       "Bitte gib ein gültiges Datum an (JJJJ-MM-TT).",
     ),
-  value: z
-    .string()
-    .optional()
-    .refine(
-      (value) =>
-        value === undefined ||
-        value.trim() === "" ||
-        (!Number.isNaN(Number(value)) && Number(value) >= 0),
-      "Der Wert muss eine positive Zahl sein.",
-    ),
+  value: optionalCurrencyValue,
   location: z.number().nullable().optional(),
   tags: z.array(z.number()).optional(),
   employee_name: z.string().max(255, "Mitarbeiter Name darf maximal 255 Zeichen enthalten.").optional(),
@@ -68,7 +102,7 @@ export const normaliseItemPayload = (values: ItemFormSchema): ItemPayload => {
     description: optional(values.description),
     quantity: values.quantity,
     purchase_date: optional(values.purchase_date),
-    value: optional(values.value),
+    value: normaliseCurrencyValue(values.value),
     location: values.location ?? null,
     wodis_inventory_number: optional(values.wodis_inventory_number),
     tags: values.tags ?? [],
@@ -78,7 +112,7 @@ export const normaliseItemPayload = (values: ItemFormSchema): ItemPayload => {
 };
 
 export const formatItemFormCurrency = (value: string | undefined) => {
-  const numeric = Number.parseFloat(value ?? "");
+  const numeric = Number.parseFloat(normaliseCurrencyValue(value) ?? "");
   if (!Number.isFinite(numeric) || numeric < 0) return "—";
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(numeric);
 };
