@@ -1,6 +1,27 @@
 import { z } from "zod";
 import type { ItemPayload } from "../types/inventory";
 
+export const getApiFieldError = (
+  error: unknown,
+  field: string,
+): string | null => {
+  const data = (error as { response?: { data?: unknown } })?.response?.data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return null;
+  }
+
+  const fieldError = (data as Record<string, unknown>)[field];
+  if (typeof fieldError === "string") {
+    return fieldError;
+  }
+  if (Array.isArray(fieldError)) {
+    return fieldError.find(
+      (message): message is string => typeof message === "string",
+    ) ?? null;
+  }
+  return null;
+};
+
 /**
  * Converts the German decimal separator to the API's canonical format.
  * Empty optional values remain null so they are omitted by the backend.

@@ -199,11 +199,10 @@ class AuthSecurityTests(TimedAPITestCase):
     def test_login_ip_throttle_uses_cleaned_xff_with_configured_proxy(self):
 
         rest_framework_settings = rest_framework_settings_with(NUM_PROXIES=1)
-        request = SimpleNamespace(
-            META={
-                'HTTP_X_FORWARDED_FOR': '203.0.113.25',
-                'REMOTE_ADDR': '127.0.0.1',
-            },
+        request = APIRequestFactory().post(
+            '/',
+            HTTP_X_FORWARDED_FOR='203.0.113.25',
+            REMOTE_ADDR='127.0.0.1',
         )
 
         with temporary_rest_framework_settings(rest_framework_settings):

@@ -22,6 +22,7 @@ import {
   STEP_FIELD_MAP,
   formatItemFormCurrency,
   formatItemFormDate,
+  getApiFieldError,
   itemSchema,
   normaliseItemPayload,
   type ItemFormSchema,
@@ -29,12 +30,7 @@ import {
 } from "./addItemForm";
 import { useItemFiles } from "./useItemFiles";
 import { createItem, updateItem, uploadItemImage } from "../api/inventory";
-import type {
-  Item,
-  ItemImage,
-  Location,
-  Tag,
-} from "../types/inventory";
+import type { Item, ItemImage, Location, Tag } from "../types/inventory";
 
 interface AddItemDialogProps {
   open: boolean;
@@ -48,24 +44,6 @@ interface AddItemDialogProps {
   item?: Item | null;
   onUpdated?: (item: Item, warning?: string | null) => void;
 }
-
-const getApiFieldError = (error: unknown, field: string): string | null => {
-  const data = (error as { response?: { data?: unknown } })?.response?.data;
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    return null;
-  }
-
-  const fieldError = (data as Record<string, unknown>)[field];
-  if (typeof fieldError === "string") {
-    return fieldError;
-  }
-  if (Array.isArray(fieldError)) {
-    return fieldError.find(
-      (message): message is string => typeof message === "string",
-    ) ?? null;
-  }
-  return null;
-};
 
 const AddItemDialog: React.FC<AddItemDialogProps> = ({
   open,
