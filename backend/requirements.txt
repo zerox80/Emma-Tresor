@@ -7,7 +7,7 @@
 Django>=6.1.1,<6.2.0                          # Main web framework (latest stable)
 
 # REST API Framework
-djangorestframework>=3.18.0,<4.0.0            # Django REST Framework for API endpoints
+djangorestframework>=3.18.1,<4.0.0            # Django REST Framework for API endpoints
 
 # Authentication & Security
 djangorestframework-simplejwt>=5.5.1,<6.0.0  # JWT token authentication
