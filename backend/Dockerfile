@@ -8,7 +8,7 @@
 # Base stage - Python 3.14 slim image
 # ==========================================
 # Uses slim Alpine variant for minimal size and security
-FROM python:3.14-slim AS base
+FROM python:3.15-slim AS base
 
 # Environment variables for Python output
 # ==================================
