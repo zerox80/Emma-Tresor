@@ -62,7 +62,7 @@ Bei einem Fehler lasse Backend und Nginx gestoppt. Der Restore läuft in einer T
 ```bash
 docker compose up -d --build --wait backend
 docker compose exec -T backend python manage.py migrate --check
-docker compose up -d --build nginx
+docker compose up -d --no-deps --build nginx
 ```
 
 Prüfe mit einem bestehenden Konto die Anmeldung, einen bekannten Inventargegenstand und einen privaten Anhang. Bewahre das 16er-Volume und den Dump bis zur Abnahme auf. `docker compose down -v` würde auch die eingebundenen Medien-Volumes löschen.
