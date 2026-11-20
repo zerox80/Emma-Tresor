@@ -25,10 +25,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    ignore:
-      # Postgres major upgrades need pg_upgrade or dump/restore, not just a new image tag.
-      - dependency-name: "postgres"
-        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
