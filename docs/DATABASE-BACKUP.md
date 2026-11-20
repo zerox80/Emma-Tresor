@@ -71,4 +71,4 @@ Test a restore every now and then. A backup you have never restored is not a pro
 
 ## PostgreSQL major upgrades
 
-For the Compose upgrade from PostgreSQL 16 to 19, follow the [migration and rollback guide](POSTGRES-19.md) before updating the checkout. It restores the dump into a separate volume and keeps the old cluster available for rollback.
+For the Docker Compose upgrade from PostgreSQL 16 to 19, use the [migration script](POSTGRES-19.md). It backs up the database and uploads, restores into a separate volume, and keeps the original cluster available for rollback.

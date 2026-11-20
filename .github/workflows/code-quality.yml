@@ -88,11 +88,34 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - name: Test migrations and backend with the deployment database
+      - name: Prepare an existing PostgreSQL 16 installation
         run: |
           cp env.example .env
-          docker compose up -d --wait postgres
-          docker compose run --build --rm backend python manage.py test
+          cat > "$RUNNER_TEMP/pg16.yml" <<'YAML'
+          services:
+            postgres:
+              image: postgres:16-alpine
+              volumes: !override
+                - postgres_data:/var/lib/postgresql/data
+          YAML
+          docker compose -f docker-compose.yml -f "$RUNNER_TEMP/pg16.yml" up -d --wait postgres
+          docker compose run --build --rm --no-deps -T backend python manage.py shell <<'PY'
+          from django.contrib.auth import get_user_model
+          get_user_model().objects.create_user(username="upgrade-fixture", email="upgrade@example.invalid")
+          PY
+
+      - name: Migrate to PostgreSQL 19 and verify the restored user
+        run: |
+          python3 scripts/migrate_postgres_19.py
+          docker compose exec -T backend python manage.py shell <<'PY'
+          from django.contrib.auth import get_user_model
+          from django.db import connection
+          assert connection.pg_version // 10000 == 19
+          assert get_user_model().objects.filter(username="upgrade-fixture").exists()
+          PY
+
+      - name: Run backend tests on PostgreSQL 19
+        run: docker compose exec -T backend python manage.py test
 
   frontend:
     name: Frontend

@@ -29,4 +29,10 @@ Für den Produktivbetrieb stehen Docker-Setups mit `docker-compose.yml` (Backend
 
 Datenbank-Backups erstellt `scripts/db_backup.sh`; Wiederherstellung und Einrichtung als Cronjob beschreibt [`docs/DATABASE-BACKUP.md`](docs/DATABASE-BACKUP.md).
 
-**Bestehende Docker-Installation mit PostgreSQL 16?** Vor dem Update auf 19 den [Migrationsleitfaden mit Rückweg](docs/POSTGRES-19.md) durchgehen. Beim ersten Start einer neuen Installation legt Compose die Datenbank direkt mit PostgreSQL 19 an.
+**Bestehende Docker-Installation mit PostgreSQL 16:** Im Deployment-Verzeichnis auf dem Docker-Host diesen Befehl im Wartungsfenster ausführen:
+
+```bash
+git pull --ff-only && python3 scripts/migrate_postgres_19.py
+```
+
+Das Skript erkennt die Volumes, sichert Datenbank und Uploads, migriert auf 19 und startet die Anwendung wieder. [Ablauf und Wiederanlauf](docs/POSTGRES-19.md)
