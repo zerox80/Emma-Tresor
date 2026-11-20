@@ -14,7 +14,7 @@ services:
   # Primary data store for the EmmaTresor application.
   # Uses PostgreSQL 16 Alpine for efficiency and security.
   postgres:
-    image: postgres:16-alpine                        # Official PostgreSQL 16 Alpine image
+    image: postgres:19-alpine                        # Official PostgreSQL 16 Alpine image
     restart: unless-stopped                          # Automatic restart on failure
     env_file: .env                                   # Load environment variables from .env file
     environment:
