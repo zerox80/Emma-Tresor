@@ -12,9 +12,8 @@ services:
   # PostgreSQL Database Service
   # =========================
   # Primary data store for the EmmaTresor application.
-  # Uses PostgreSQL 16 Alpine for efficiency and security.
   postgres:
-    image: postgres:19-alpine                        # Official PostgreSQL 16 Alpine image
+    image: postgres:19-alpine
     restart: unless-stopped                          # Automatic restart on failure
     env_file: .env                                   # Load environment variables from .env file
     environment:
@@ -22,10 +21,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}                # Database user from environment
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}        # Database password from environment
     volumes:
-      - postgres_data:/var/lib/postgresql/data       # Persistent database storage
+      - postgres_data:/var/lib/postgresql            # PGDATA is <mount>/19/docker
       - ./db_backups:/backups                        # Host directory for database backups
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]  # Database readiness check
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 10s                                  # Check every 10 seconds
       timeout: 5s                                    # Timeout after 5 seconds
       retries: 5                                     # Try 5 times before marking unhealthy
@@ -112,7 +111,8 @@ services:
 # These volumes survive container restarts and recreation.
 
 volumes:
-  postgres_data:                                     # Database files
+  postgres_data:
+    name: ${POSTGRES_VOLUME_NAME:-${COMPOSE_PROJECT_NAME}_postgres_data}
   backend_static:                                    # Django static files (CSS, JS, images)
   backend_media:                                     # User-uploaded public media files
   backend_private_media:                             # User-uploaded private media files
