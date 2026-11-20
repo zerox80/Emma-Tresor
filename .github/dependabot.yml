@@ -25,6 +25,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      # The official postgres image is re-pushed under the same tags every few days,
+      # which restarts the cooldown each time, so no update PR would ever be opened.
+      exclude:
+        - "postgres"
 
   - package-ecosystem: "github-actions"
     directory: "/"
