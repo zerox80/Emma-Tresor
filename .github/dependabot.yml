@@ -13,19 +13,20 @@ updates:
     open-pull-requests-limit: 20
 
   - package-ecosystem: "docker"
-    directory: "/backend"
+    directories:
+      - "/backend"
+      - "/docker/frontend"
+      - "/docker/nginx"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 20
 
-  - package-ecosystem: "docker"
-    directory: "/docker/frontend"
+  - package-ecosystem: "docker-compose"
+    directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 20
 
-  - package-ecosystem: "docker"
-    directory: "/docker/nginx"
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 20
