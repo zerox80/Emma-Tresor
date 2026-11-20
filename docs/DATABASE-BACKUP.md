@@ -71,4 +71,4 @@ Test a restore every now and then. A backup you have never restored is not a pro
 
 ## PostgreSQL major upgrades
 
-The dump format works across major versions: a backup from PostgreSQL 16 restores into a newer server (tested with 16 → 18). A major upgrade is therefore: back up, start the new version with an empty data volume, and restore as described above. Simply changing the image tag on an existing data volume does not work, because PostgreSQL cannot read the data directory of an older major version.
+For the Compose upgrade from PostgreSQL 16 to 19, follow the [migration and rollback guide](POSTGRES-19.md) before updating the checkout. It restores the dump into a separate volume and keeps the old cluster available for rollback.

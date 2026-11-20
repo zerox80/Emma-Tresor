@@ -79,6 +79,21 @@ jobs:
           python -m pip install --disable-pip-version-check pip-audit
           python -m pip_audit -r requirements.txt
 
+  postgres:
+    name: Backend on PostgreSQL 19
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Test migrations and backend with the deployment database
+        run: |
+          cp env.example .env
+          docker compose up -d --wait postgres
+          docker compose run --build --rm backend python manage.py test
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
