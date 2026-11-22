@@ -13,19 +13,25 @@ updates:
     open-pull-requests-limit: 20
 
   - package-ecosystem: "docker"
-    directory: "/backend"
+    directories:
+      - "/backend"
+      - "/docker/frontend"
+      - "/docker/nginx"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 20
 
-  - package-ecosystem: "docker"
-    directory: "/docker/frontend"
+  - package-ecosystem: "docker-compose"
+    directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 20
+    cooldown:
+      # The official postgres image is re-pushed under the same tags every few days,
+      # which restarts the cooldown each time, so no update PR would ever be opened.
+      exclude:
+        - "postgres"
 
-  - package-ecosystem: "docker"
-    directory: "/docker/nginx"
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 20

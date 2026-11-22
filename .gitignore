@@ -61,6 +61,7 @@ logs/
 htmlcov/
 
 # Database backups
+/.pg19-migration/
 *.bak
 *.backup
 /db_backups/*.sql

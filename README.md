@@ -26,3 +26,13 @@ EmmaTresor ist ein sicheres, mandantenfähiges Inventar- und Asset-Management-Sy
 ## Deployment
 
 Für den Produktivbetrieb stehen Docker-Setups mit `docker-compose.yml` (Backend, Frontend, Nginx) bereit. Details zu API, Sicherheit und Fehlersuche befinden sich im Ordner `docs/`.
+
+Datenbank-Backups erstellt `scripts/db_backup.sh`; Wiederherstellung und Einrichtung als Cronjob beschreibt [`docs/DATABASE-BACKUP.md`](docs/DATABASE-BACKUP.md).
+
+**Bestehende Docker-Installation mit PostgreSQL 16:** Im Deployment-Verzeichnis auf dem Docker-Host diesen Befehl im Wartungsfenster ausführen:
+
+```bash
+git pull --ff-only && python3 scripts/migrate_postgres_19.py
+```
+
+Das Skript erkennt die Volumes, sichert Datenbank und Uploads, migriert auf 19 und startet die Anwendung wieder. [Ablauf und Wiederanlauf](docs/POSTGRES-19.md)

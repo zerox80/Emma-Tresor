@@ -17,12 +17,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
 
@@ -50,10 +50,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
           cache: pip
@@ -79,6 +79,44 @@ jobs:
           python -m pip install --disable-pip-version-check pip-audit
           python -m pip_audit -r requirements.txt
 
+  postgres:
+    name: Backend on PostgreSQL 19
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+
+      - name: Prepare an existing PostgreSQL 16 installation
+        run: |
+          cp env.example .env
+          cat > "$RUNNER_TEMP/pg16.yml" <<'YAML'
+          services:
+            postgres:
+              image: postgres:16-alpine
+              volumes: !override
+                - postgres_data:/var/lib/postgresql/data
+          YAML
+          docker compose -f docker-compose.yml -f "$RUNNER_TEMP/pg16.yml" up -d --wait postgres
+          docker compose run --build --rm --no-deps -T backend python manage.py shell <<'PY'
+          from django.contrib.auth import get_user_model
+          get_user_model().objects.create_user(username="upgrade-fixture", email="upgrade@example.invalid")
+          PY
+
+      - name: Migrate to PostgreSQL 19 and verify the restored user
+        run: |
+          python3 scripts/migrate_postgres_19.py
+          docker compose exec -T backend python manage.py shell <<'PY'
+          from django.contrib.auth import get_user_model
+          from django.db import connection
+          assert connection.pg_version // 10000 == 19
+          assert get_user_model().objects.filter(username="upgrade-fixture").exists()
+          PY
+
+      - name: Run backend tests on PostgreSQL 19
+        run: docker compose exec -T backend python manage.py test
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
@@ -89,10 +127,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
           cache: npm
